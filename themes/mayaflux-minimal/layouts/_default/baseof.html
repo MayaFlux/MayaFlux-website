@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+        {{ if .IsHome }}{{ site.Title }}{{ else }}{{ .Title }} | {{ site.Title
+        }}{{ end }}
+    </title>
+    <meta name="description" content="{{ .Site.Params.description }}" />
+    <link rel="stylesheet" href="/css/style.css" />
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <a href="/" class="logo">MayaFlux</a>
+            <ul class="nav-links">
+                {{ range .Site.Menus.main }}
+                <li><a href="{{ .URL }}">{{ .Name }}</a></li>
+                {{ end }}
+            </ul>
+        </div>
+    </nav>
+
+    <main>{{ block "main" . }}{{ end }}</main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2024 MayaFlux. Digital-First Multimedia Computation.</p>
+        </div>
+    </footer>
+</body>
+
+</html>

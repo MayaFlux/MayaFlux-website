@@ -6,8 +6,12 @@
   </url><url>
     <loc>http://localhost:1313/download/</loc>
   </url><url>
+    <loc>http://localhost:1313/personas/</loc>
+  </url><url>
     <loc>http://localhost:1313/</loc>
   </url><url>
     <loc>http://localhost:1313/tags/</loc>
+  </url><url>
+    <loc>http://localhost:1313/tutorials/</loc>
   </url>
 </urlset>

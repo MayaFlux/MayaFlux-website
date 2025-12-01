@@ -1,21 +1,14 @@
 baseURL = 'https://mayaflux.org/'
 languageCode = 'en-us'
 title = 'MayaFlux'
-theme = 'PaperMod'
+theme = 'mayaflux-minimal'
 
 [params]
 description = "Digital-First Multimedia Computation Framework"
-ShowCodeCopyButtons = true
-ShowReadingTime = true
-defaultTheme = "auto"
 
 [params.homeInfoParams]
 Title = "MayaFlux"
 Content = "Revolutionary C++20 multimedia DSP framework - digital-first paradigms for audio, visual, and control data"
-
-[[params.socialIcons]]
-name = "github"
-url = "https://github.com/MayaFlux/MayaFlux"
 
 [[menu.main]]
 name = "Download"
@@ -39,7 +32,3 @@ weight = 4
 
 [markup.highlight]
 style = "monokai"
-lineNos = true
-
-[outputs]
-home = ["HTML", "RSS", "JSON"]

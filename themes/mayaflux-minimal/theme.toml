@@ -1,0 +1,5 @@
+name = "MayaFlux Minimal"
+license = "MIT"
+licenselink = "https://github.com/MayaFlux/MayaFlux-website/blob/main/LICENSE"
+description = "Minimal custom theme for MayaFlux"
+min_version = "0.100.0"
