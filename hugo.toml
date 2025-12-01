@@ -1,0 +1,45 @@
+baseURL = 'https://mayaflux.org/'
+languageCode = 'en-us'
+title = 'MayaFlux'
+theme = 'PaperMod'
+
+[params]
+description = "Digital-First Multimedia Computation Framework"
+ShowCodeCopyButtons = true
+ShowReadingTime = true
+defaultTheme = "auto"
+
+[params.homeInfoParams]
+Title = "MayaFlux"
+Content = "Revolutionary C++20 multimedia DSP framework - digital-first paradigms for audio, visual, and control data"
+
+[[params.socialIcons]]
+name = "github"
+url = "https://github.com/MayaFlux/MayaFlux"
+
+[[menu.main]]
+name = "Download"
+url = "/download/"
+weight = 1
+
+[[menu.main]]
+name = "Personas"
+url = "/personas/"
+weight = 2
+
+[[menu.main]]
+name = "Tutorials"
+url = "/tutorials/"
+weight = 3
+
+[[menu.main]]
+name = "Docs"
+url = "https://github.com/MayaFlux/MayaFlux/wiki"
+weight = 4
+
+[markup.highlight]
+style = "monokai"
+lineNos = true
+
+[outputs]
+home = ["HTML", "RSS", "JSON"]
