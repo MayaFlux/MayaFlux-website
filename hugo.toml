@@ -27,8 +27,10 @@ weight = 3
 
 [[menu.main]]
 name = "Docs"
-url = "https://github.com/MayaFlux/MayaFlux/wiki"
+url = "https://mayaflux.github.io/MayaFlux/"
 weight = 4
 
-[markup.highlight]
-style = "monokai"
+[markup]
+[markup.goldmark]
+[markup.goldmark.renderer]
+unsafe = true

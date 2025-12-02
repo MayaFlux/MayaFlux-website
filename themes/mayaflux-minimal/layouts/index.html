@@ -1,15 +1,11 @@
 {{ define "main" }}
-<div class="hero">
-    <div class="container">
-        <h1>{{ .Site.Params.homeInfoParams.Title }}</h1>
-        <p class="tagline">{{ .Site.Params.homeInfoParams.Content }}</p>
-        <div class="cta-buttons">
-            <a href="/download/" class="btn btn-primary">Download Weave</a>
-            <a href="/personas/" class="btn btn-secondary">Find Your Entry Point</a>
-            <a href="https://github.com/MayaFlux/MayaFlux" class="btn btn-secondary">View on GitHub</a>
-        </div>
+
+<div class="container home-container">
+    <div class="home-header">
+        {{ .Title | markdownify }} {{ .Params.description | markdownify }}
     </div>
+
+    <div class="card-grid">{{ .Content }}</div>
 </div>
 
-<div class="container content">{{ .Content }}</div>
 {{ end }}
