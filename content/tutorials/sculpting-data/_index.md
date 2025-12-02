@@ -4,10 +4,12 @@ slug: "sculpting-data"
 layout: "tutorial"
 weight: 10
 description: "How to navigate the Sculpting Data series: the philosophy, structure, and tutorial order."
+hideChildren: true
 
-build:
-  list: never
-  render: always
+cascade:
+  build:
+    list: never
+    publishResources: false
 ---
 
 Sculpting Data is a guided sequence that teaches MayaFlux through one principle:

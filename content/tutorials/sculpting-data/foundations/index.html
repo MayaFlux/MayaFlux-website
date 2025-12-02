@@ -1,0 +1,290 @@
+---
+title: "Part I — Foundations of Form"
+layout: "tutorial"
+---
+
+<!-- =======================  PART I HEADER  ======================= -->
+
+<!-- <h1>Part I — Foundations of Form</h1> -->
+
+<div class="card-row">
+
+    <div class="card">
+        <h3>How to Use This</h3>
+        <p>Each section begins with <code>Tutorial:</code> — run the snippet first.<br>
+            Deep-dive panels are optional.<br>
+            End with <strong>Try It → Recap</strong> to consolidate.</p>
+    </div>
+
+    <div class="card">
+        <h3>What You'll Learn</h3>
+        <ul>
+            <li>How data behaves as material</li>
+            <li>Containers → Buffers → Streams</li>
+            <li>Cycle-based timing & deterministic flow</li>
+            <li>How structure produces form in MayaFlux</li>
+        </ul>
+    </div>
+
+</div>
+
+<hr>
+
+<!-- =======================  TUTORIAL SECTION ======================= -->
+
+<section class="tutorial-section">
+
+    <div class="tutorial-row">
+
+        <div class="tutorial-card" data-target="first-expanded">
+            <h3 class="tutorial-title">The Simplest First Step</h3>
+            <p class="hint">Click this card to reveal full explanation</p>
+
+            <pre><code class="language-cpp">
+// In your src/user_project.hpp compose() function:
+
+void compose() {
+    auto sound_container = vega.read_audio("path/to/your/file.wav");
+}
+                </code></pre>
+
+            <p>Replace "path/to/your/file.wav" with an actual path to a .wav file.</p>
+
+            <pre><code class="language-text">✓ Loaded: path/to/your/file.wav
+                    Channels: 2
+                    Frames: 2304000
+                    Sample Rate: 48000 Hz
+                </code></pre>
+
+            <p>Nothing plays yet. That's intentional—and important.</p>
+
+            <p>You have:</p>
+            <ul>
+                <li>All audio data in memory</li>
+                <li>Organized as a Container with metadata</li>
+                <li>A processor attached, ready to chunk and feed data</li>
+                <li>Full control over what happens next</li>
+            </ul>
+
+            <p>The file is loaded. Ready. Waiting.</p>
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- =======================  EXPANSION SECTION ======================= -->
+
+<section id="first-expanded" class="tutorial-expanded">
+
+    <h2>Expansion 1: What Is a Container?</h2>
+
+    <details>
+        <summary></summary>
+
+        <p>When you call <code>vega.read_audio()</code>, you're not just reading bytes from disk and forgetting them.
+            You're creating a <strong>Container</strong>—a structure that holds:</p>
+
+        <ul>
+            <li><strong>The audio data itself</strong> (all samples as numbers, deinterleaved and ready to process)</li>
+            <li><strong>Metadata about the data</strong> (sample rate, channels, duration, number of frames)</li>
+            <li><strong>A processor</strong> (machinery that knows how to access this data efficiently)</li>
+            <li><strong>Organizational structure</strong> (dimensions: time, channels, memory layout)</li>
+        </ul>
+
+        <p>The difference: A file is inert. A Container is active creative material.</p>
+
+        <p>When <code>vega.read_audio("file.wav")</code> runs, MayaFlux:</p>
+
+        <ol>
+            <li>Creates a <code>SoundFileReader</code> and initializes FFmpeg</li>
+            <li>Checks if the file is readable</li>
+            <li>Resamples to your project's sample rate (configurable)</li>
+            <li>Converts to 64-bit depth (high precision)</li>
+            <li><strong>Deinterleaves</strong> the audio</li>
+            <li>Creates a <code>SoundFileContainer</code></li>
+            <li>Loads all the audio data into memory</li>
+            <li>Configures a <code>ContiguousAccessProcessor</code></li>
+            <li>Returns the Container to you</li>
+        </ol>
+
+    </details>
+
+
+    <h2>Expansion 2: Memory, Ownership, and Smart Pointers</h2>
+
+    <details>
+        <summary></summary>
+
+        <p>MayaFlux uses smart pointers so memory is always safe.</p>
+
+        <pre><code class="language-cpp">
+auto sound_container = vega.read_audio("file.wav");
+            </code></pre>
+
+        <p>Actually means:</p>
+
+        <pre><code class="language-cpp">
+std::shared_ptr<MayaFlux::Kakshya::SoundFileContainer> sound_container =
+    /* vega.read_audio() internally returns a shared_ptr */;
+            </code></pre>
+
+        <p>This means:</p>
+
+        <ul>
+            <li>You never manually <code>delete</code> the Container.</li>
+            <li>Multiple parts of the program can reference the same Container safely.</li>
+            <li>When the last reference is gone, memory is automatically freed.</li>
+        </ul>
+
+    </details>
+
+
+    <h2>Expansion 3: What is <code>vega</code>?</h2>
+
+    <details>
+        <summary></summary>
+
+        <p><code>vega</code> is a fluent interface—convenience without hiding machinery.</p>
+
+        <p>Without vega:</p>
+
+        <pre><code class="language-cpp">
+// Without vega - explicit, showing every step
+auto reader = std::make_unique<MayaFlux::IO::SoundFileReader>();
+MayaFlux::IO::SoundFileReader::initialize_ffmpeg();
+
+if (!reader->can_read("file.wav")) {
+    std::cerr << "Cannot read file\n";
+    return;
+}
+
+reader->set_target_sample_rate(MayaFlux::Config::get_sample_rate());
+reader->set_target_bit_depth(64);
+reader->set_audio_options(MayaFlux::IO::AudioReadOptions::DEINTERLEAVE);
+
+MayaFlux::IO::FileReadOptions options = MayaFlux::IO::FileReadOptions::EXTRACT_METADATA;
+if (!reader->open("file.wav", options)) {
+        MF_ERROR(Journal::Component::API, Journal::Context::FileIO, "Failed to open file: {}", reader->get_last_error());
+    return;
+}
+
+auto container = reader->create_container();
+auto sound_container = std::dynamic_pointer_cast<Kakshya::SoundFileContainer>(container);
+
+if (!reader->load_into_container(sound_container)) {
+        MF_ERROR(Journal::Component::API, Journal::Context::Runtime, "Failed to load audio data: {}", reader->get_last_error());
+    return;
+}
+
+auto processor = std::dynamic_pointer_cast<Kakshya::ContiguousAccessProcessor>(
+    sound_container->get_default_processor());
+if (processor) {
+    std::vector<uint64_t> output_shape = {
+        MayaFlux::Config::get_buffer_size(),
+        sound_container->get_num_channels()
+    };
+    processor->set_output_size(output_shape);
+    processor->set_auto_advance(true);
+}
+
+// Now you have sound_container
+            </code></pre>
+
+        <p>With vega:</p>
+
+        <pre><code class="language-cpp">
+auto sound_container = vega.read_audio("file.wav");
+            </code></pre>
+
+        <p><strong>What vega does:</strong></p>
+        <ul>
+            <li>Infers format</li>
+            <li>Initializes the reader</li>
+            <li>Handles errors</li>
+            <li>Configures the processor</li>
+            <li>Returns the Container</li>
+        </ul>
+
+        <p><strong>What vega doesn’t do:</strong></p>
+        <ul>
+            <li>Hide complexity</li>
+            <li>Make the Container less capable</li>
+            <li>Prevent explicit manual control</li>
+        </ul>
+
+        <p>Use vega because you value fluency.</p>
+
+    </details>
+
+
+    <h2>Expansion 4: The Container's Processor</h2>
+
+    <details>
+        <summary></summary>
+
+        <p>The Container has a default <code>ContiguousAccessProcessor</code> that:</p>
+
+        <ol>
+            <li>Understands memory layout</li>
+            <li>Knows buffer size</li>
+            <li>Tracks playback position</li>
+            <li>Deinterleaves access for independent channel processing</li>
+        </ol>
+
+        <p>This processor is what feeds buffers when you connect the Container to output.</p>
+
+        <p><code>vega.read_audio()</code> configures it automatically:</p>
+
+        <ul>
+            <li>Sets output size</li>
+            <li>Enables auto-advance</li>
+            <li>Registers it with the Container</li>
+        </ul>
+
+    </details>
+
+
+    <h2>Expansion 5: What <code>.read_audio()</code> Does NOT Do</h2>
+
+    <details>
+        <summary></summary>
+
+        <p><strong>It does NOT:</strong></p>
+        <ul>
+            <li>Start playback</li>
+            <li>Create buffers</li>
+            <li>Connect to hardware</li>
+            <li>Route signal anywhere</li>
+        </ul>
+
+        <p><strong>It DOES:</strong></p>
+        <ul>
+            <li>Decode audio</li>
+            <li>Resample</li>
+            <li>Convert precision</li>
+            <li>Deinterleave channels</li>
+            <li>Allocate memory</li>
+            <li>Attach processor</li>
+            <li>Return a Container</li>
+        </ul>
+
+    </details>
+
+    <hr>
+
+    <p>In the next section, we'll connect this Container to buffers and route it to your speakers.</p>
+
+</section>
+
+
+<script>
+    document.querySelectorAll(".tutorial-card").forEach(card => {
+        card.addEventListener("click", () => {
+            const target = document.getElementById(card.dataset.target);
+            if (!target) return;
+            target.style.display = (target.style.display === "block") ? "none" : "block";
+        });
+    });
+</script>

@@ -274,6 +274,143 @@ h4 {
     width: 100%;
 }
 
+/* --------------------------------------------------------------
+   MayaFlux Tutorial Component (global)
+-------------------------------------------------------------- */
+
+.tutorial-section {
+    margin: 2rem 0;
+}
+
+.tutorial-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.tutorial-card {
+    flex: 1 1 300px;
+    background: var(--paper-2, rgba(255, 255, 255, 0.03));
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    padding: 1rem 1.2rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+    cursor: pointer;
+    transition: 0.25s ease;
+    color: var(--text) !important;
+}
+
+.tutorial-card pre code {
+    color: #f8f8f2 !important;
+}
+
+.tutorial-card ul li::marker,
+.tutorial-expanded ul li::marker {
+    color: var(--primary) !important;
+}
+
+.tutorial-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+}
+
+.tutorial-title {
+    color: var(--accent-primary);
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+}
+
+.hint {
+    opacity: 0.5;
+    font-size: 0.85rem;
+}
+
+.tutorial-expanded {
+    display: none;
+    padding: 1rem;
+    border-radius: 12px;
+    margin-top: 0.5rem;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+}
+
+.tutorial-expanded p,
+.tutorial-expanded li,
+.tutorial-expanded summary {
+    color: #ddd;
+    line-height: 1.6;
+}
+
+/* make bullets subtle but elegant */
+.tutorial-expanded ul li {
+    margin: 0.25rem 0;
+    padding-left: 0.4rem;
+    border-left: 3px solid rgba(255, 255, 255, 0.08);
+}
+
+/* darker text for code explanations */
+.tutorial-expanded code {
+    color: #ffddb3;
+}
+
+/* DETAILS TAG STYLING */
+details summary {
+    cursor: pointer;
+    font-weight: 600;
+    margin: 0.5rem 0;
+    color: var(--accent-primary);
+}
+
+details[open] summary {
+    opacity: 0.8;
+}
+
+details {
+    background: rgba(255, 255, 255, 0.03);
+    padding: 0.6rem 1rem;
+    border-radius: 8px;
+    margin: 1rem 0;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* CODE BLOCK DARK THEME BOOST */
+pre code {
+    font-size: 0.9rem;
+    background: transparent !important;
+    color: inherit;
+}
+
+/* MAKE THE CARD TEXT NOT BLACK */
+.tutorial-card p,
+.tutorial-card h3 {
+    color: #ddd !important;
+}
+
+/* BULLET POP COLOR */
+.tutorial-expanded ul li::marker {
+    color: var(--accent-primary);
+}
+
+/* More comfortable spacing inside expanded panel */
+.tutorial-expanded {
+    padding: 1.5rem !important;
+    color: #ddd;
+}
+
+.try-it {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.04);
+    border-left: 3px solid var(--accent-primary);
+    border-radius: 8px;
+}
+
+.try-note {
+    opacity: 0.6;
+    font-size: 0.9rem;
+}
+
 hr {
     border: none;
     height: 1px;

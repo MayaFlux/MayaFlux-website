@@ -1,5 +1,8 @@
 <!doctype html>
 <html lang="en">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css"
+    integrity="sha512-9/OM5IbS6yPXiGi+NShReUqy3zq9QbJzv9zOJLfJ2E2gu7M2sVh3LVEkBFmGXuRjI9OVA4cPCbyQGgJQIMaV7A=="
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
 
 <head>
     <meta charset="UTF-8" />
@@ -11,6 +14,26 @@
     <meta name="description" content="{{ .Site.Params.description }}" />
     <link rel="stylesheet" href="/css/style.css" />
 </head>
+
+<script>
+    function toggleTutorial(card) {
+        const section = card.closest(".tutorial-section");
+        const expanded = section.querySelector(".tutorial-expanded");
+
+        if (expanded.style.display === "block") {
+            expanded.style.display = "none";
+        } else {
+            expanded.style.display = "block";
+        }
+    }
+</script>
+
+<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/base16/railscasts.min.css" />
+
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>
+    hljs.highlightAll();
+</script>
 
 <body>
     <nav class="navbar">
