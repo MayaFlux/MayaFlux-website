@@ -1,10 +1,13 @@
 ---
 title: "Sculpting Data: Overview"
 slug: "sculpting-data"
-type: "tutorial"
 layout: "tutorial"
 weight: 10
 description: "How to navigate the Sculpting Data series: the philosophy, structure, and tutorial order."
+
+build:
+  list: never
+  render: always
 ---
 
 Sculpting Data is a guided sequence that teaches MayaFlux through one principle:
@@ -17,7 +20,7 @@ This page explains **how to use the series** and **what to expect in each tutori
 
 ---
 
-# How to Use These Tutorials
+## How to Use These Tutorials
 
 <div class="card-row">
 
@@ -43,7 +46,7 @@ You can skip them and return at any time without losing the thread.</p>
 
 ---
 
-# Structure of Every Section
+## Structure of Every Section
 
 <div class="card-row">
 
@@ -85,7 +88,7 @@ This signals that a runnable example follows.</p>
 
 ---
 
-# Recommended Reading Flow
+## Recommended Reading Flow
 
 <div class="card-row">
 
@@ -109,7 +112,7 @@ or spend days exploring optional subsections.</p>
 
 ---
 
-# Sculpting Data Tutorials
+## Sculpting Data Tutorials
 
 <div class="card-row">
 
@@ -137,7 +140,7 @@ or spend days exploring optional subsections.</p>
 
 ---
 
-# Before You Begin
+## Before You Begin
 
 <div class="card-row">
 

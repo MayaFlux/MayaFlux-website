@@ -2,6 +2,10 @@
 title: "Tutorials"
 type: "tutorials"
 layout: "tutorials-list"
+
+build:
+  list: never
+  render: always
 ---
 
 This space contains structured learning paths for MayaFlux.  
