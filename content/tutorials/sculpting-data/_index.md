@@ -22,9 +22,9 @@ This page explains **how to use the series** and **what to expect in each tutori
 
 ---
 
-## How to Use These Tutorials
-
 <div class="card-row">
+
+<h2> How to Use These Tutorials </h2>
 
 <div class="card">
 <h3>Flow First</h3>
@@ -48,19 +48,15 @@ You can skip them and return at any time without losing the thread.</p>
 
 ---
 
-## Structure of Every Section
-
 <div class="card-row">
 
-<div class="card wide">
+<h2> Structure of Every Section </h2>
+
+<div class="card">
 <h3>1. Section Heading</h3>
 <p>Each section begins with <code>Tutorial: &lt;Concept&gt;</code>.  
 This signals that a runnable example follows.</p>
 </div>
-
-</div>
-
-<div class="card-row">
 
 <div class="card">
 <h3>2. Runnable Example</h3>
@@ -77,10 +73,6 @@ This signals that a runnable example follows.</p>
 <p>A quick checkpoint: summary, modified snippet, optional variant.</p>
 </div>
 
-</div>
-
-<div class="card-row">
-
 <div class="card wide">
 <h3>5. Flow Controls</h3>
 <p>Every part ends with navigation to the next part, the overview, and the full tutorials index.</p>
@@ -90,9 +82,9 @@ This signals that a runnable example follows.</p>
 
 ---
 
-## Recommended Reading Flow
-
 <div class="card-row">
+
+<h2> Recommended Reading Flow </h2>
 
 <div class="card">
 <ol>
@@ -114,9 +106,9 @@ or spend days exploring optional subsections.</p>
 
 ---
 
-## Sculpting Data Tutorials
-
 <div class="card-row">
+
+<h2> Sculpting Data Tutorials </h2>
 
 <div class="card wide">
 <h3><a href="/tutorials/sculpting-data/foundations/">Part I — Foundations of Form</a></h3>
@@ -142,9 +134,9 @@ or spend days exploring optional subsections.</p>
 
 ---
 
-## Before You Begin
-
 <div class="card-row">
+
+<h2> Before You Begin </h2>
 
 <div class="card wide">
 <p>You don’t need detailed C++ knowledge; only curiosity and willingness to experiment.</p>

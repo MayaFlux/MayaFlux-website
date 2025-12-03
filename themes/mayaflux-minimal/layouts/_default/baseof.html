@@ -54,6 +54,33 @@
             <p>&copy; 2025 MayaFlux. Digital-First Multimedia Computation.</p>
         </div>
     </footer>
+
+    <script>
+        document.querySelectorAll(".collapsible").forEach((card) => {
+            card.addEventListener("click", () => {
+                const body = card.querySelector(".collapsible-body");
+                const isOpen = card.classList.contains("open");
+
+                // Close all other open cards
+                document.querySelectorAll(".collapsible.open").forEach((openCard) => {
+                    if (openCard !== card) {
+                        openCard.classList.remove("open");
+                        openCard.querySelector(".collapsible-body").style.display =
+                            "none";
+                    }
+                });
+
+                // Toggle current one
+                if (isOpen) {
+                    card.classList.remove("open");
+                    body.style.display = "none";
+                } else {
+                    card.classList.add("open");
+                    body.style.display = "block";
+                }
+            });
+        });
+    </script>
 </body>
 
 </html>
