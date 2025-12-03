@@ -20,26 +20,37 @@ It is meant to be read progressively, but each part stands alone.
 
 This page explains **how to use the series** and **what to expect in each tutorial**.
 
+## Before You Begin
+
+<div class="card wide">
+<p>You don’t need detailed C++ knowledge; only curiosity and willingness to experiment.
+It is recommended to read the cards below before starting the tutorials, as it explains the structure and flow of the series.
+</p>
+
+#### Quick link to Part I
+
+👉 <strong><a href="/tutorials/sculpting-data/foundations/">Part I — Foundations of Form</a></strong></p>
+
+</div>
+
 ---
 
-<div class="card-row">
+## How to Use These Tutorials
 
-<h2> How to Use These Tutorials </h2>
+<div class="card-grid">
 
-<div class="card">
+<div class="card vertical">
 <h3>Flow First</h3>
 <p>Move linearly through each tutorial. Sections are designed to be short and runnable.</p>
 </div>
 
-<div class="card">
+<div class="card vertical">
 <h3>Return When Ready</h3>
-<p>Advanced readers can thumb through the explanations.
-
+<p>Advanced readers can thumb through the explanations.  
 You can skip them and return at any time without losing the thread.</p>
-
 </div>
 
-<div class="card">
+<div class="card vertical">
 <h3>Optional Depth</h3>
 <p>Open collapsed API/Design panels only when you want to dive deeper.</p>
 </div>
@@ -48,32 +59,32 @@ You can skip them and return at any time without losing the thread.</p>
 
 ---
 
-<div class="card-row">
+## Structure of Every Section
 
-<h2> Structure of Every Section </h2>
+<div class="card-grid">
 
-<div class="card">
+<div class="card vertical">
 <h3>1. Section Heading</h3>
 <p>Each section begins with <code>Tutorial: &lt;Concept&gt;</code>.  
 This signals that a runnable example follows.</p>
 </div>
 
-<div class="card">
+<div class="card vertical">
 <h3>2. Runnable Example</h3>
 <p>The spine of the section. Short, minimal, and executable immediately.</p>
 </div>
 
-<div class="card">
+<div class="card vertical">
 <h3>3. Optional Panels</h3>
 <p>API notes, design notes, and advanced variations — all collapsed by default.</p>
 </div>
 
-<div class="card">
+<div class="card vertical">
 <h3>4. Try It → Recap</h3>
 <p>A quick checkpoint: summary, modified snippet, optional variant.</p>
 </div>
 
-<div class="card wide">
+<div class="card vertical wide">
 <h3>5. Flow Controls</h3>
 <p>Every part ends with navigation to the next part, the overview, and the full tutorials index.</p>
 </div>
@@ -82,11 +93,11 @@ This signals that a runnable example follows.</p>
 
 ---
 
-<div class="card-row">
+## Recommended Reading Flow
 
-<h2> Recommended Reading Flow </h2>
+<div class="card-grid">
 
-<div class="card">
+<div class="card vertical">
 <ol>
 <li>Read the section heading</li>
 <li>Run the example</li>
@@ -97,7 +108,7 @@ This signals that a runnable example follows.</p>
 </ol>
 </div>
 
-<div class="card">
+<div class="card vertical">
 <p>You can complete the series linearly in 1–2 hours,<br>
 or spend days exploring optional subsections.</p>
 </div>
@@ -106,9 +117,9 @@ or spend days exploring optional subsections.</p>
 
 ---
 
-<div class="card-row">
+## Sculpting Data Tutorials
 
-<h2> Sculpting Data Tutorials </h2>
+<div class="card-grid">
 
 <div class="card wide">
 <h3><a href="/tutorials/sculpting-data/foundations/">Part I — Foundations of Form</a></h3>
@@ -133,16 +144,3 @@ or spend days exploring optional subsections.</p>
 </div>
 
 ---
-
-<div class="card-row">
-
-<h2> Before You Begin </h2>
-
-<div class="card wide">
-<p>You don’t need detailed C++ knowledge; only curiosity and willingness to experiment.</p>
-
-<p>Start here:<br>
-👉 <strong><a href="/tutorials/sculpting-data/foundations/">Part I — Foundations of Form</a></strong></p>
-</div>
-
-</div>
