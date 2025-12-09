@@ -135,8 +135,11 @@ title: "MayaFlux"
 
         <p>
         MayaFlux wasn’t built to improve on existing tools—it was built because they could not support the work already happening.
+        It is the culmination of years of experience in performance, production, and education.
+        <br>
+        <br>
+        Built by the author with:
         </p>
-
         <ul>
             <li><strong>15+ years of interdisciplinary performance</strong> across Chennai, Delhi, and the Netherlands</li>
             <li><strong>Production audio engineering</strong> for Unreal Engine 5 and Metro: Awakening VR</li>
@@ -144,6 +147,8 @@ title: "MayaFlux"
             <li>Experience pushing the limits of instruments, Eurorack, and DSP systems</li>
         </ul>
 
+        <br>
+        <br>
         <p>
         When tools protect you from complexity, they also protect you from possibility.
         </p>

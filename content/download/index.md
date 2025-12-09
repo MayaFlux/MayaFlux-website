@@ -4,7 +4,7 @@ title: "Download"
 
 # Get Started with Weave
 
-The one-click installer and project creator for **MayaFlux**.
+The unified installer and project creator for **MayaFlux**.
 
 Weave downloads the framework, installs dependencies, and sets up your first project in minutes.
 
@@ -37,6 +37,11 @@ Weave downloads the framework, installs dependencies, and sets up your first pro
 4. Run installer normally
 5. A Terminal window will open and complete setup
 6. When it closes, Weave is ready
+
+### Prerequisites
+
+- **Apple Silicon:** macOS 14.0 (Sonoma) or later
+- **Intel:** macOS 15.0 (Sequoia) or later
 
 ### Contents
 
@@ -87,6 +92,13 @@ cmake --build . --parallel
 tar -xzf Weave-X.X.X-linux.tar.gz -C ~/.local/
 ~/.local/Weave-X.X.X/Weave
 ```
+
+### Supported Distributions
+
+- Arch Linux (pacman)
+- Fedora >= 43 (dnf)
+- Ubuntu (25)/Debian (ci build)
+- openSUSE (ci build)
 
 ### Mode Selection
 
@@ -169,6 +181,10 @@ cmake --build . --parallel
 
 5. **Restart your terminal**
 6. Run Weave again and select **Create Project**
+
+### Prerequisites
+
+- Windows 10 or later (64-bit only)
 
 ### Create & Build
 
