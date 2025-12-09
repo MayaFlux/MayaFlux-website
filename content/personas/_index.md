@@ -1,5 +1,9 @@
 ---
 title: "MayaFlux Personas:"
+
+build:
+  list: never
+  render: always
 ---
 
 <div class="card wide">
@@ -120,7 +124,7 @@ and the substrate let them build it.
 <div class="card-grid">
 
 <div class="card vertical">
-<h3><a href="musician_starting.md">I'm a Musician</a></h3>
+<h3><a href="musician_starting/">I'm a Musician</a></h3>
 <p>
 Starts with oscillators and envelopes you already know, then shows what happens when
 you stop thinking about signal flow and start thinking about data transformation.
