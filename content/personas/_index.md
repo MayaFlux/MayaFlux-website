@@ -9,15 +9,20 @@ cascade:
 
 <div class="card wide">
 <p>
-Before you start, loosen your grip on whatever tools taught you to think in menus,
-modules, and workflows. Those habits make sense in systems built to simulate hardware.
+Before you start, loosen your grip on whatever tools taught you that synthesis must pass through oscillator banks,
+that envelopes “shape” signals, that visuals must live in their own rendering loops,
+that audio and graphics belong to different worlds, and that rhythm only comes from sequencers and clocks.
+Those habits make sense in systems built to imitate hardware. 
 They don’t help in a space where everything is data and nothing has to behave like a circuit.
 </p>
 
 <p>
-MayaFlux begins with your instincts, not your categories. Musician, visual artist, game developer…
+MayaFlux begins with your instincts, not your categories.
+
+The labels: Musician, visual artist, game developer, etc…
 those labels describe where you came from, not what you can do here.
 The personas simply give you a place to stand while your old mental models dissolve and new ones form inside computation.
+
 </p>
 
 <p>
@@ -111,7 +116,7 @@ Once you accept that, all the disciplinary separations dissolve.
 </p>
 
 <p>
-A musician can drive particle physics. A visual artist can generate rhythm.
+A musician can drive particle system. A visual artist can generate rhythm.
 A game developer can treat sound as sculptural material.
 Not because they "learned programming," but because they imagined something that required it,
 and the substrate let them build it.
@@ -135,7 +140,7 @@ wondering why you ever accepted the limitations of Max or SuperCollider.</em></p
 </div>
 
 <div class="card vertical">
-<h3><a href="visual_artist_starting.md">I'm a Visual Artist</a></h3>
+<h3><a href="visual_artist_starting">I'm a Visual Artist</a></h3>
 <p>
 Starts with pixels and frames, then shows what happens when graphics processing runs
 on the same substrate as audio DSP.
@@ -145,7 +150,7 @@ and wondering why openFrameworks ever separated graphics from sound.</em></p>
 </div>
 
 <div class="card vertical">
-<h3><a href="game_dev_starting.md">I'm a Game Developer</a></h3>
+<h3><a href="game_dev_starting">I'm a Game Developer</a></h3>
 <p>
 Starts with game loops and audio middleware, then shows what procedural soundscapes
 look like when synthesis runs native in your engine.
@@ -156,7 +161,7 @@ to "sound design."</em></p>
 </div>
 
 <div class="card vertical">
-<h3><a href="researcher_starting.md">I'm a Researcher</a></h3>
+<h3><a href="researcher_starting">I'm a Researcher</a></h3>
 <p>
 Starts with existing DSP theory and conventions, then shows what changes when
 you have direct computational access without abstraction layers.
@@ -166,7 +171,7 @@ and wondering why creative tools were ever built on compromised architectures.</
 </div>
 
 <div class="card vertical">
-<h3><a href="universal_starting.md">I Don't Fit These Categories</a></h3>
+<h3><a href="universal_starting">I Don't Fit These Categories</a></h3>
 <p>
 Starts from scratch. No assumptions. Just computational substrate and examples of what it can do.
 </p>
