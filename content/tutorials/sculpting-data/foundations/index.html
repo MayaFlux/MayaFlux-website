@@ -669,7 +669,7 @@ void compose() {
 auto sound_container = vega.read_audio("path/to/file.wav") | Audio;
 auto buffers = MayaFlux::get_last_created_container_buffers();
 
-auto filter = vega.IIR({0.1, 0.2, 0.1}, {1.0, -0.6});
+auto filter = vega.IIR(std::vector{0.1, 0.2, 0.1}, std::vector{1.0, -0.6});
 auto filter_processor = MayaFlux::create_processor<MayaFlux::Buffers::FilterProcessor>(buffers[0], filter);
             </code></pre>
 
@@ -718,7 +718,7 @@ auto filter = std::make_shared<Nodes::Filters::IIR>(
         <p>With vega:</p>
 
         <pre><code class="language-cpp">
-auto filter = vega.IIR({0.1, 0.2, 0.1}, {1.0, -0.6});
+auto filter = vega.IIR(std::vector{0.1, 0.2, 0.1}, std::vector{1.0, -0.6});
         </code></pre>
 
         <p>Same filter. Same capabilities. Vega just hides the verbosity.</p>
@@ -808,7 +808,7 @@ auto filter_processor = MayaFlux::create_processor<MayaFlux::Buffers::FilterProc
         <p>You can add the same processor to channel 1:</p>
 
         <pre><code class="language-cpp">
-auto filter = vega.IIR({0.1, 0.2, 0.1}, {1.0, -0.6});
+auto filter = vega.IIR(std::vector{0.1, 0.2, 0.1}, std::vector{1.0, -0.6});
 auto fp0 = MayaFlux::create_processor<MayaFlux::Buffers::FilterProcessor>(buffers[0], filter);
 auto fp1 = MayaFlux::create_processor<MayaFlux::Buffers::FilterProcessor>(buffers[1], filter);
         </code></pre>
@@ -816,7 +816,7 @@ auto fp1 = MayaFlux::create_processor<MayaFlux::Buffers::FilterProcessor>(buffer
         <p>Or more simply, add the existing processor to another buffer:</p>
 
         <pre><code class="language-cpp">
-auto filter = vega.IIR({0.1, 0.2, 0.1}, {1.0, -0.6});
+auto filter = vega.IIR(std::vector{0.1, 0.2, 0.1}, std::vector{1.0, -0.6});
 auto filter_processor = MayaFlux::create_processor<MayaFlux::Buffers::FilterProcessor>(buffers[0], filter);
 MayaFlux::add_processor(filter_processor, buffers[1], MayaFlux::Buffers::ProcessingToken::AUDIO_BACKEND);
         </code></pre>
@@ -905,7 +905,7 @@ chain->add_processor(processor, buffer);
         <p>Example: two channels with the same filter:</p>
 
         <pre><code class="language-cpp">
-auto filter = vega.IIR({0.1, 0.2, 0.1}, {1.0, -0.6});
+auto filter = vega.IIR(std::vector{0.1, 0.2, 0.1}, std::vector{1.0, -0.6});
 auto processor = MayaFlux::create_processor<MayaFlux::Buffers::FilterProcessor>(buffers[0], filter);
 MayaFlux::add_processor(processor, buffers[1]);
         </code></pre>
@@ -937,7 +937,7 @@ void compose() {
     auto sound_container = vega.read_audio("path/to/your/file.wav") | Audio;
     auto buffers = MayaFlux::get_last_created_container_buffers();
 
-    auto filter = vega.IIR({0.1, 0.2, 0.1}, {1.0, -0.6});
+    auto filter = vega.IIR(std::vector{0.1, 0.2, 0.1}, std::vector{1.0, -0.6});
     auto filter_processor = MayaFlux::create_processor<MayaFlux::Buffers::FilterProcessor>(buffers[0], filter);
 }
         </code></pre>
@@ -949,7 +949,7 @@ void compose() {
         <p>Now try modifying the coefficients:</p>
 
         <pre><code class="language-cpp">
-auto filter = vega.IIR({0.05, 0.3, 0.05}, {1.0, -0.8});
+auto filter = vega.IIR(std::vector{0.05, 0.3, 0.05}, std::vector{1.0, -0.8});
         </code></pre>
 
         <p>Listen again. Different sound. You're sculpting the filter response.</p>
@@ -982,7 +982,7 @@ auto filter = vega.IIR({0.05, 0.3, 0.05}, {1.0, -0.8});
             <pre><code class="language-cpp">
 auto sound_container = vega.read_audio("path/to/file.wav") | Audio;
 auto buffers = MayaFlux::get_last_created_container_buffers();
-auto filter = vega.IIR({0.1, 0.2, 0.1}, {1.0, -0.6});
+auto filter = vega.IIR(std::vector{0.1, 0.2, 0.1}, std::vector{1.0, -0.6});
 auto fp = MayaFlux::create_processor<MayaFlux::Buffers::FilterProcessor>(buffers[0], filter);
             </code></pre>
 

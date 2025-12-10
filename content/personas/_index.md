@@ -1,9 +1,10 @@
 ---
 title: "MayaFlux Personas:"
 
-build:
-  list: never
-  render: always
+cascade:
+  build:
+    list: never
+    publishResources: false
 ---
 
 <div class="card wide">
