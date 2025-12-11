@@ -1,4 +1,11 @@
-# **Rosetta Stone: Unlearning to Relearn**
+---
+title: "Rosetta Stone: Unlearning to Relearn:"
+
+cascade:
+  build:
+    list: never
+    publishResources: false
+---
 
 <div class="card wide">
 <p>
@@ -153,7 +160,7 @@ These documents just make that process explicit for creative computation.
 <div class="card-grid">
 
 <div class="card vertical">
-<h3><a href="from_pure_data/">From Pure Data</a></h3>
+<h3><a href="pure_data/">From Pure Data</a></h3>
 <p>
 <strong>What you learned:</strong> Message passing, control rate vs audio rate, event driven patching
 </p>
