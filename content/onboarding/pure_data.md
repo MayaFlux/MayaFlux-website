@@ -70,8 +70,20 @@ schedule_metro(0.5, []() {
     trigger_something();
 }, "my_timer");
 
-// Want sample-accurate? Just declare it
-auto impulse = vega.Impulse(2.0)[0] | Audio;  // 2Hz at 48kHz precision
+// OR Want sample-accurate? Just declare it
+auto tick = vega.Impulse(2.0)[0] | Audio;  // 2Hz = every 0.5 seconds
+
+tick->on_impulse([](auto& ctx) {
+    trigger_something();
+});
+
+// Advanced: Custom coroutine-based timing
+schedule_task("Sample_task", []() -> Vruta::SoundRoutine {
+    while (true) {
+        co_await SampleDelay{48000};  // 1 second at 48kHz
+        trigger_something();
+    }
+}, true);
 </code></pre>
 
 `[metro]` was not a conceptual limit. It was a clear, efficient implementation aligned with PD’s architecture.
@@ -156,36 +168,36 @@ Callbacks receive the node's complete internal state:
 <pre><code class="language-cpp">
 auto gate = vega.Logic(LogicOperator::THRESHOLD, 0.3);
 
-gate->on_change([](NodeContext ctx) {
-    auto& logic_ctx = dynamic_cast<LogicContext&>(ctx);
-    
+gate->on_change([](auto& ctx) {
+    auto logic_ctx = ctx.template as<LogicContext>();
+
     // Access everything:
-    auto history = logic_ctx.get_history();      // Past states
-    auto threshold = logic_ctx.get_threshold();  // Current threshold
-    bool edge = logic_ctx.is_edge_detected();    // Edge detection
-    auto mode = logic_ctx.get_mode();            // Processing mode
-    
-    // Make creative decisions from state
-    if (history.size() > 10 && count_true(history) > 7) {
-        trigger_dense_event();  // Pattern detected
-    }
+    auto history = logic_ctx->get_history(); // Past states
+    auto threshold = logic_ctx->get_threshold(); // Current threshold
+    bool edge = logic_ctx->is_edge_detected(); // Edge detection
+    auto mode = logic_ctx->get_mode(); // Processing mode
+
+        // Make creative decisions from state
+        if (history.size() > 10 && history > 7) {
+            trigger_dense_event(); // Pattern detected
+        }
 });
 </code></pre>
 
 <pre><code class="language-cpp">
-auto shaper = vega.Polynomial({0.1, 0.8, -0.3}, PolynomialMode::RECURSIVE);
+auto shaper = vega.Polynomial(std::vector { 0.1, 0.8, -0.3 });
 
-shaper->on_tick([](NodeContext ctx) {
-    auto& poly_ctx = dynamic_cast<PolynomialContext&>(ctx);
-    
-    auto coeffs = poly_ctx.get_coefficients();
-    auto input_history = poly_ctx.get_input_buffer();
-    auto output_history = poly_ctx.get_output_buffer();
-    
+shaper->on_tick([](auto& ctx) {
+    auto poly_ctx = ctx.template as<PolynomialContext>();
+
+    auto coeffs = poly_ctx->get_coefficients();
+    auto input_history = poly_ctx->get_input_buffer();
+    auto output_history = poly_ctx->get_output_buffer();
+
     // Envelope follower from output variance
     double variance = calculate_variance(output_history);
     if (variance > 0.5) {
-        increase_resonance();  // Signal getting chaotic
+        increase_resonance(); // Signal getting chaotic
     }
 });
 </code></pre>
@@ -202,7 +214,7 @@ PD abstracted internal state to reduce cognitive load. MayaFlux exposes it becau
 
 PD's `[fexpr~]` was a breakthrough for its time, bringing recursive audio-rate expressions into an efficient, predictable syntax. The constraints it imposed were intentional.
 
-<h3>Your PD Patch Example</h3>
+<h3>fexpr PD Patch Example</h3>
 
 <pre><code>
 [fexpr~ a = fmod(a + (accumValues[i]*accumValues[i]*$f2+1)/48000, 1) ;
@@ -249,19 +261,19 @@ auto phase_accum = vega.Polynomial(
     [&](const std::deque<double>& history) {
         static int index = 0;
         static std::vector<double> accum_values(40);
-        
-        double increment = (accum_values[index] * accum_values[index] * rate + 1.0) / 48000.0;
+
+        double increment = (accum_values[index] * accum_values[index] * Config::get_sample_rate() + 1.0) / Config::get_sample_rate();
         double new_phase = std::fmod(history[0] + increment, 1.0);
-        
+
         // Zero-crossing detection
         if (new_phase - history[1] < 0.0) {
             index = (index + 1) % 40;
         }
-        
+
         return new_phase;
     },
     PolynomialMode::RECURSIVE,
-    2  // Need current and previous
+    2 // Need current and previous
 );
 </code></pre>
 
@@ -414,6 +426,11 @@ onset->set_input_node(vega.Sine(2.0));
 auto window = create_window({"Audio-Visual", 1920, 1080});
 auto particles = vega.PointCollectionNode(500) | Graphics;
 
+auto geom = vega.GeometryBuffer(points) | Graphics;
+
+geom->setup_rendering({ .target_window = window });
+window->show();
+
 onset->on_change_to(true, [particles](NodeContext ctx) {
     float x = get_uniform_random(-1.0, 1.0);
     float y = get_uniform_random(-1.0, 1.0);
@@ -487,7 +504,7 @@ You are not writing effects in the traditional sense. You are defining behaviora
 <pre><code class="language-cpp">
 // JIT compile C++ at runtime
 Lila::jit_compile_and_execute(R"(
-    auto new_wave = vega.Polynomial({
+    auto new_wave = vega.Polynomial(std::vector {
         get_uniform_random(-1.0, 1.0),
         get_uniform_random(-1.0, 1.0),
         get_uniform_random(-1.0, 1.0)
