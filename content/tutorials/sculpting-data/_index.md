@@ -61,7 +61,7 @@ You can skip them and return at any time without losing the thread.</p>
 
 ## Structure of Every Section
 
-<div class="card-grid">
+<div class="card-grid breakout">
 
 <div class="card vertical">
 <h3>1. Section Heading</h3>
@@ -83,12 +83,11 @@ This signals that a runnable example follows.</p>
 <h3>4. Try It → Recap</h3>
 <p>A quick checkpoint: summary, modified snippet, optional variant.</p>
 </div>
+</div>
 
 <div class="card vertical wide">
 <h3>5. Flow Controls</h3>
 <p>Every part ends with navigation to the next part, the overview, and the full tutorials index.</p>
-</div>
-
 </div>
 
 ---

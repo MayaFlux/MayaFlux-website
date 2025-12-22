@@ -158,7 +158,7 @@ std::shared_ptr<MayaFlux::Kakshya::SoundFileContainer> sound_container =
 
         <p>If you didn't have <code>vega</code>, loading a file would look like this:</p>
 
-        <pre><code class="language-cpp">
+<pre><code class="language-cpp">
 // Without vega - explicit, showing every step
 auto reader = std::make_unique<MayaFlux::IO::SoundFileReader>();
 MayaFlux::IO::SoundFileReader::initialize_ffmpeg();
@@ -174,7 +174,11 @@ reader->set_audio_options(MayaFlux::IO::AudioReadOptions::DEINTERLEAVE);
 
 MayaFlux::IO::FileReadOptions options = MayaFlux::IO::FileReadOptions::EXTRACT_METADATA;
 if (!reader->open("file.wav", options)) {
-        MF_ERROR(Journal::Component::API, Journal::Context::FileIO, "Failed to open file: {}", reader->get_last_error());
+        MF_ERROR(Journal::Component::API, 
+                    Journal::Context::FileIO, 
+                    "Failed to open file: {}", 
+                    reader->get_last_error()
+                );
     return;
 }
 
@@ -182,7 +186,11 @@ auto container = reader->create_container();
 auto sound_container = std::dynamic_pointer_cast<Kakshya::SoundFileContainer>(container);
 
 if (!reader->load_into_container(sound_container)) {
-        MF_ERROR(Journal::Component::API, Journal::Context::Runtime, "Failed to load audio data: {}", reader->get_last_error());
+        MF_ERROR(Journal::Component::API, 
+                    Journal::Context::Runtime,
+                    "Failed to load audio data: {}",
+                    reader->get_last_error()
+                );
     return;
 }
 
@@ -198,7 +206,7 @@ if (processor) {
 }
 
 // Now you have sound_container
-        </code></pre>
+</code></pre>
 
         <p>Depending on your exposure to programming, this can either feel complex or liberating. Lacking the facilities to be explicit about memory management or allocation can be limiting:</p>
         <ul>
@@ -1577,13 +1585,3 @@ pipeline
         <p>For now: you've seen the teaser. Everything you've learned so far is the foundation for that depth.</p>
 
         <p>You understand how information flows. Pipelines just let you declare that flow elegantly.</p>
-
-<script>
-    document.querySelectorAll(".tutorial-card").forEach(card => {
-        card.addEventListener("click", () => {
-            const target = document.getElementById(card.dataset.target);
-            if (!target) return;
-            target.style.display = (target.style.display === "block") ? "none" : "block";
-        });
-    });
-</script>

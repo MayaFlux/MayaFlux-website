@@ -1,86 +1,116 @@
 <!doctype html>
 <html lang="en">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css"
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css"
     integrity="sha512-9/OM5IbS6yPXiGi+NShReUqy3zq9QbJzv9zOJLfJ2E2gu7M2sVh3LVEkBFmGXuRjI9OVA4cPCbyQGgJQIMaV7A=="
-    crossorigin="anonymous" referrerpolicy="no-referrer" />
+    crossorigin="anonymous"
+    referrerpolicy="no-referrer"
+  />
 
-<head>
+  <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>
-        {{ if .IsHome }}{{ site.Title }}{{ else }}{{ .Title }} | {{ site.Title
-        }}{{ end }}
+      {{ if .IsHome }}{{ site.Title }}{{ else }}{{ .Title }} | {{ site.Title
+      }}{{ end }}
     </title>
     <meta name="description" content="{{ .Site.Params.description }}" />
     <link rel="stylesheet" href="/css/style.css" />
-</head>
+  </head>
 
-<script>
+  <script>
     function toggleTutorial(card) {
-        const section = card.closest(".tutorial-section");
-        const expanded = section.querySelector(".tutorial-expanded");
+      const existing = card.querySelector(".tutorial-expanded");
 
-        if (expanded.style.display === "block") {
-            expanded.style.display = "none";
-        } else {
-            expanded.style.display = "block";
-        }
+      if (existing) {
+        existing.remove();
+        return;
+      }
+
+      const targetId = card.dataset.target;
+      if (!targetId) return;
+
+      const source = document.getElementById(targetId);
+      if (!source) return;
+
+      const clone = source.cloneNode(true);
+      clone.style.display = "block";
+      clone.removeAttribute("id");
+
+      clone.addEventListener("click", (e) => e.stopPropagation());
+
+      card.appendChild(clone);
     }
-</script>
+  </script>
 
-<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/base16/railscasts.min.css" />
+  <script>
+    document.addEventListener("click", (e) => {
+      const card = e.target.closest(".tutorial-card");
+      if (!card) return;
 
-<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-<script>
+      // ignore clicks inside expanded content
+      if (e.target.closest(".tutorial-expanded")) return;
+
+      toggleTutorial(card);
+    });
+  </script>
+
+  <link
+    rel="stylesheet"
+    href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/base16/railscasts.min.css"
+  />
+
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script>
     hljs.highlightAll();
-</script>
+  </script>
 
-<body>
+  <body>
     <nav class="navbar">
-        <div class="container">
-            <a href="/" class="logo">MayaFlux</a>
-            <ul class="nav-links">
-                {{ range .Site.Menus.main }}
-                <li><a href="{{ .URL }}">{{ .Name }}</a></li>
-                {{ end }}
-            </ul>
-        </div>
+      <div class="container">
+        <a href="/" class="logo">MayaFlux</a>
+        <ul class="nav-links">
+          {{ range .Site.Menus.main }}
+          <li><a href="{{ .URL }}">{{ .Name }}</a></li>
+          {{ end }}
+        </ul>
+      </div>
     </nav>
 
     <main>{{ block "main" . }}{{ end }}</main>
 
     <footer>
-        <div class="container">
-            <p>&copy; 2025 MayaFlux. Digital-First Multimedia Computation.</p>
-        </div>
+      <div class="container">
+        <p>&copy; 2025 MayaFlux. Digital-First Multimedia Computation.</p>
+      </div>
     </footer>
 
     <script>
-        document.querySelectorAll(".collapsible").forEach((card) => {
-            card.addEventListener("click", () => {
-                const body = card.querySelector(".collapsible-body");
-                const isOpen = card.classList.contains("open");
+      document.querySelectorAll(".collapsible").forEach((card) => {
+        card.addEventListener("click", () => {
+          const body = card.querySelector(".collapsible-body");
+          const isOpen = card.classList.contains("open");
 
-                // Close all other open cards
-                document.querySelectorAll(".collapsible.open").forEach((openCard) => {
-                    if (openCard !== card) {
-                        openCard.classList.remove("open");
-                        openCard.querySelector(".collapsible-body").style.display =
-                            "none";
-                    }
-                });
+          // Close all other open cards
+          document.querySelectorAll(".collapsible.open").forEach((openCard) => {
+            if (openCard !== card) {
+              openCard.classList.remove("open");
+              openCard.querySelector(".collapsible-body").style.display =
+                "none";
+            }
+          });
 
-                // Toggle current one
-                if (isOpen) {
-                    card.classList.remove("open");
-                    body.style.display = "none";
-                } else {
-                    card.classList.add("open");
-                    body.style.display = "block";
-                }
-            });
+          // Toggle current one
+          if (isOpen) {
+            card.classList.remove("open");
+            body.style.display = "none";
+          } else {
+            card.classList.add("open");
+            body.style.display = "block";
+          }
         });
+      });
     </script>
-</body>
-
+  </body>
 </html>

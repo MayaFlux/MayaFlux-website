@@ -127,7 +127,7 @@ and the substrate let them build it.
 
 # Choose Your Starting Point
 
-<div class="card-grid">
+<div class="card-grid breakout">
 
 <div class="card vertical">
 <h3><a href="musician_starting/">I'm a Musician</a></h3>

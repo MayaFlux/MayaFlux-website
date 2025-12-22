@@ -171,6 +171,17 @@ These documents just make that process explicit for creative computation.
 </div>
 
 <div class="card vertical">
+<h3><a href="max_msp/">From Max/MSP</a></h3>
+<p>
+<strong>What you learned:</strong> Visual patching, message dispatch, object libraries
+</p>
+<p>
+<strong>What changes:</strong> Explicit pipelines you compose with code. Git friendly text instead of opaque binaries. Cross domain coordination that Max makes painful.
+</p>
+<p><em>"Same compositional thinking, but your patches are version controlled code."</em></p>
+</div>
+
+<div class="card vertical">
 <h3><a href="from_supercollider/">From SuperCollider</a></h3>
 <p>
 <strong>What you learned:</strong> SynthDefs on the server, Patterns in the language, OSC boundaries between thought and sound
@@ -201,17 +212,6 @@ These documents just make that process explicit for creative computation.
 <strong>What changes:</strong> Unified data flow architecture. Audio and visuals use identical infrastructure. Vulkan, not deprecated OpenGL.
 </p>
 <p><em>"Audio nodes can control visuals. Video can modulate synthesis. Because it's all just numbers."</em></p>
-</div>
-
-<div class="card vertical">
-<h3><a href="max_msp/">From Max/MSP</a></h3>
-<p>
-<strong>What you learned:</strong> Visual patching, message dispatch, object libraries
-</p>
-<p>
-<strong>What changes:</strong> Explicit pipelines you compose with code. Git friendly text instead of opaque binaries. Cross domain coordination that Max makes painful.
-</p>
-<p><em>"Same compositional thinking, but your patches are version controlled code."</em></p>
 </div>
 
 <div class="card vertical">
