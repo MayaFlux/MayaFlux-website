@@ -67,6 +67,11 @@ ol li::marker {
     font-weight: 500;
 }
 
+.hint {
+    opacity: 0.5;
+    font-size: 0.85rem;
+}
+
 /* =========================================================
    3. LAYOUT PRIMITIVES
 ========================================================= */
@@ -385,14 +390,9 @@ h4 {
 }
 
 .tutorial-title {
-    color: var(--accent-primary);
+    color: var(--heading);
     margin-top: 0;
     margin-bottom: 0.5rem;
-}
-
-.hint {
-    opacity: 0.5;
-    font-size: 0.85rem;
 }
 
 .tutorial-expanded {
@@ -434,11 +434,12 @@ details summary {
     cursor: pointer;
     font-weight: 600;
     margin: 0.5rem 0;
+    opacity: 0.6;
     color: var(--primary);
 }
 
 details[open] summary {
-    opacity: 0.8;
+    opacity: 0.4;
     color: var(--primary);
 }
 
@@ -458,9 +459,20 @@ pre code {
 }
 
 /* MAKE THE CARD TEXT NOT BLACK */
-.tutorial-card p,
-.tutorial-card h3 {
-    color: #ddd !important;
+.tutorial-card p {
+    /* color: #ddd !important; */
+    color: #ddd;
+}
+
+.tutorial-card .hint {
+    font-size: 1 rem;
+    color: lightblue;
+}
+
+.tutorial-card .hint::before {
+    content: " ▸ ";
+    color: var(--heading);
+    font-weight: 600;
 }
 
 /* BULLET POP COLOR */

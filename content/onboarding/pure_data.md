@@ -24,29 +24,29 @@ MayaFlux asks: what if those boundaries were simply one possible interpretation 
 
 Every tool embeds assumptions that become "just how things work." In PD these assumptions were deliberate and effective simplifications for its architecture and era.
 
-**`[metro]` ticks at control rate**  
-You learned: Time is discrete bangs at ~64Hz intervals  
-Actually: PD emphasized discrete timing for clarity. MayaFlux treats time as a resolution you choose.
+- **`[metro]` ticks at control rate**  
+  You learned: Time is discrete bangs at ~64Hz intervals  
+  Actually: PD emphasized discrete timing for clarity. MayaFlux treats time as a resolution you choose.
 
-**`~` objects run at 48kHz, regular objects at control rate**  
-You learned: Audio and control belong to separate domains  
-Actually: PD separated domains for pedagogical and performance clarity. In MayaFlux, they are simply different evaluation precisions applied to the same kind of data.
+- **`~` objects run at 48kHz, regular objects at control rate**  
+  You learned: Audio and control belong to separate domains  
+  Actually: PD separated domains for pedagogical and performance clarity. In MayaFlux, they are simply different evaluation precisions applied to the same kind of data.
 
-**`[osc~ 440]` is a black box**  
-You learned: Oscillators generate sound and their internals are abstracted  
-Actually: PD hid internals intentionally. MayaFlux allows internal access when creative practice benefits from it.
+- **`[osc~ 440]` is a black box**  
+  You learned: Oscillators generate sound and their internals are abstracted  
+  Actually: PD hid internals intentionally. MayaFlux allows internal access when creative practice benefits from it.
 
-**`[fexpr~]` is "advanced" recursive processing**  
-You learned: Recursive expressions require special syntax  
-Actually: PD used a compact syntax to make recursion predictable. MayaFlux exposes recursion as one mode among several equally natural choices.
+- **`[fexpr~]` is "advanced" recursive processing**  
+  You learned: Recursive expressions require special syntax  
+  Actually: PD used a compact syntax to make recursion predictable. MayaFlux exposes recursion as one mode among several equally natural choices.
 
-**`[table]` stores data you write/read**  
-You learned: Arrays are passive storage  
-Actually: PD made this explicit and visible. MayaFlux treats buffers as temporal gatherers that can be shaped before being released.
+- **`[table]` stores data you write/read**  
+  You learned: Arrays are passive storage  
+  Actually: PD made this explicit and visible. MayaFlux treats buffers as temporal gatherers that can be shaped before being released.
 
-**Patching is visual connection**  
-You learned: Creativity happens through dragging wires  
-Actually: PD emphasized visibility. MayaFlux expresses flow as code because modern practice often benefits from explicit, versioned logic.
+- **Patching is visual connection**  
+  You learned: Creativity happens through dragging wires  
+  Actually: PD emphasized visibility. MayaFlux expresses flow as code because modern practice often benefits from explicit, versioned logic.
 
 These were not limitations in skill or imagination. They were elegant design decisions shaped by PD’s moment in technological history.
 
@@ -489,7 +489,12 @@ grammar->create_rule("expand_quiet")
     .when([](const auto& data) { return peak_level(data) < 0.2; })
     .executes([](auto& data) { apply_expansion(data, 1.5); });
 
-buffer->apply_processor(grammar);
+auto pipeline = std::make_shared<ComputePipeline<InputType, OutputType>>(grammar);
+
+// Apply to buffer processor
+MayaFlux::attac_quick_process([grammar, pipeline](auto& buf) {
+    buf->get_data() = pipeline->process(input_data);
+}, your_audio_buffer);
 ```
 
 You are not writing effects in the traditional sense. You are defining behavioral rules, and the buffer applies whichever ones match its state. Pure Data’s `[select]`, `[route]`, and `[spigot]` objects already embody the insight that message routing is a form of computation. MayaFlux’s grammar system extends that idea by letting the data itself determine which transformations apply. Both approaches share the same conceptual root, expressed through different architectural lenses.
