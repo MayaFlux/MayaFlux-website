@@ -204,7 +204,7 @@ These documents just make that process explicit for creative computation.
 </div>
 
 <div class="card vertical">
-<h3><a href="from_max_msp/">From Max/MSP</a></h3>
+<h3><a href="max_msp/">From Max/MSP</a></h3>
 <p>
 <strong>What you learned:</strong> Visual patching, message dispatch, object libraries
 </p>
