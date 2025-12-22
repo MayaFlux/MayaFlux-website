@@ -2,9 +2,8 @@
 title: "From MaxMSP to MayaFlux: Transcending the sanitized digital realm"
 ---
 
-## Max/MSP, PD, and Where This Document Actually Begins
-
 <div class="card wide">
+<h2> Max/MSP, PD, and Where This Document Actually Begins </h2>
 
 Max/MSP occupies a unique position in creative computation. Out of the box, its scope is vast:
 
@@ -35,9 +34,9 @@ but because PD strips the ecosystem down to its bones, making visible what Max�
 
 ---
 
-## What This Section Is About (and What It Isn’t)
-
 <div class="card">
+
+## What This Section Is About (and What It Isn’t)
 
 This document is **not** a general tour of Max/MSP.
 
@@ -67,9 +66,10 @@ are the subject of this Rosetta Stone.
 
 ---
 
+<div class="card wide">
+
 ## gen~: A Paradigm Trapped Inside Another Paradigm
 
-<div class="card wide">
 <p>
 gen~ was a radical addition to Max/MSP.
 </p>
@@ -89,9 +89,10 @@ But here's what's rarely said out loud:
 
 ---
 
-## What gen~ Was Trying to Be
+<div class="card-group columns breakout">
 
-<div class="card">
+<div class="card vertical">
+<h2>What gen~ Was Trying to Be</h2>
 
 gen~ emerged from a simple realization: **the patcher paradigm breaks down when you need to think sample-by-sample.**
 
@@ -114,17 +115,15 @@ And it worked—sort of.
 
 </div>
 
----
-
-## What gen~ Is Actually Fighting
-
-<div class="card">
+<div class="card vertical">
+<h2> What gen~ Is Actually Fighting</h2>
 
 The problem is that gen~ didn't get to redesign Max's architecture. It had to **coexist** with it.
 
 This created fundamental tensions that shape everything you do in gen~:
 
-### 1. **Visual Patching vs. Computational Density**
+<details>
+<summary><strong>Visual Patching vs Computational Density</strong></summary>
 
 gen~ patches are still **visual graphs**. But sample-accurate DSP requires thinking in dense mathematical expressions, not spatially-arranged boxes.
 
@@ -134,7 +133,10 @@ In gen~: 64 `[*]` objects, 64 `[history]` objects, 63 `[+]` objects, all careful
 
 **The visual paradigm becomes cognitive overhead** instead of clarifying aid. You're not looking at the algorithm—you're looking at plumbing.
 
-### 2. **Message Scheduling vs. Sample-Rate Computation**
+</details>
+
+<details>
+<summary><strong>Message Scheduling vs Sample-Rate Computation</strong></summary>
 
 Max's scheduler runs at ~1ms resolution. Audio runs at ~20μs resolution (48kHz).
 
@@ -150,7 +152,10 @@ This is architecturally sensible. It's also **a massive constraint**.
 
 The sandboxing that makes gen~ work **also makes it fundamentally separate** from the rest of your patch.
 
-### 3. **Object-Oriented Thinking vs. Data Flow**
+</details>
+
+<details>
+<summary><strong>Object Metaphors vs Data Flow</strong></summary>
 
 Max teaches you to think in **objects with inputs and outputs**.
 
@@ -166,7 +171,10 @@ So you end up with this hybrid: **mathematical thinking expressed through object
 
 The answer is both, and that cognitive friction is always present.
 
-### 4. **Explicit State Management in a Stateless Paradigm**
+</details>
+
+<details>
+<summary><strong>Explicit State Management in a Stateless Paradigm</strong></summary>
 
 Max's core paradigm is **stateless message passing**. Objects don't inherently remember anything—state is an exception you explicitly manage with `[int]`, `[float]`, etc.
 
@@ -184,7 +192,10 @@ But in actual DSP, history is **fundamental**. Filters are defined by feedback. 
 
 gen~ makes you work around its paradigm instead of working with your algorithm.
 
-### 5. **Analog Metaphors Constraining Digital Thinking**
+</details>
+
+<details>
+<summary><strong> Analog Metaphors Constraining Digital Thinking</strong></summary>
 
 Max/MSP was designed to **simulate modular synthesis**. Even gen~ carries forward assumptions from this:
 
@@ -195,15 +206,14 @@ Max/MSP was designed to **simulate modular synthesis**. Even gen~ carries forwar
 
 But **digital computation is not analog simulation**.
 
+</details>
+
 gen~ gives you the ability to think digitally, then constrains you to express it through analog-derived metaphors. You can build a Karplus-Strong string, but you have to think about "delay lines" and "feedback" instead of recursive difference equations.
 
 </div>
 
----
-
-## The Architectural Bind
-
-<div class="card">
+<div class="card vertical">
+<h2>The Architectural Bind</h2>
 
 gen~ occupies an uncomfortable middle ground:
 
@@ -230,15 +240,13 @@ And once you recognize them as **architectural choices, not computational laws**
 
 </div>
 
+</div>
+
 ---
 
 # Seeing the Difference: Karplus-Strong String Synthesis
 
-<div class="card">
-
 Let's start with a classic: Karplus-Strong plucked string. This is something gen~ handles well, and comparing the approaches reveals different ways of thinking about the same algorithm.
-
-</div>
 
 ---
 
@@ -427,8 +435,6 @@ Not better. **Different substrate, different patterns.**
 
 # Where gen~'s Architecture Shows: Real-World Patterns
 
-<div class="card wide">
-
 The Karplus-Strong example shows mathematical clarity. But gen~'s constraints become more apparent when you build systems that need:
 
 - **Complex state machines** (onset detection, envelope followers, pattern recognition)
@@ -437,8 +443,6 @@ The Karplus-Strong example shows mathematical clarity. But gen~'s constraints be
 - **Cross-process coordination** (multiple gen~ instances working together)
 
 Let's examine real patterns where the visual/object paradigm creates friction.
-
-</div>
 
 ---
 
@@ -505,7 +509,13 @@ auto envelope_follower = vega.Polynomial(
     3  // track current input, previous output, previous input
 )[0] | Audio;
 
-// OR at buffer level
+```
+
+<details>
+
+<summary><strong>or at buffer level directly:</strong></summary>
+
+```cpp
 auto buffer = vega.NodeBuffer(vega.Sine(200))[0] | Audio;
 
 auto env_processor = MayaFlux::create_processor<PolynomialProcessor>(
@@ -517,6 +527,8 @@ auto env_processor = MayaFlux::create_processor<PolynomialProcessor>(
     3
 );
 ```
+
+</details>
 
 **One node.** The state logic is in the algorithm itself. No object sprawl. No manual state tracking. The coefficients adapt based on signal characteristics **within the same processing function**.
 
@@ -585,7 +597,8 @@ spectral_gate->on_change_to(false, [synth]() {
 });
 ```
 
-Or using buffer level processors directly:
+<details>
+<summary><strong>Or using buffer level processors directly:</strong></summary>
 
 ```cpp
 auto buffer = vega.AudioBuffer()[0] | Audio;
@@ -619,6 +632,8 @@ auto gate = MayaFlux::create_processor<LogicProcessor>(
 gate->set_modulation_type(LogicProcessor::ModulationType::ZERO_ON_FALSE);
 
 ```
+
+</details>
 
 **Spectral analysis, history-based logic, and sample-accurate triggering** all in one coherent system. No domain boundaries. No architectural impossibilities.
 

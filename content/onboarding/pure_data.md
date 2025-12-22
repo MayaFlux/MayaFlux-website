@@ -64,7 +64,7 @@ In PD: `[metro 500]` bangs every 500ms. That is "how metronomes work" inside the
 
 In MayaFlux: Time is just a number you choose.
 
-<pre><code class="language-cpp">
+```cpp
 // Periodic evaluation at 0.5 second intervals
 schedule_metro(0.5, []() {
     trigger_something();
@@ -84,7 +84,7 @@ schedule_task("Sample_task", []() -> Vruta::SoundRoutine {
         trigger_something();
     }
 }, true);
-</code></pre>
+```
 
 `[metro]` was not a conceptual limit. It was a clear, efficient implementation aligned with PD’s architecture.
 
@@ -102,7 +102,7 @@ PD expresses `[osc~]` at audio rate and `[metro]` at control rate to keep the me
 
 MayaFlux expresses everything as data whose evaluation frequency is adjustable.
 
-<pre><code class="language-cpp">
+```cpp
 // Rhythm generator evaluated at 48kHz
 auto rhythm = vega.Impulse(4.0)[0] | Audio;
 
@@ -110,16 +110,16 @@ auto rhythm = vega.Impulse(4.0)[0] | Audio;
 rhythm->on_tick([](NodeContext ctx) {
     // Spawn visual particles at exact sample moments
     spawn_particle_at(ctx.value);
-    
+
     // Change polynomial coefficients
     shaper->set_coefficients({ctx.value, 0.5, -0.2});
-    
+
     // Reschedule another metro
     if (ctx.value > 0.9) {
         modify_metro_timing("bass_trigger", 0.125);
     }
 });
-</code></pre>
+```
 
 PD’s separation of control and audio was a sensible design choice for its goals. In MayaFlux these categories collapse because modern processors allow a unified evaluation model.
 
@@ -137,7 +137,7 @@ Pure Data’s `[osc~ 440]` sensibly abstracts away details so you can reason abo
 
 MayaFlux lets you reach into those details when that becomes part of the creative gesture.
 
-<pre><code class="language-cpp">
+```cpp
 auto wave = vega.Sine(440.0, 0.3)[0] | Audio;
 
 // Hook into processing—48,000 times per second
@@ -155,7 +155,7 @@ wave->on_tick_if(
         modulate_something(ctx.value);
     }
 );
-</code></pre>
+```
 
 The pattern you internalized was: "Oscillators generate sound and their internals are not meant to be inspected." This was completely valid for PD’s goals.
 
@@ -165,7 +165,7 @@ The computational truth: Every processing step is just a transformation. Transfo
 
 Callbacks receive the node's complete internal state:
 
-<pre><code class="language-cpp">
+```cpp
 auto gate = vega.Logic(LogicOperator::THRESHOLD, 0.3);
 
 gate->on_change([](auto& ctx) {
@@ -182,9 +182,9 @@ gate->on_change([](auto& ctx) {
             trigger_dense_event(); // Pattern detected
         }
 });
-</code></pre>
+```
 
-<pre><code class="language-cpp">
+```cpp
 auto shaper = vega.Polynomial(std::vector { 0.1, 0.8, -0.3 });
 
 shaper->on_tick([](auto& ctx) {
@@ -200,7 +200,7 @@ shaper->on_tick([](auto& ctx) {
         increase_resonance(); // Signal getting chaotic
     }
 });
-</code></pre>
+```
 
 PD abstracted internal state to reduce cognitive load. MayaFlux exposes it because current creative practices often treat computation itself as material.
 
@@ -216,21 +216,21 @@ PD's `[fexpr~]` was a breakthrough for its time, bringing recursive audio-rate e
 
 <h3>fexpr PD Patch Example</h3>
 
-<pre><code>
+```cpp
 [fexpr~ a = fmod(a + (accumValues[i]*accumValues[i]*$f2+1)/48000, 1) ;
         if ((a-$y1[$i3])<0, i = (i+1)%40, 0)]
-</code></pre>
+```
 
 The pattern PD encouraged was: "Recursion lives inside a special syntax."
 
 <h3>MayaFlux Polynomial Nodes</h3>
 
-<pre><code class="language-cpp">
+```cpp
 // Direct mode: Simple polynomial (like fexpr without history)
 auto waveshaper = vega.Polynomial({0.0, 1.2, -0.4});  // 1.2x - 0.4x²
-</code></pre>
+```
 
-<pre><code class="language-cpp">
+```cpp
 // Recursive mode: Access previous OUTPUTS (like $y1, $y2)
 auto feedback = vega.Polynomial(
     [](const std::deque<double>& history) {
@@ -240,9 +240,9 @@ auto feedback = vega.Polynomial(
     PolynomialMode::RECURSIVE,
     100  // 100-sample history
 );
-</code></pre>
+```
 
-<pre><code class="language-cpp">
+```cpp
 // Feedforward mode: Access previous INPUTS (like $x1, $x2)
 auto moving_avg = vega.Polynomial(
     [](const std::deque<double>& history) {
@@ -254,15 +254,16 @@ auto moving_avg = vega.Polynomial(
     PolynomialMode::FEEDFORWARD,
     64  // 64-sample window
 );
-</code></pre>
+```
 
-<pre><code class="language-cpp">
+```cpp
 auto phase_accum = vega.Polynomial(
     [&](const std::deque<double>& history) {
         static int index = 0;
         static std::vector<double> accum_values(40);
 
-        double increment = (accum_values[index] * accum_values[index] * Config::get_sample_rate() + 1.0) / Config::get_sample_rate();
+        double increment = (accum_values[index] * accum_values[index] * Config::get_sample_rate() + 1.0)
+            / Config::get_sample_rate();
         double new_phase = std::fmod(history[0] + increment, 1.0);
 
         // Zero-crossing detection
@@ -275,13 +276,13 @@ auto phase_accum = vega.Polynomial(
     PolynomialMode::RECURSIVE,
     2 // Need current and previous
 );
-</code></pre>
+```
 
 PD offered a predictable window of history for efficiency. MayaFlux expands this because modern architectures make larger or dynamic history sizes practical.
 
 <h3>Polynomial Processors on Buffers</h3>
 
-<pre><code class="language-cpp">
+```cpp
 // Karplus-Strong string via recursive polynomial on buffer
 auto synth = vega.Sine(220.0, 0.3);
 auto buffer = vega.NodeBuffer(0, 512, synth)[0] | Audio;
@@ -300,7 +301,7 @@ auto processor = create_processor<PolynomialProcessor>(buffer, string);
 processor->set_process_mode(PolynomialProcessor::ProcessMode::SAMPLE_BY_SAMPLE);
 // processor->set_process_mode(PolynomialProcessor::ProcessMode::BATCH);
 // processor->set_process_mode(PolynomialProcessor::ProcessMode::WINDOWED);
-</code></pre>
+```
 
 Pure Data’s architecture did not expose iteration strategies to preserve performance guarantees. MayaFlux makes them adjustable because it is built for a different computational moment.
 
@@ -316,7 +317,7 @@ PD: `[table]` explicitly exposes memory, which is one of its strengths. You can 
 
 MayaFlux: Buffers gather temporal slices that can be transformed before release.
 
-<pre><code class="language-cpp">
+```cpp
 auto synth = vega.Sine(220.0, 0.3);
 auto buffer = vega.NodeBuffer(0, 512, synth)[0] | Audio;
 
@@ -324,7 +325,7 @@ auto buffer = vega.NodeBuffer(0, 512, synth)[0] | Audio;
 auto feedback = create_processor<FeedbackProcessor>(buffer);
 feedback->set_feedback(0.3);
 
-auto shaper = create_processor<PolynomialProcessor>(buffer, 
+auto shaper = create_processor<PolynomialProcessor>(buffer,
     vega.Polynomial({0.0, 1.2, -0.4})
 );
 
@@ -334,7 +335,7 @@ chain->add_processor(shaper, buffer);   // Shape first
 chain->add_processor(feedback, buffer); // Then feedback
 
 buffer->set_processing_chain(chain);
-</code></pre>
+```
 
 Every 512 samples (adjustable):
 
@@ -347,7 +348,7 @@ Buffer size becomes compositional parameter. Larger = slower update rate = more 
 
 <h3>Buffer Pipelines</h3>
 
-<pre><code class="language-cpp">
+```cpp
 auto capture = vega.AudioBuffer()[0] | Audio;
 auto analysis = vega.AudioBuffer()[1] | Audio;
 
@@ -358,7 +359,7 @@ pipeline
     // Capture 40 cycles (like 40-element array)
     >> BufferOperation::capture_input_from(get_buffer_manager(), 0)
         .for_cycles(40)
-    
+
     // Transform accumulated data
     >> BufferOperation::transform([](const auto& data, uint32_t cycle) {
         auto samples = std::get<std::vector<double>>(data);
@@ -367,11 +368,11 @@ pipeline
         }
         return samples;
     })
-    
+
     >> BufferOperation::route_to_buffer(analysis);
 
 pipeline->execute_buffer_rate();
-</code></pre>
+```
 
 Pure Data's explicit `[tabwrite~]` and `[tabread~]` objects made data flow visible, letting you see precisely when arrays were being accessed and written. This clarity was one of PD’s strengths, especially for teaching and debugging. MayaFlux's declarative pipelines explore a complementary trade-off: you express the what of the operation (accumulate → transform → route) and the system handles the when, made possible by an architecture that manages buffer synchronization at the engine level.
 
@@ -383,7 +384,7 @@ Pure Data's explicit `[tabwrite~]` and `[tabread~]` objects made data flow visib
 
 <div class="card">
 
-<pre><code class="language-cpp">
+```cpp
 // Bell-like inharmonic spectrum
 auto bell = vega.ModalNetwork(
     12,                                      // 12 modes
@@ -395,9 +396,9 @@ schedule_metro(2.0, [bell]() {
     bell->excite(0.8);
     bell->set_fundamental(get_uniform_random(220.0, 880.0));
 }, "bell_strikes");
-</code></pre>
+```
 
-<pre><code class="language-cpp">
+```cpp
 // String-like harmonic spectrum
 auto string = vega.ModalNetwork(
     8, 440.0, ModalNetwork::Spectrum::HARMONIC
@@ -407,7 +408,7 @@ auto string = vega.ModalNetwork(
 auto piano = vega.ModalNetwork(
     16, 220.0, ModalNetwork::Spectrum::STRETCHED
 )[1] | Audio;
-</code></pre>
+```
 
 Pure Data's one-oscillator-per-partial approach directly reflected modular synthesis practice, giving each mode a visible, manipulable identity. This explicitness made the technique intuitive and pedagogically strong, because you understood modal synthesis by assembling it yourself. MayaFlux's `ModalNetwork` offers a complementary approach: the mathematical structure of the modes becomes a first-class parameter, so you shape relationships between modes rather than wiring each one individually. Both approaches illuminate different aspects of the same idea.
 
@@ -419,7 +420,7 @@ Pure Data's one-oscillator-per-partial approach directly reflected modular synth
 
 <div class="card">
 
-<pre><code class="language-cpp">
+```cpp
 auto onset = vega.Logic(LogicOperator::THRESHOLD, 0.5);
 onset->set_input_node(vega.Sine(2.0));
 
@@ -440,7 +441,7 @@ onset->on_change_to(true, [particles](NodeContext ctx) {
         .size = 10.0
     });
 });
-</code></pre>
+```
 
 Pure Data handled graphics through GEM, a separate environment that made perfect sense when OpenGL was the available rendering model. This separation kept the system clear and modular. MayaFlux benefits from modern unified memory and scheduling architectures where audio and visual processes inhabit the same computational space, allowing sample-accurate cross-domain interactions that were not technically accessible in PD’s era. Different technical contexts, different expressive possibilities.
 
@@ -452,18 +453,18 @@ Pure Data handled graphics through GEM, a separate environment that made perfect
 
 <div class="card">
 
-<pre><code class="language-cpp">
+```cpp
 // Metro that recalculates its own interval
 auto adaptive = [](Vruta::TaskScheduler& s) -> Vruta::SoundRoutine {
     while (true) {
         float complexity = analyze_spectral_density();
         float interval = map(complexity, 0.0, 1.0, 0.1, 2.0);
-        
+
         co_await SampleDelay{s.seconds_to_samples(interval)};
         trigger_event();
     }
 };
-</code></pre>
+```
 
 Pure Data's `[metro]` provides stable, deterministic timing suited for rhythmic structures, performances, and pedagogical clarity. MayaFlux’s coroutine-based timing sits alongside that idea and explores a different space. Temporal processes can observe their own computational context and adapt their timing dynamically. This is enabled by language-level coroutine support that simply did not exist when PD defined its timing model.
 
@@ -475,7 +476,7 @@ Pure Data's `[metro]` provides stable, deterministic timing suited for rhythmic 
 
 <div class="card">
 
-<pre><code class="language-cpp">
+```cpp
 auto grammar = std::make_shared<ComputationGrammar>();
 
 grammar->create_rule("compress_loud")
@@ -489,7 +490,7 @@ grammar->create_rule("expand_quiet")
     .executes([](auto& data) { apply_expansion(data, 1.5); });
 
 buffer->apply_processor(grammar);
-</code></pre>
+```
 
 You are not writing effects in the traditional sense. You are defining behavioral rules, and the buffer applies whichever ones match its state. Pure Data’s `[select]`, `[route]`, and `[spigot]` objects already embody the insight that message routing is a form of computation. MayaFlux’s grammar system extends that idea by letting the data itself determine which transformations apply. Both approaches share the same conceptual root, expressed through different architectural lenses.
 
@@ -501,7 +502,7 @@ You are not writing effects in the traditional sense. You are defining behaviora
 
 <div class="card">
 
-<pre><code class="language-cpp">
+```cpp
 // JIT compile C++ at runtime
 Lila::jit_compile_and_execute(R"(
     auto new_wave = vega.Polynomial(std::vector {
@@ -511,7 +512,7 @@ Lila::jit_compile_and_execute(R"(
     });
     new_wave >> DAC::instance();
 )");
-</code></pre>
+```
 
 Pure Data’s interpreted expression system prioritized immediacy and fluid patching, which is why it became so powerful in performance contexts. MayaFlux builds on a different technological foundation by using LLVM’s JIT capabilities, allowing native C++ to be compiled on the fly while preserving that sense of immediacy. Both paths honor the same impulse: make live computational manipulation part of the creative act.
 
@@ -552,14 +553,14 @@ Your PD knowledge translates directly. Oscillators, filters, envelopes, and patc
 
 Try the simplest pattern:
 
-<pre><code class="language-cpp">
+```cpp
 void compose() {
     auto wave = vega.Sine(440.0, 0.3)[0] | Audio;
     wave->on_tick([](NodeContext ctx) {
         if (ctx.value > 0.9) std::cout << "Peak!\n";
     });
 }
-</code></pre>
+```
 
 Run it. You will see "Peak!" printed at the exact moments the sine crosses 0.9.
 

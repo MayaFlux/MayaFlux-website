@@ -101,14 +101,41 @@ body {
     font-weight: 700;
 }
 
-h1,
-h2,
-h3,
-h4 {
-    color: #ffffff;
+/* ---------------------------------
+   Editorial Heading Hierarchy
+   (Dwindling Contrast, Single Hue)
+---------------------------------- */
+
+/* H1 — Section entry / thesis */
+h1 {
+    color: rgba(102, 179, 255, 0.95);
+    letter-spacing: -0.6px;
+    font-weight: 700;
+    text-shadow: 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+/* H2 — Major section */
+h2 {
+    color: rgba(102, 179, 255, 0.8);
     letter-spacing: -0.5px;
     font-weight: 700;
-    text-shadow: 0 0 1px rgba(255, 255, 255, 0.1);
+    text-shadow: 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+/* H3 — Subsection */
+h3 {
+    color: rgba(102, 179, 255, 0.65);
+    letter-spacing: -0.4px;
+    font-weight: 600;
+    text-shadow: none;
+}
+
+/* H4 — Minor heading / inline structure */
+h4 {
+    color: rgba(102, 179, 255, 0.5);
+    letter-spacing: -0.3px;
+    font-weight: 600;
+    text-shadow: none;
 }
 
 .tagline {
@@ -160,24 +187,25 @@ h4 {
     padding: 4rem 0;
 }
 
+.content {
+    padding: 4rem 0;
+}
+
 .content h1 {
     font-size: 2.5rem;
     margin-bottom: 1.5rem;
-    color: var(--text);
 }
 
 .content h2 {
     font-size: 2rem;
     margin-top: 2rem;
     margin-bottom: 1rem;
-    color: var(--text);
 }
 
 .content h3 {
     font-size: 1.5rem;
     margin-top: 1.5rem;
     margin-bottom: 0.75rem;
-    color: var(--text);
 }
 
 .content p {
@@ -227,6 +255,22 @@ h4 {
     margin-top: 3rem;
 }
 
+.card-group {
+    display: grid;
+    gap: 2rem;
+    align-items: start;
+}
+
+.card-group.columns {
+    grid-template-columns: 1fr 2fr 1fr;
+}
+
+.breakout {
+    width: 66;
+    margin-left: calc(-33vw + 33%);
+    margin-right: calc(-33vw + 33%);
+}
+
 .card {
     background: var(--bg-alt);
     padding: 2rem;
@@ -250,6 +294,10 @@ h4 {
         box-shadow 0.15s ease;
 }
 
+.card.wide {
+    grid-column: 1 / -1;
+}
+
 .card:hover {
     transform: translateY(-2px);
     box-shadow:
@@ -260,7 +308,6 @@ h4 {
 .card h2,
 .card h3 {
     margin-bottom: 1rem;
-    color: white;
 }
 
 .card p {

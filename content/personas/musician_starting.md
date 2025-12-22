@@ -21,11 +21,11 @@ when you treat sound as numbers flowing through precise computational decisions 
 <div class="card">
 <h2>Your First Sound</h2>
 
-<pre><code class="language-cpp">
+```cpp
 void compose() {
     auto wave = vega.Sine(440.0f, 0.2f)[0] | Audio;
 }
-</code></pre>
+```
 
 <p>
 <code>vega.Sine(440.0f, 0.2f)</code> doesn't create an oscillator object.
@@ -45,7 +45,7 @@ It's 48,000 discrete computational moments per second, each one a fresh calculat
 In traditional systems, you use a clock or metronome to trigger events. In MayaFlux, rhythm emerges from mathematical conditions.
 </p>
 
-<pre><code class="language-cpp">
+```cpp
 void compose() {
     auto clock = vega.Sine(2.0f, 0.3f)[0] | Audio;
 
@@ -56,7 +56,7 @@ void compose() {
         }
     );
 }
-</code></pre>
+```
 
 <p>
 <code>on_tick_if</code> attaches to every sample evaluation (48,000 times per second) but only fires the callback when <code>ctx.value > 0.0</code> becomes true. Sample-accurate rhythm tied to mathematical conditions, not external clocks.
@@ -64,7 +64,7 @@ void compose() {
 
 <p>You can make time operations from any mathematical relationship:</p>
 
-<pre><code class="language-cpp">
+```cpp
 void compose() {
     auto synth = vega.Sine(220.0f, 0.3f)[0] | Audio;
 
@@ -77,7 +77,7 @@ void compose() {
         }
     );
 }
-</code></pre>
+```
 
 <p>
 Traditional systems force you to separate "rhythm generation" from "sound generation." Any data source can become a temporal trigger.
@@ -93,7 +93,7 @@ Traditional systems force you to separate "rhythm generation" from "sound genera
 You know gates as "open/closed" switches on audio signals. MayaFlux treats gates as logical decisions about data flow.
 </p>
 
-<pre><code class="language-cpp">
+```cpp
 void compose() {
     auto synth = vega.Sine(220.0f, 0.3f);
     auto buffer = vega.NodeBuffer(0, 512, synth)[0] | Audio;
@@ -105,7 +105,7 @@ void compose() {
     auto processor = create_processor<LogicProcessor>(buffer, gate);
     processor->set_modulation_type(LogicProcessor::ModulationType::HOLD_ON_FALSE);
 }
-</code></pre>
+```
 
 <p>
 <code>LogicProcessor</code> doesn't just multiply audio by 0 or 1 (traditional gate).
@@ -115,7 +115,7 @@ Result: granular stuttering effect. The audio repeats frozen moments.
 
 <p>Other logical transformations:</p>
 
-<pre><code class="language-cpp">
+```cpp
 void compose() {
     auto synth = vega.Sine(120.0f, 0.3f);
     auto buffer = vega.NodeBuffer(0, 512, synth)[0] | Audio;
@@ -135,7 +135,7 @@ void compose() {
     // gate->set_input_node(tick);
     // processor->set_modulation_type(LogicProcessor::ModulationType::CROSSFADE);
 }
-</code></pre>
+```
 
 <p>
 Gates aren't on/off switches. They're data transformation strategies.
@@ -153,7 +153,7 @@ Traditional: Envelope generates control signal, modulates something else.
 MayaFlux: Envelope is a data transformation function applied directly.
 </p>
 
-<pre><code class="language-cpp">
+```cpp
 void compose() {
     auto synth = vega.Sine(440.0f, 0.3f);
     auto buffer = vega.NodeBuffer(0, 512, synth)[0] | Audio;
@@ -161,7 +161,7 @@ void compose() {
     auto envelope = vega.Polynomial(std::vector{0.1, 0.9, -0.3, 0.05});
     auto processor = create_processor<PolynomialProcessor>(buffer, envelope);
 }
-</code></pre>
+```
 
 <p>
 <code>PolynomialProcessor</code> applies the polynomial to every sample in the buffer.
@@ -171,7 +171,7 @@ No separate "envelope follower" or "modulation routing." The data is the shape.
 
 <p>Variations:</p>
 
-<pre><code class="language-cpp">
+```cpp
 void compose() {
     auto synth = vega.Sine(220.0f, 0.3f);
     auto buffer = vega.NodeBuffer(0, 512, synth)[0] | Audio;
@@ -210,7 +210,7 @@ void compose() {
     // Optional: adjust how processor iterates through buffer
     // processor->set_process_mode(PolynomialProcessor::ProcessMode::BATCH);
 }
-</code></pre>
+```
 
 <p>
 You're not "applying an envelope to a sound." You're transforming data according to a mathematical shape.
@@ -227,7 +227,7 @@ The same polynomial creates wildly different results depending on the processing
 Traditional DAWs treat time as a fixed grid. MayaFlux treats time as something you compose with.
 </p>
 
-<pre><code class="language-cpp">
+```cpp
 void compose() {
     auto synth = vega.Sine(440.0f, 0.3f)[0] | Audio;
 
@@ -243,7 +243,7 @@ void compose() {
         {1.0, [synth]() { synth->set_frequency(880.0f); }}
     }, "pitch_sequence");
 }
-</code></pre>
+```
 
 <p>
 <code>metro</code> creates a persistent temporal pulse at exact intervals (0.5 seconds = 2Hz).
@@ -253,7 +253,7 @@ Both run indefinitely until you terminate them. Sample-accurate timing coordinat
 
 <p>More complex temporal structures:</p>
 
-<pre><code class="language-cpp">
+```cpp
 void compose() {
     auto synth = vega.Sine(440.0f, 0.3f);
 
@@ -271,14 +271,14 @@ void compose() {
         0.2,
         "every_eighth");
 }
-</code></pre>
+```
 
 <code>pattern</code> generates events based on beat-conditional logic.
 The scheduler manages all temporal coordination, you just describe the relationships.
 
 EventChains for temporal choreography:
 
-<pre><code class="language-cpp">
+```cpp
 void compose() {
     auto synth = vega.Sine(440.0f, 0.3f)[0] | Audio;
 
@@ -290,7 +290,7 @@ void compose() {
 
     chain.start();
 }
-</code></pre>
+```
 
 Each <code>.then()</code> schedules an action at a specific time offset from the previous event.
 The entire sequence runs once, executing actions at precise moments. You're composing with temporal relationships.
@@ -309,7 +309,7 @@ Buffers aren't just storage. They're temporal gatherers that accumulate moments,
 
 <p>Simple capture from file:</p>
 
-<pre><code class="language-cpp">
+```cpp
 void compose() {
     auto capture_buffer = vega.AudioBuffer()[0] | Audio;
     auto pipeline = create_buffer_pipeline();
@@ -321,7 +321,7 @@ void compose() {
 
     pipeline->execute_buffer_rate();
 }
-</code></pre>
+```
 
 <p>
 <code>capture_file_from</code> reads from audio file.
@@ -331,7 +331,7 @@ void compose() {
 
 <p>Accumulation and batch processing:</p>
 
-<pre><code class="language-cpp">
+```cpp
 void compose() {
     Config::get_global_stream_info().input.enabled = true;
     Config::get_global_stream_info().input.channels = 1;
@@ -357,7 +357,7 @@ void compose() {
 
     pipeline->execute_buffer_rate();
 }
-</code></pre>
+```
 
 <p>
 <code>.for_cycles(20)</code> captures 20 times, concatenating into a single buffer.  
@@ -367,7 +367,7 @@ The <code>transform</code> sees all accumulated samples at once.
 
 <p>Windowed analysis:</p>
 
-<pre><code class="language-cpp">
+```cpp
 void compose() {
     auto pipeline = create_buffer_pipeline();
 
@@ -382,7 +382,7 @@ void compose() {
 
     pipeline->execute_buffer_rate();
 }
-</code></pre>
+```
 
 <p>
 <code>with_window</code> creates overlapping capture windows —
@@ -399,7 +399,7 @@ use it for spectral analyzers, feature extraction, and sliding-window transforms
 This is where MayaFlux diverges completely from analog paradigms. Audio data can directly control visual processes.
 </p>
 
-<pre><code class="language-cpp">
+```cpp
 void compose() {
     auto synth = vega.Sine(220.0f, 0.3f);
 
@@ -425,7 +425,7 @@ void compose() {
                 .size = 10.0f });
         });
 }
-</code></pre>
+```
 
 <p>
 Audio peaks trigger visual particle spawns. Sample-accurate coordination between domains. 
@@ -448,7 +448,7 @@ Traditional: Audio flows continuously through effects.
 MayaFlux: Audio accumulates in temporal chunks, gets transformed, then releases.
 </p>
 
-<pre><code class="language-cpp">
+```cpp
 void compose() {
     auto synth = vega.Sine(220.0f, 0.3f);
     auto buffer = vega.NodeBuffer(0, 512, synth)[0] | Audio;
@@ -473,7 +473,7 @@ void compose() {
 
     buffer->set_processing_chain(chain);
 }
-</code></pre>
+```
 
 <p>
 Buffers aren't just "storage." They're moments of accumulated time. 
@@ -496,7 +496,7 @@ Traditional synthesis uses banks of oscillators.
 MayaFlux treats resonant modes as parallel data transformations.
 </p>
 
-<pre><code class="language-cpp">
+```cpp
 void compose() {
     auto bell = vega.ModalNetwork(
         12,
@@ -509,7 +509,7 @@ void compose() {
         bell->set_fundamental(get_uniform_random(220.0f, 880.0f));
     }, "bell_strikes");
 }
-</code></pre>
+```
 
 <p>
 <code>ModalNetwork</code> creates 12 resonant modes with inharmonic frequency ratios (bell-like). 
@@ -519,7 +519,7 @@ The same network with different spectrum types produces completely different tim
 
 </p>
 
-<pre><code class="language-cpp">
+```cpp
 void compose() {
     auto string = vega.ModalNetwork(
         8,
@@ -533,7 +533,7 @@ void compose() {
         ModalNetwork::Spectrum::STRETCHED
     )[1] | Audio;
 }
-</code></pre>
+```
 
 <p>
 <code>HARMONIC</code> creates integer frequency ratios (string-like). 
