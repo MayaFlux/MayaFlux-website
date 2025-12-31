@@ -126,7 +126,7 @@ or spend days exploring optional subsections.</p>
 </div>
 
 <div class="card wide">
-<h3>Part II — Processing Expression <em>(coming soon)</em></h3>
+<h3><a href="/tutorials/sculpting-data/processing_expression">Part II — Processing Expression </a></h3>
 <p>Processors, operations, shaping behaviour.</p>
 </div>
 

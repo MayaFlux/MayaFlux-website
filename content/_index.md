@@ -173,7 +173,7 @@ title: "MayaFlux"
         <hr>
         <p><strong>Production-ready:</strong> Audio processing, node graphs, memory management.</p>
         <hr>
-        <p><strong>In development:</strong> GPU compute routing, cross-modal connectors.</p>
+        <p><strong>Validated:</strong> GPU compute routing, cross-modal connectors.</p>
         <hr>
         <p><strong>Future:</strong> Lua scripting, UE5/Godot plugins, WASM.</p>
 
