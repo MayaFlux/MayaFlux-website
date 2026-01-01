@@ -175,7 +175,7 @@ title: "MayaFlux"
         <hr>
         <p><strong>Validated:</strong> GPU compute routing, cross-modal connectors.</p>
         <hr>
-        <p><strong>Future:</strong> Lua scripting, UE5/Godot plugins, WASM.</p>
+        <p><strong>Future:</strong> Full 3D graphics stack, networking, OpenCV integration</p>
 
     </div>
 
@@ -203,6 +203,95 @@ title: "MayaFlux"
         <a href="https://github.com/MayaFlux/MayaFlux">Source Code</a>
         </p>
 
+    </div>
+
+</div>
+
+<div class="card collapsible wide">
+    <div class="collapsible-header">
+        <h2>Quick teaser</h2>
+        <p class="hint">Click to expand</p>
+    </div>
+
+    <div class="collapsible-body">
+    <pre><code class="language-cpp">
+
+#pragma once
+#define MAYASIMPLE
+#include "MayaFlux/MayaFlux.hpp"
+
+void settings() {
+// Low-latency audio setup
+auto& stream = MayaFlux::Config::get_global_stream_info();
+stream.sample_rate = 48000;
+}
+
+void compose() {
+
+    // 1. Create the bell
+    auto bell = vega.ModalNetwork(
+                    12,
+                    220.0,
+                    ModalNetwork::Spectrum::INHARMONIC)[0]
+        | Audio;
+
+    // 2. Create audio-driven logic
+    auto source_sine = vega.Sine(0.2, 1.0f); // 0.2 Hz slow oscillator
+
+    static double last_input = 0.0;
+    auto logic = vega.Logic([](double input) {
+        // Arhythmic: true when sine crosses zero AND going positive
+        bool crossed_zero = (last_input < 0.0) && (input >= 0.0);
+        last_input = input;
+        return crossed_zero;
+    });
+
+    source_sine >> logic;
+
+    // 3. When logic fires, excite the bell
+    logic->on_change_to(true, [bell](auto& ctx) {
+        if (ctx.value >= 0) {
+            bell->excite(get_uniform_random(0.5f, 0.9f));
+            bell->set_fundamental(get_uniform_random(220.0f, 1000.0f));
+        }
+    });
+
+    // 4. Graphics (same as before)
+    auto window = MayaFlux::create_window({ "Audio-Driven Bell", 1280, 720 });
+    auto points = vega.PointCollectionNode(500) | Graphics;
+    auto geom = vega.GeometryBuffer(points) | Graphics;
+
+    geom->setup_rendering({ .target_window = window });
+    window->show();
+
+    // 5. Visualize: points grow when bell strikes (when logic fires)
+    MayaFlux::schedule_metro(0.016, [points]() {
+        static float angle = 0.0f;
+        static float radius = 0.0f;
+
+        if (last_input != 0) {
+            angle += 0.5f; // Quick burst on strike
+            radius += 0.002f;
+        } else {
+            angle += 0.01f; // Slow growth otherwise
+            radius += 0.0001f;
+        }
+
+        if (radius > 1.0f) {
+            radius = 0.0f;
+            points->clear_points();
+        }
+
+        float x = std::cos(angle) * radius;
+        float y = std::sin(angle) * radius * (16.0f / 9.0f);
+        float brightness = 1.0f - (radius * 0.7f);
+
+        points->add_point(Nodes::GpuSync::PointVertex {
+            .position = glm::vec3(x, y, 0.0f),
+            .color = glm::vec3(brightness, brightness * 0.8f, 1.0f),
+            .size = 8.0f + radius * 4.0f });
+    });
+    </code></pre>
     </div>
 
 </div>
