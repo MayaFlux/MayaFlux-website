@@ -197,11 +197,12 @@ title: "MayaFlux"
         MayaFlux is for creators who've outgrown callback-driven thinking and want unified streams across audio, visual, and algorithmic composition.
         </p>
 
-        <p>
-        <a href="/download/">Download Weave</a> ·
-        <a href="https://mayaflux.github.io/MayaFlux/">Documentation</a> ·
-        <a href="https://github.com/MayaFlux/MayaFlux">Source Code</a>
-        </p>
+        <ul>
+        <li><a href="/download/">Download Weave</a></li>
+        <li><a href="https://mayaflux.github.io/MayaFlux/">Documentation</a></li>
+        <li><a href="https://github.com/MayaFlux/MayaFlux">Source Code</a></li>
+        <li><a href="/releases/"> Release Notes</a></li>
+        </ul>
 
     </div>
 
