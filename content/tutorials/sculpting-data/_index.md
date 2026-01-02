@@ -131,8 +131,8 @@ or spend days exploring optional subsections.</p>
 </div>
 
 <div class="card wide">
-<h3>Part III — Structural Motion <em>(planned)</em></h3>
-<p>Temporal form, motion grammar, evolving transformations.</p>
+<h3><a href="/tutorials/sculpting-data/visual_materiality_i">Part III — Visual Materiality I </a></h3>
+<p>Introduction to declarative graphics</p>
 </div>
 
 <div class="card wide">

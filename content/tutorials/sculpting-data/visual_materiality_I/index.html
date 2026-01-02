@@ -1,0 +1,2533 @@
+---
+title: "Visual Materiality Part I"
+layout: "tutorial"
+---
+
+<h2>Geometry as Data</h2>
+<p>
+  <em
+    >In MayaFlux, geometry isn't shapes you draw. It's data you generate.<br />
+    Points, vertices, colors: all numerical streams you sculpt and send to the
+    GPU.<br />
+    This tutorial shows you the smallest visual gesture: a single point.</em
+  >
+</p>
+
+<p>
+  MayaFlux's visual system follows the same architectural principles as audio
+  processing:
+</p>
+<ul>
+  <li><strong>Nodes</strong>: Generate vertex data at visual rate (60 FPS)</li>
+  <li><strong>Buffers</strong>: Manage GPU memory and processor chains</li>
+  <li>
+    <strong>Processors</strong>: Handle upload, transformation, and rendering
+  </li>
+  <li>
+    <strong>No manual draw loops</strong>: Declare structure, subsystem handles
+    timing
+  </li>
+</ul>
+
+<!-- ======================= EXPANDED SECTION: POINTS IN SPACE ======================= -->
+
+<section class="tutorial-section">
+  <div class="tutorial-row">
+    <div class="tutorial-card" data-target="points-detail">
+      <h3 class="tutorial-title">Tutorial: Points in Space</h3>
+      <p class="hint">Click this card to reveal full explanation</p>
+
+      <h4>The Simplest Visual Gesture</h4>
+
+      <pre><code class="language-cpp">
+void compose() {
+    auto window = MayaFlux::create_window({ "Visual", 800, 600 });
+
+    auto point = vega.PointNode(glm::vec3(0.0f, 0.5f, 0.0f)) | Graphics;
+    auto buffer = vega.GeometryBuffer(point) | Graphics;
+
+    buffer->setup_rendering({ .target_window = window });
+    window->show();
+}
+                </code></pre>
+
+      <p>Run this. You see a white point in the upper half of the window.</p>
+
+      <p>
+        Change <code>0.5f</code> to <code>-0.5f</code>. The point moves to the
+        lower half. Try <code>0.0f, 0.0f, 0.0f</code>. It centers.
+      </p>
+
+      <p>
+        <strong>That's it.</strong> A point rendered from explicit coordinates.
+        No primitives. Just three numbers.
+      </p>
+    </div>
+  </div>
+
+  <!-- Points in Space Expanded Details -->
+  <section id="points-detail" class="tutorial-expanded">
+    <h2>Expansion 1: What Is PointNode?</h2>
+
+    <details>
+      <summary>Click to expand: Points Are Vertex Data</summary>
+
+      <p>
+        <code>PointNode</code> is a <strong>GeometryWriterNode</strong>, a node
+        that generates vertex data each frame.
+      </p>
+
+      <pre><code class="language-cpp">
+struct PointVertex {
+    glm::vec3 position;  // x, y, z coordinates
+    glm::vec3 color;     // r, g, b values
+    float size;          // point size in pixels
+};
+                </code></pre>
+
+      <p>
+        When you create
+        <code>vega.PointNode(glm::vec3(0.0f, 0.5f, 0.0f))</code>, you're
+        setting:
+      </p>
+
+      <ul>
+        <li>
+          <code>position = {0.0, 0.5, 0.0}</code> (center horizontally, upper
+          half, at origin depth)
+        </li>
+        <li><code>color = {1.0, 1.0, 1.0}</code> (white, default)</li>
+        <li><code>size = 10.0</code> (10 pixels, default)</li>
+      </ul>
+
+      <p>
+        Every frame (at <code>GRAPHICS_BACKEND</code> - 60 FPS),
+        <code>compute_frame()</code> writes these values into a CPU byte buffer.
+        That buffer uploads to GPU as vertex data.
+      </p>
+
+      <p>
+        <strong>Coordinates are normalized device coordinates (NDC):</strong>
+      </p>
+
+      <ul>
+        <li>X: -1.0 (left edge) → +1.0 (right edge)</li>
+        <li>Y: -1.0 (bottom) → +1.0 (top)</li>
+        <li>Z: -1.0 (near) → +1.0 (far)</li>
+      </ul>
+
+      <p>
+        The <code>| Graphics</code> token registers the node with the graphics
+        subsystem to run at visual rate. Without it, the node exists but never
+        processes.
+      </p>
+    </details>
+
+    <h2>Expansion 2: GeometryBuffer Connects Node → GPU</h2>
+
+    <details>
+      <summary>Click to expand: The Upload Chain</summary>
+
+      <p>
+        <code>GeometryBuffer</code> does what <code>ContainerBuffer</code> does
+        for audio: connects a data source to processing infrastructure.
+      </p>
+
+      <pre><code class="language-cpp">
+                    auto buffer = vega.GeometryBuffer(point) | Graphics;
+                </code></pre>
+
+      <p>This creates:</p>
+
+      <ol>
+        <li>
+          <strong>VKBuffer</strong> on GPU (device-local vertex buffer storage)
+        </li>
+        <li>
+          <strong>GeometryBindingsProcessor</strong> (default processor that
+          handles CPU→GPU upload)
+        </li>
+        <li>
+          <strong>BufferProcessingChain</strong> (where you can add
+          transformations)
+        </li>
+      </ol>
+
+      <p>
+        The fluent <code>| Graphics</code> token calls
+        <code>setup_processors(ProcessingToken::GRAPHICS_BACKEND)</code> behind
+        the scenes, which:
+      </p>
+
+      <ul>
+        <li>Creates the bindings processor</li>
+        <li>Sets it as the default processor</li>
+        <li>Binds the geometry node to this buffer</li>
+        <li>Registers buffer with graphics subsystem scheduler</li>
+      </ul>
+
+      <p><strong>Each frame cycle:</strong></p>
+
+      <ol>
+        <li>
+          Scheduler triggers buffer processing at <code>GRAPHICS_BACKEND</code>
+        </li>
+        <li>
+          Default processor runs:
+          <code>GeometryBindingsProcessor::processing_function()</code>
+        </li>
+        <li>
+          Processor calls <code>point->compute_frame()</code> (generates
+          vertex data)
+        </li>
+        <li>
+          Processor checks <code>point->needs_gpu_update()</code> (dirty
+          flag)
+        </li>
+        <li>If dirty: upload vertex bytes to GPU via staging buffer</li>
+        <li>Processing chain runs (currently empty, we'll add to it later)</li>
+      </ol>
+
+      <p>
+        This is <strong>identical to audio flow</strong>, just different data:
+      </p>
+
+      <ul>
+        <li>
+          Audio:
+          <code
+            >SoundContainer → ContainerBuffer → FilterProcessor → Speakers</code
+          >
+        </li>
+        <li>
+          Graphics:
+          <code
+            >PointNode → GeometryBuffer → [empty chain] → (needs
+            RenderProcessor)</code
+          >
+        </li>
+      </ul>
+
+      <p>
+        <strong>The separation:</strong> Upload and rendering are separate
+        processors. You can upload geometry without rendering it (for compute
+        shader reads), or render the same geometry to multiple windows.
+      </p>
+    </details>
+
+    <h2>Expansion 3: setup_rendering() Adds Draw Calls</h2>
+
+    <details>
+      <summary>
+        Click to expand: RenderProcessor and the Rendering Pipeline
+      </summary>
+
+      <pre><code class="language-cpp">
+                    buffer->setup_rendering({ .target_window = window });
+                </code></pre>
+
+      <p>
+        This creates a <strong>RenderProcessor</strong> and adds it to the
+        buffer's processing chain. Now the full flow is:
+      </p>
+
+      <p><strong>Default Processor (GeometryBindingsProcessor):</strong></p>
+
+      <ul>
+        <li>Upload vertex data to GPU</li>
+      </ul>
+
+      <p><strong>Processing Chain (RenderProcessor):</strong></p>
+
+      <ul>
+        <li>Record Vulkan draw commands</li>
+        <li>Issue draw call</li>
+        <li>Present to window</li>
+      </ul>
+
+      <p><strong>What RenderProcessor does each frame:</strong></p>
+
+      <pre><code class="language-cpp">
+// Simplified RenderProcessor::execute_shader() flow:
+void RenderProcessor::execute_shader(VKBuffer* buffer) {
+    auto cmd_id = foundry.begin_secondary_commands(color_format);
+    auto cmd = foundry.get_command_buffer(cmd_id);
+
+    flow.bind_pipeline(cmd_id, m_pipeline_id);
+    flow.bind_vertex_buffers(cmd_id, {buffer});
+
+    flow.draw(cmd_id, vertex_count);  // vertex_count = 1 for PointNode
+
+    foundry.end_commands(cmd_id);
+}
+                </code></pre>
+
+      <p>
+        <strong>RenderFlow</strong> is the high-level rendering API (analogous
+        to RtAudio for audio). It wraps Vulkan command recording but you never
+        touch Vulkan directly unless you want to.
+      </p>
+
+      <p><strong>RenderConfig</strong> lets you customize:</p>
+
+      <pre><code class="language-cpp">
+GeometryBuffer::RenderConfig {
+    .target_window = window,
+    .vertex_shader = "point.vert.spv",     // Default: point rendering
+    .fragment_shader = "point.frag.spv",   // Default: flat color
+    .topology = PrimitiveTopology::POINT_LIST,  // POINT_LIST | LINE_LIST | TRIANGLE_LIST
+    .polygon_mode = PolygonMode::FILL,
+    .cull_mode = CullMode::NONE
+}
+                </code></pre>
+
+      <p><strong>Critical: No draw loop.</strong> You never write:</p>
+
+      <pre><code class="language-cpp">
+while (!window.should_close()) {
+    draw_something();
+    swap_buffers();
+}
+                </code></pre>
+
+      <p>
+        The graphics subsystem runs its own thread, ticks at 60 FPS, processes
+        visual-rate nodes, processes graphics buffers, presents frames.
+        <strong
+          >You declare what to render. The engine handles when and how.</strong
+        >
+      </p>
+    </details>
+
+    <h2>Expansion 4: Windowing and GLFW</h2>
+
+    <details>
+      <summary>
+        Click to expand: Window Management Without Manual Event Loops
+      </summary>
+
+      <pre><code class="language-cpp">
+auto window = MayaFlux::create_window({ "Visual", 800, 600 });
+                </code></pre>
+
+      <p>
+        Creates a <strong>GLFW window</strong> (cross-platform windowing
+        library) with:
+      </p>
+
+      <ul>
+        <li>Title: "Visual"</li>
+        <li>Size: 800x600 pixels</li>
+        <li>Vulkan surface attached automatically</li>
+        <li>Event handling registered with MayaFlux's event system</li>
+      </ul>
+
+      <p>
+        <strong>WindowManager</strong> handles GLFW event polling in the
+        graphics thread. You don't call <code>glfwPollEvents()</code> yourself.
+        It's handled by the subsystem's <code>process()</code> cycle.
+      </p>
+
+      <pre><code class="language-cpp">
+                    window->show();
+                </code></pre>
+
+      <p>
+        Makes the window visible. Windows are created hidden by default so you
+        can set everything up before display.
+      </p>
+
+      <p>
+        <strong>Key architectural point:</strong> Windows, like buffers, are
+        resources managed by subsystems. You create them, register them for
+        processing (via the <code>| Graphics</code> token on buffers), and the
+        subsystem schedules their updates.
+      </p>
+
+      <p>
+        When you call <code>setup_rendering({ .target_window = window })</code>:
+      </p>
+
+      <ol>
+        <li>RenderProcessor stores window reference</li>
+        <li>Each frame, processor queries window's Vulkan swapchain</li>
+        <li>Records draw commands to swapchain framebuffer</li>
+        <li>Presents frame via DisplayService</li>
+      </ol>
+
+      <p>
+        <strong
+          >You never manually manage swapchains, framebuffers, or
+          presentation.</strong
+        >
+        That's RenderFlow's job.
+      </p>
+    </details>
+
+    <h2>Expansion 5: The Fluent API and Separation of Concerns</h2>
+
+    <details>
+      <summary>
+        Click to expand: Processor Architecture vs. Monolithic Rendering
+      </summary>
+
+      <p>Compare this to typical graphics framework code:</p>
+
+      <p><strong>Typical OpenFrameworks/Processing:</strong></p>
+
+      <pre><code class="language-cpp">
+void draw() {
+    ofBackground(0);
+    ofSetColor(255);
+    ofDrawCircle(width/2, height/2, 10);  // Immediate mode, mixed concerns
+}
+                </code></pre>
+
+      <p><strong>MayaFlux:</strong></p>
+
+      <pre><code class="language-cpp">
+auto point = vega.PointNode(glm::vec3(0.0, 0.0, 0.0)) | Graphics;
+auto buffer = vega.GeometryBuffer(point) | Graphics;
+buffer->setup_rendering({ .target_window = window });
+                </code></pre>
+
+      <p><strong>Separation:</strong></p>
+
+      <ul>
+        <li>
+          <strong>PointNode</strong>: Data generation (position, color, size)
+        </li>
+        <li>
+          <strong>GeometryBuffer</strong>: GPU memory management and upload
+        </li>
+        <li>
+          <strong>GeometryBindingsProcessor</strong>: CPU→GPU transfer logic
+        </li>
+        <li>
+          <strong>RenderProcessor</strong>: Vulkan command recording and
+          presentation
+        </li>
+      </ul>
+
+      <p>Each processor has one job. You can:</p>
+
+      <ul>
+        <li>
+          Replace GeometryBindingsProcessor with a compute shader that generates
+          vertices on GPU
+        </li>
+        <li>
+          Add processors between upload and render (transform vertex data, apply
+          shaders)
+        </li>
+        <li>
+          Render the same buffer to multiple windows with different shaders
+        </li>
+        <li>Upload geometry without rendering (for other buffers to read)</li>
+      </ul>
+
+      <p>
+        <strong
+          >The fluent API hides complexity without removing access:</strong
+        >
+      </p>
+
+      <p>Fluent:</p>
+
+      <pre><code class="language-cpp">
+auto buffer = vega.GeometryBuffer(point) | Graphics;
+                </code></pre>
+
+      <p>Explicit equivalent:</p>
+
+      <pre><code class="language-cpp">
+auto buffer = std::make_shared&lt;GeometryBuffer>(point);
+buffer->setup_processors(ProcessingToken::GRAPHICS_BACKEND);
+MayaFlux::register_buffer(buffer);
+                </code></pre>
+
+      <p>
+        The <code>vega</code> proxy and <code>| Graphics</code> operator do the
+        setup for you. But you can always access the explicit API when you need
+        control.
+      </p>
+    </details>
+
+    <hr />
+
+    <h2>Try It</h2>
+
+    <pre><code class="language-cpp">
+// Change position (move to bottom-left)
+auto point = vega.PointNode(glm::vec3(-0.8f, -0.8f, 0.0f)) | Graphics;
+
+// Change color to red
+auto point = vega.PointNode(
+    glm::vec3(0.0f, 0.0f, 0.0f),
+    glm::vec3(1.0f, 0.0f, 0.0f),  // RGB: red
+    10.0f                          // size
+) | Graphics;
+
+// Make it huge
+auto point = vega.PointNode() | Graphics;
+point-&gt;set_size(100.0f);
+
+// Multiple points (each needs its own buffer for now)
+auto p1 = vega.PointNode(glm::vec3(-0.5f, 0.0f, 0.0f)) | Graphics;
+auto p2 = vega.PointNode(glm::vec3(0.5f, 0.0f, 0.0f)) | Graphics;
+
+auto b1 = vega.GeometryBuffer(p1) | Graphics;
+auto b2 = vega.GeometryBuffer(p2) | Graphics;
+
+b1->setup_rendering({ .target_window = window });
+b2->setup_rendering({ .target_window = window });
+    </code></pre>
+
+    <hr />
+
+    <h2>What You've Learned</h2>
+
+    <p>You now understand the complete graphics stack:</p>
+
+    <p>
+      <strong>Nodes:</strong> Generate vertex data at visual rate (60 FPS)<br />
+      <strong>Buffers:</strong> Manage GPU memory and processor chains<br />
+      <strong>Default Processor (GeometryBindingsProcessor):</strong> Upload CPU
+      data to GPU<br />
+      <strong>Processing Chain (RenderProcessor):</strong> Record draw commands
+      and present<br />
+      <strong>Tokens:</strong> <code>| Graphics</code> registers components with
+      visual-rate scheduler<br />
+      <strong>No draw loop:</strong> Subsystem handles timing, you declare
+      structure
+    </p>
+
+    <p>
+      <strong>Next:</strong> Section 2 will show you
+      <code>PointCollectionNode</code> for rendering many points efficiently,
+      and Section 3 will drive point positions from audio nodes, finally
+      crossing the audio/visual boundary.
+    </p>
+  </section>
+</section>
+
+<hr />
+
+<!-- ======================= PARENT CARD: COLLECTIONS AND AGGREGATION ======================= -->
+
+<section class="tutorial-section">
+  <div class="tutorial-row">
+    <div class="tutorial-card tutorial-parent" data-target="collections-detail">
+      <h3 class="tutorial-title">Tutorial: Collections and Aggregation</h3>
+      <p class="hint">Click this card to reveal the complete tutorial</p>
+
+      <p>
+        <em
+          >In the previous section, you rendered a single point with its own
+          buffer.<br />
+          Now: render many points with one buffer, one upload, one draw call.<br />
+          This is how you work with data at scale: aggregation, not
+          repetition.</em
+        >
+      </p>
+
+      <pre><code class="language-cpp">
+    auto window = MayaFlux::create_window({ "Visual", 800, 600 });
+
+    // Create a spiral of points
+    auto points = vega.PointCollectionNode() | Graphics;
+
+    for (int i = 0; i < 200; i++) {
+        float t = i * 0.1f;
+        float radius = t * 0.05f;
+        float x = radius * std::cos(t);
+        float y = radius * std::sin(t);
+
+        // Color transitions from red → green → blue
+        float hue = static_cast<float>(i) / 200.0f;
+        glm::vec3 color(
+            std::sin(hue * 6.28f) * 0.5f + 0.5f,
+            std::sin(hue * 6.28f + 2.09f) * 0.5f + 0.5f,
+            std::sin(hue * 6.28f + 4.19f) * 0.5f + 0.5f
+        );
+
+        points-&gt;add_point({ glm::vec3(x, y, 0.0f), color, 8.0f });
+    }
+
+    auto buffer = vega.GeometryBuffer(points) | Graphics;
+    buffer->setup_rendering({ .target_window = window });
+
+    window->show();
+    </code></pre>
+
+      <p>Run this. You see a colorful spiral expanding from center to edges.</p>
+
+      <p>
+        Change the formula. Try
+        <code>float radius = std::sin(t) * 0.5f;</code> for a circular pattern.
+        Try different color equations. The pattern is the same: generate point
+        data procedurally, one buffer handles all of them.
+      </p>
+
+      <p>
+        <strong>That's the key difference:</strong> One
+        <code>GeometryBuffer</code>, 200 vertices. One upload cycle, one draw
+        call.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= EXPANDED SECTION ======================= -->
+
+<!-- Expanded Details -->
+<section id="collections-detail" class="tutorial-expanded">
+  <h2>Expansion 1: What Is PointCollectionNode?</h2>
+
+  <details>
+    <summary>Click to expand: Unstructured Aggregation</summary>
+
+    <p>
+      <code>PointCollectionNode</code> is a
+      <strong>GeometryWriterNode</strong> that manages multiple
+      <code>PointVertex</code> entries in a single vertex buffer.
+    </p>
+
+    <pre><code class="language-cpp">
+class PointCollectionNode : public GeometryWriterNode {
+private:
+    std::vector<PointVertex> m_points;  // CPU-side point storage
+};
+            </code></pre>
+
+    <p><strong>Key methods:</strong></p>
+
+    <pre><code class="language-cpp">
+points->add_point(PointVertex{position, color, size}); // Append
+points->set_points(std::vector&lt;PointVertex>); // Replace all
+points->update_point(size_t index, PointVertex); // Modify one
+points->clear_points(); // Empty
+            </code></pre>
+
+    <p>
+      Each modification sets <code>m_vertex_data_dirty = true</code>. Next
+      frame, <code>compute_frame()</code> uploads the entire collection:
+    </p>
+
+    <pre><code class="language-cpp">
+void PointCollectionNode::compute_frame() {
+{
+    if (m_points.empty()) {
+        resize_vertex_buffer(0);
+        return;
+    }
+
+    // Copy all points to flat vertex buffer
+    set_vertices<PointVertex>(std::span{m_points.data(), m_points.size()});
+
+    // Update vertex layout metadata
+    auto layout = get_vertex_layout();
+    layout->vertex_count = m_points.size();
+    set_vertex_layout(*layout);
+}
+            </code></pre>
+
+    <p><strong>Why "unstructured"?</strong></p>
+
+    <p>
+      Points have no relationships. They're just a list of positions. No
+      topology, no connectivity, no physics.
+    </p>
+
+    <p>
+      For particle systems with relationships (springs, forces, neighborhoods),
+      use <code>ParticleNetwork</code> instead (covered in a future tutorial).
+    </p>
+
+    <p><strong>When to use PointCollectionNode:</strong></p>
+
+    <ul>
+      <li>Static data visualization (plot 10,000 data points)</li>
+      <li>Debug markers (show algorithm execution paths)</li>
+      <li>Procedural forms (generated geometry like this spiral)</li>
+      <li>Any collection where points don't interact</li>
+    </ul>
+  </details>
+
+  <h2>Expansion 2: One Buffer, One Draw Call</h2>
+
+  <details>
+    <summary>Click to expand: Batching and GPU Efficiency</summary>
+
+    <p>Compare two approaches:</p>
+
+    <p><strong>Inefficient (Section 1 pattern repeated):</strong></p>
+
+    <pre><code class="language-cpp">
+for (int i = 0; i < 200; i++) {
+    auto point = vega.PointNode(positions[i]) | Graphics;
+    auto buffer = vega.GeometryBuffer(point) | Graphics;
+    buffer->setup_rendering({.target_window = window});
+}
+            </code></pre>
+
+    <p>Result:</p>
+
+    <ul>
+      <li>200 buffers</li>
+      <li>200 upload operations per frame</li>
+      <li>200 draw calls</li>
+      <li>Massive CPU→GPU bandwidth waste</li>
+    </ul>
+
+    <p><strong>Efficient (current section):</strong></p>
+
+    <pre><code class="language-cpp">
+auto points = vega.PointCollectionNode() | Graphics;
+for (int i = 0; i < 200; i++) {
+    points->add_point({positions[i], colors[i], 8.0f});
+}
+auto buffer = vega.GeometryBuffer(points) | Graphics;
+buffer->setup_rendering({.target_window = window});
+            </code></pre>
+
+    <p>Result:</p>
+
+    <ul>
+      <li>1 buffer</li>
+      <li>1 upload operation per frame (only if dirty)</li>
+      <li>1 draw call: <code>flow.draw(cmd_id, 200)</code></li>
+      <li>Minimal overhead</li>
+    </ul>
+
+    <p><strong>How GeometryBindingsProcessor batches:</strong></p>
+
+    <pre><code class="language-cpp">
+void GeometryBindingsProcessor::processing_function(Buffer* buffer) {
+    // For EACH bound geometry node (but we only have one):
+    auto vertices = binding.node->get_vertex_data();  // All 200 points
+
+    size_t upload_size = vertices.size_bytes();  // 200 * sizeof(PointVertex)
+
+    upload_to_gpu(
+        vertices.data(),
+        upload_size,
+        binding.gpu_vertex_buffer,
+        binding.staging_buffer  // If GPU buffer is device-local
+    );
+}
+            </code></pre>
+
+    <p>
+      It uploads the entire vertex array as a contiguous block. GPU reads it
+      sequentially, renders all points in one dispatch.
+    </p>
+
+    <p>
+      <strong>This is fundamental to real-time graphics:</strong> minimize state
+      changes, batch identical operations, upload contiguous data.
+    </p>
+  </details>
+
+  <h2>Expansion 3: RootGraphicsBuffer and Graphics Subsystem Architecture</h2>
+
+  <details>
+    <summary>Click to expand: How Rendering Actually Happens</summary>
+
+    <p>
+      You've been working with <code>GeometryBuffer</code>, a specialized buffer
+      for vertex data. But there's a hidden orchestrator:
+      <strong>RootGraphicsBuffer</strong>.
+    </p>
+
+    <p><strong>The Graphics Subsystem runs its own thread:</strong></p>
+
+    <pre><code class="language-cpp">
+void GraphicsSubsystem::graphics_thread_loop() {
+    while (m_running.load()) {
+        m_frame_clock->tick();  // Advance to next frame (60 FPS)
+
+        // 1. Process visual-rate nodes (PointCollectionNode::compute_frame())
+        m_handle->nodes.process(1);
+
+        // 2. Process all graphics buffers
+        m_handle->buffers.process(1);  // <-- This processes RootGraphicsBuffer
+
+        // 3. Window management
+        m_handle->windows.process();
+
+        m_frame_clock->wait_for_next_frame();
+    }
+}
+            </code></pre>
+
+    <p>
+      <strong
+        >Inside <code>m_handle->buffers.process(1)</code>, RootGraphicsBuffer
+        executes:</strong
+      >
+    </p>
+
+    <pre><code class="language-cpp">
+class RootGraphicsBuffer : public Buffer {
+private:
+    std::vector<std::shared_ptr<VKBuffer>> m_child_buffers;  // Your GeometryBuffer is here
+    std::shared_ptr<GraphicsBatchProcessor> m_default_processor;
+    std::shared_ptr<PresentProcessor> m_final_processor;
+};
+            </code></pre>
+
+    <p><strong>The processing sequence:</strong></p>
+
+    <ol>
+      <li>
+        <strong>GraphicsBatchProcessor</strong> (default processor) runs first:
+        <ul>
+          <li>Iterates through all child buffers (your GeometryBuffer)</li>
+          <li>
+            Calls each buffer's default processor (GeometryBindingsProcessor -
+            uploads vertices)
+          </li>
+          <li>
+            Calls each buffer's processing chain (RenderProcessor - records draw
+            commands)
+          </li>
+          <li>Collects buffers that have render commands ready</li>
+        </ul>
+      </li>
+      <li>
+        <strong>PresentProcessor</strong> (final processor) runs last:
+        <ul>
+          <li>Receives the list of buffers ready to render</li>
+          <li>Groups buffers by target window</li>
+          <li>
+            For each window: creates primary command buffer, executes secondary
+            command buffers, presents frame
+          </li>
+        </ul>
+      </li>
+    </ol>
+
+    <p><strong>GraphicsBatchProcessor code (simplified):</strong></p>
+
+    <pre><code class="language-cpp">
+void GraphicsBatchProcessor::processing_function(Buffer* buffer) {
+    auto root_buf = std::dynamic_pointer_cast<RootGraphicsBuffer>(buffer);
+
+    // Process all child buffers
+    for (auto& ch_buffer : root_buf->get_child_buffers()) {
+        // Upload vertices (GeometryBindingsProcessor)
+        if (ch_buffer->has_default_processor()) {
+            ch_buffer->process_default();
+        }
+
+        // Run processing chain (RenderProcessor records commands)
+        if (ch_buffer->has_processing_chain()) {
+            ch_buffer->get_processing_chain()->process(ch_buffer);
+        }
+
+        // If buffer has render pipeline, mark it renderable
+        if (auto vk_buffer = std::dynamic_pointer_cast<VKBuffer>(ch_buffer)) {
+            if (vk_buffer->has_render_pipeline()) {
+                    RootGraphicsBuffer::RenderableBufferInfo info;
+                    info.buffer = vk_buffer;
+                    info.target_window = window;
+                    info.pipeline_id = id;
+                    info.command_buffer_id = vk_buffer->get_pipeline_command(id);
+
+                    root_buf->add_renderable_buffer(info);
+                });
+            }
+        }
+    }
+}
+            </code></pre>
+
+    <p><strong>PresentProcessor fallback renderer (simplified):</strong></p>
+
+    <pre><code class="language-cpp">
+void PresentProcessor::fallback_renderer(RootGraphicsBuffer* root) {
+    // Group buffers by window
+    std::unordered_map<Window*, std::vector<BufferInfo>> buffers_by_window;
+
+    for (const auto& renderable : root->get_renderable_buffers()) {
+        buffers_by_window[renderable.target_window].push_back(renderable);
+    }
+
+    // Render each window
+    for (const auto& [window, buffer_infos] : buffers_by_window) {
+        // Begin dynamic rendering
+        auto primary_cmd = foundry.begin_commands(GRAPHICS);
+        flow.begin_rendering(primary_cmd, window, swapchain_image);
+
+        // Execute all secondary command buffers for this window
+        std::vector<vk::CommandBuffer> secondaries;
+        for (const auto& info : buffer_infos) {
+            secondaries.push_back(info.command_buffer);
+        }
+        primary_cmd.executeCommands(secondaries);
+
+        flow.end_rendering(primary_cmd, window);
+
+        // Submit and present
+        display_service->submit_and_present(window, primary_cmd);
+    }
+}
+            </code></pre>
+
+    <p><strong>Why this architecture?</strong></p>
+
+    <ul>
+      <li>
+        <strong>Separation:</strong> Upload (GeometryBindingsProcessor) and
+        rendering (RenderProcessor) are distinct
+      </li>
+      <li>
+        <strong>Batching:</strong> All uploads happen first, then all rendering
+      </li>
+      <li>
+        <strong>Multi-window:</strong> Same geometry can render to multiple
+        windows
+      </li>
+      <li>
+        <strong>No draw loop:</strong> You never write
+        <code>while (!should_close())</code> - the subsystem handles timing
+      </li>
+    </ul>
+  </details>
+
+  <h2>Expansion 4: Dynamic Rendering (Vulkan 1.3)</h2>
+
+  <details>
+    <summary>
+      Click to expand: No Render Passes, Just Begin/End Rendering
+    </summary>
+
+    <p>
+      MayaFlux uses <strong>Vulkan 1.3 dynamic rendering</strong>, which means
+      no <code>VkRenderPass</code> objects.
+    </p>
+
+    <p><strong>Traditional Vulkan (pre-1.3):</strong></p>
+
+    <ul>
+      <li>Create <code>VkRenderPass</code> ahead of time</li>
+      <li>Specify all attachments (color, depth) statically</li>
+      <li>Pipeline tied to render pass compatibility</li>
+      <li>Inflexible: changing attachments requires new pipelines</li>
+    </ul>
+
+    <p><strong>Dynamic Rendering (Vulkan 1.3+):</strong></p>
+
+    <ul>
+      <li>No <code>VkRenderPass</code> objects</li>
+      <li>
+        Call <code>vkCmdBeginRendering()</code> with inline attachment info
+      </li>
+      <li>Specify attachments per-frame dynamically</li>
+      <li>Flexible: same pipeline works with different attachments</li>
+    </ul>
+
+    <p><strong>RenderFlow::begin_rendering() implementation:</strong></p>
+
+    <pre><code class="language-cpp">
+void RenderFlow::begin_rendering(
+    CommandBufferID cmd_id,
+    Window* window,
+    vk::Image swapchain_image,
+    const std::array<float, 4>& clear_color)
+{
+    auto cmd = foundry.get_command_buffer(cmd_id);
+
+    // Inline color attachment info
+    vk::RenderingAttachmentInfo color_attachment;
+    color_attachment.imageView = swapchain_image_view;
+    color_attachment.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+    color_attachment.loadOp = vk::AttachmentLoadOp::eClear;
+    color_attachment.storeOp = vk::AttachmentStoreOp::eStore;
+    color_attachment.clearValue.color = vk::ClearColorValue(std::array{
+        clear_color[0], clear_color[1], clear_color[2], clear_color[3]
+    });
+
+    // Dynamic rendering info
+    vk::RenderingInfo rendering_info;
+    rendering_info.renderArea = {{0, 0}, {width, height}};
+    rendering_info.layerCount = 1;
+    rendering_info.colorAttachmentCount = 1;
+    rendering_info.pColorAttachments = &color_attachment;
+
+    // Begin rendering - no render pass object!
+    cmd.beginRendering(rendering_info);
+}
+            </code></pre>
+
+    <p><strong>Why this matters:</strong></p>
+
+    <ul>
+      <li>
+        Post-processing chains: Render to texture A, then B, then screen (no
+        pipeline recreation)
+      </li>
+      <li>
+        Multi-pass rendering: Different attachments per pass without render pass
+        combinatorial explosion (automatic because of dynamic rendering)
+      </li>
+      <li>Flexibility: Attachments decided at runtime, not compile time</li>
+    </ul>
+
+    <p>
+      <strong>From your perspective:</strong> Invisible.
+      <code>RenderProcessor</code> handles it. But it enables advanced
+      techniques later without architectural changes.
+    </p>
+  </details>
+
+  <hr />
+
+  <h2>Try It</h2>
+
+  <pre><code class="language-cpp">
+            // Lissajous curve (parametric 2D oscillation)
+void compose() {
+    auto w1 = MayaFlux::create_window({ "lissajous", 800, 600 });
+    auto w2 = MayaFlux::create_window({ "waves", 800, 600 });
+
+    auto lissajous = vega.PointCollectionNode() | Graphics;
+    for (int i = 0; i < 500; i++) {
+        float t = i * 0.02f;
+        float x = std::sin(3.0f * t) * 0.8f;
+        float y = std::cos(5.0f * t) * 0.8f;
+        float intensity = (std::sin(t * 2.0f) + 1.0f) * 0.5f;
+
+        lissajous->add_point({ glm::vec3(x, y, 0.0f),
+            glm::vec3(intensity, 1.0f - intensity, 0.5f),
+            6.0f });
+    }
+
+    // Wave interference pattern
+    auto waves = vega.PointCollectionNode() | Graphics;
+    for (int x = -20; x <= 20; x++) {
+        for (int y = -20; y <= 20; y++) {
+            float nx = x / 20.0f;
+            float ny = y / 20.0f;
+            float dist = std::sqrt(nx * nx + ny * ny);
+            float wave = std::sin(dist * 10.0f) * 0.5f + 0.5f;
+
+            waves->add_point({ glm::vec3(nx * 0.9f, ny * 0.9f, 0.0f),
+                glm::vec3(wave, wave, 1.0f),
+                4.0f });
+        }
+    }
+
+    auto b1 = vega.GeometryBuffer(waves) | Graphics;
+    b1->setup_rendering({ .target_window = w1 });
+
+    auto b2 = vega.GeometryBuffer(lissajous) | Graphics;
+    b2->setup_rendering({ .target_window = w2 });
+
+    w1->show();
+    w2->show();
+}
+        </code></pre>
+
+  <hr />
+
+  <h2>What You've Learned</h2>
+
+  <p>
+    <strong>PointCollectionNode:</strong> Aggregate many vertices in one node<br />
+    <strong>Batching:</strong> One buffer, one upload, one draw call - critical
+    for performance<br />
+    <strong>RootGraphicsBuffer:</strong> Hidden orchestrator managing all
+    graphics buffers<br />
+    <strong>GraphicsBatchProcessor:</strong> Default processor coordinating
+    child buffer processing<br />
+    <strong>PresentProcessor:</strong> Final processor grouping buffers by
+    window and presenting frames<br />
+    <strong>Graphics Subsystem Thread:</strong> Self-driven loop running at 60
+    FPS, no manual event loops<br />
+    <strong>Dynamic Rendering:</strong> Vulkan 1.3 approach with
+    <code>vkCmdBeginRendering</code>, no render pass objects
+  </p>
+
+  <p>
+    <strong>Next:</strong> Section 3 crosses domains. We'll drive point
+    positions from audio nodes for live audio analysis moving visual data.
+    Finally: numbers are just numbers.
+  </p>
+</section>
+
+
+
+<!-- ======================= PARENT CARD: TIME AND UPDATES ======================= -->
+
+<section class="tutorial-section">
+  <div class="tutorial-row">
+    <div
+      class="tutorial-card tutorial-parent"
+      data-target="time-updates-detail"
+    >
+      <h3 class="tutorial-title">Tutorial: Time and Updates</h3>
+      <p class="hint">Click this card to reveal the complete tutorial</p>
+
+      <p>
+        <em
+          >In the previous sections, geometry was static, created once in
+          <code>compose()</code>.<br />
+          Now: geometry that evolves. Points that grow, move, disappear.<br />
+          This is where MayaFlux's architecture reveals its power: no draw loop,
+          updates on your terms.</em
+        >
+      </p>
+
+      <pre><code class="language-cpp">
+void compose() {
+    auto window = MayaFlux::create_window({ "Growing Spiral", 1920, 1080 });
+
+    auto points = vega.PointCollectionNode(256) | Graphics;
+    auto buffer = vega.GeometryBuffer(points) | Graphics;
+    buffer->setup_rendering({ .target_window = window });
+
+    window->show();
+
+    // Grow spiral over time: 10 new points per frame
+    static float angle = 0.0f;
+    static float radius = 0.0f;
+
+    MayaFlux::schedule_metro(0.016, [points]() {  // ~60 Hz
+        angle += 0.02f;
+        radius += 0.001f;
+
+        // Reset when spiral fills screen
+        if (radius > 2.0f) {
+            points->clear_points();
+            radius = 0.0f;
+        }
+
+        // Add 10 new points this frame
+        for (int i = 0; i &lt; 10; ++i) {
+            float local_angle = angle + (i / 10.0f) * 6.28f;
+            float x = std::cos(local_angle) * radius;
+            float y = std::sin(local_angle) * radius;
+
+            float brightness = 1.0f - radius;
+            points->add_point({
+                glm::vec3(x, y, 0.0f),
+                glm::vec3(brightness, brightness * 0.8f, brightness * 0.5f),
+                10.0f + (i * 2.0f)
+            });
+        }
+    });
+}
+      </code></pre>
+
+      <p>
+        Run this. The spiral grows from center, fades as it expands, then resets
+        and repeats.
+      </p>
+
+      <p>
+        <strong>That's the pattern:</strong> Create geometry once. Schedule
+        updates whenever you want. The graphics subsystem handles the rest.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= EXPANDED SECTION ======================= -->
+
+  <!-- Expanded Details -->
+  <section id="time-updates-detail" class="tutorial-expanded">
+    <h2>Expansion 1: No Draw Loop, <code>compose()</code> Runs Once</h2>
+
+    <details>
+      <summary>Click to expand: Why This Is Different</summary>
+
+      <p>
+        <strong
+          >Typical graphics framework (Processing, openFrameworks):</strong
+        >
+      </p>
+
+      <pre><code class="language-cpp">
+// Global state (forced pattern)
+std::vector&lt;Point> points;
+
+void setup() {
+    // Initialize once
+}
+
+void draw() {
+    background(0);
+
+    // MUST redraw everything, every frame, forever
+    for (auto&amp; p : points) {
+        circle(p.x, p.y, 10);
+    }
+
+    // Update state for next frame
+    updatePhysics();
+}
+
+// Hidden main loop you don't control:
+while (running) {
+    draw();      // Called automatically at framerate
+    swap_buffers();
+}
+      </code></pre>
+
+      <p><strong>Problems:</strong></p>
+
+      <ol>
+        <li>
+          <strong>Forced void:</strong> <code>draw()</code> is a mandatory
+          callback you're trapped in
+        </li>
+        <li>
+          <strong>Global state:</strong> Everything must be accessible from both
+          <code>setup()</code> and <code>draw()</code>
+        </li>
+        <li>
+          <strong>No separation:</strong> Update and render are coupled in
+          <code>draw()</code>
+        </li>
+        <li>
+          <strong>No timing control:</strong> Can't easily say "update every 2
+          frames" or "render at 120 FPS, update at 30 FPS"
+        </li>
+      </ol>
+
+      <hr />
+
+      <p><strong>MayaFlux:</strong></p>
+
+      <pre><code class="language-cpp">
+void compose() {
+    // Setup happens once
+    auto points = vega.PointCollectionNode() | Graphics;
+    auto buffer = vega.GeometryBuffer(points) | Graphics;
+    buffer->setup_rendering({ .target_window = window });
+
+    // Schedule updates independently
+    MayaFlux::schedule_metro(0.033, [points]() {  // 30 Hz updates
+        points->add_point({/* ... */});
+    });
+
+    // Rendering happens at 60 FPS automatically in graphics thread
+    // No coupling, no forced structure
+}
+      </code></pre>
+
+      <p>
+        <strong><code>compose()</code> is not a loop.</strong> It runs once at
+        startup. You declare structure, not repeated execution.
+      </p>
+
+      <p>
+        <strong>Updates are scheduled, not looped:</strong> You schedule tasks
+        that run at specific intervals using the task scheduler. These run
+        independently from rendering.
+      </p>
+
+      <p>
+        <strong>Rendering is automatic:</strong> The graphics subsystem thread
+        runs at 60 FPS, processes visual-rate nodes, uploads geometry, issues
+        draw calls, presents frames. You never write that loop.
+      </p>
+    </details>
+
+    <h2>Expansion 2: Multiple Windows Without Offset Hacks</h2>
+
+    <details>
+      <summary>Click to expand: Different Content, Different Windows</summary>
+
+      <p>
+        Because each buffer targets a specific window through
+        <code>setup_rendering()</code>, you don't need to offset or partition
+        your geometry. Just create separate content for separate windows:
+      </p>
+
+      <pre><code class="language-cpp">
+void compose() {
+    auto window1 = MayaFlux::create_window({ "Spiral", 800, 600 });
+    auto window2 = MayaFlux::create_window({ "Grid", 800, 600 });
+
+    // Spiral in window 1
+    auto spiral = vega.PointCollectionNode() | Graphics;
+    auto spiral_buffer = vega.GeometryBuffer(spiral) | Graphics;
+    spiral_buffer->setup_rendering({ .target_window = window1 });
+
+    // Grid in window 2
+    auto grid = vega.PointCollectionNode() | Graphics;
+    auto grid_buffer = vega.GeometryBuffer(grid) | Graphics;
+    grid_buffer->setup_rendering({ .target_window = window2 });
+
+    window1->show();
+    window2->show();
+
+    // Update spiral
+    MayaFlux::schedule_metro(0.016, [spiral]() {
+        /* add spiral points */
+    });
+
+    // Update grid independently
+    MayaFlux::schedule_metro(0.033, [grid]() {
+        /* add grid points */
+    });
+}
+      </code></pre>
+
+      <p><strong>What PresentProcessor does:</strong></p>
+
+      <pre><code class="language-cpp">
+// Groups buffers by target window
+std::unordered_map&lt;Window*, std::vector&lt;BufferInfo>> buffers_by_window;
+buffers_by_window[window1].push_back(spiral_buffer_info);
+buffers_by_window[window2].push_back(grid_buffer_info);
+
+// Each window gets its own rendering pass
+for (auto&amp; [window, buffer_infos] : buffers_by_window) {
+    begin_dynamic_rendering(window);
+    for (auto&amp; info : buffer_infos) {
+        execute_secondary_command_buffer(info.cmd_buffer);
+    }
+    end_dynamic_rendering(window);
+    present(window);
+}
+      </code></pre>
+
+      <p>
+        <strong>Key point:</strong> You're not rendering to one framebuffer and
+        offsetting content. Each window is a separate rendering target. No
+        manual viewport management, no draw call coordination.
+      </p>
+
+      <p>Traditional frameworks force you to either:</p>
+
+      <ul>
+        <li>Render everything to one window and manually partition</li>
+        <li>Manage multiple OpenGL contexts yourself</li>
+        <li>Fight the framework's assumptions</li>
+      </ul>
+
+      <p>MayaFlux: just create another window, point a buffer at it. Done.</p>
+    </details>
+
+    <h2>Expansion 3: Update Timing: Three Approaches</h2>
+
+    <details>
+      <summary>
+        Click to expand: Metro Tasks, Coroutines, and Node Ticks
+      </summary>
+
+      <p>
+        MayaFlux gives you three ways to schedule updates, each for different
+        use cases:
+      </p>
+
+      <h3>Approach 1: <code>schedule_metro</code> (Simplest)</h3>
+
+      <pre><code class="language-cpp">
+MayaFlux::schedule_metro(interval_seconds, callback);
+      </code></pre>
+
+      <p>
+        Schedules a callback to run at fixed intervals using the
+        <strong>TaskScheduler</strong>:
+      </p>
+
+      <pre><code class="language-cpp">
+MayaFlux::schedule_metro(0.016, [points]() {  // ~60 Hz
+    points->add_point({/* ... */});
+});
+      </code></pre>
+
+      <p><strong>Under the hood:</strong></p>
+
+      <pre><code class="language-cpp">
+// Creates a SoundRoutine coroutine
+auto metro_routine = [](Vruta::TaskScheduler&amp; scheduler) -> Vruta::SoundRoutine {
+    auto&amp; promise = co_await Kriya::GetAudioPromise{};
+    uint64_t interval_samples = scheduler.seconds_to_samples(interval_seconds);
+
+    while (!promise.should_terminate) {
+        callback();  // Your function
+        co_await Kriya::SampleDelay{interval_samples};
+    }
+};
+
+scheduler->add_task(std::make_shared&lt;Vruta::SoundRoutine>(metro_routine(*scheduler)));
+      </code></pre>
+
+      <p>
+        <strong>When to use:</strong> Simple periodic updates. Most common case.
+      </p>
+
+      <hr />
+
+      <h3>
+        Approach 2: Coroutines with <code>Sequence</code> or
+        <code>EventChain</code>
+      </h3>
+
+      <p><strong>EventChain</strong> for sequential timed events:</p>
+
+      <pre><code class="language-cpp">
+Kriya::EventChain()
+    .then([]() { points->clear_points(); })
+    .then([]() {
+        for (int i = 0; i &lt; 50; i++) {
+            points->add_point({/* ... */});
+        }
+    }, 0.5)  // After 0.5 seconds
+    .then([]() { /* do something else */ }, 1.0)  // After another 1.0 seconds
+    .start();
+      </code></pre>
+
+      <p><strong>Under the hood:</strong></p>
+
+      <pre><code class="language-cpp">
+auto coroutine_func = [](Vruta::TaskScheduler&amp; scheduler, EventChain* chain) -> Vruta::SoundRoutine {
+    for (const auto&amp; event : chain->m_events) {
+        co_await Kriya::SampleDelay{scheduler.seconds_to_samples(event.delay_seconds)};
+        event.action();  // Execute callback
+    }
+};
+      </code></pre>
+
+      <p>
+        <strong>When to use:</strong> Multi-step animations with specific
+        timing. State machines. Choreographed sequences.
+      </p>
+
+      <p>
+        <strong>Note:</strong> <code>Sequence</code> is similar but less
+        commonly used for graphics. See project knowledge for details.
+      </p>
+
+      <hr />
+
+      <h3>Approach 3: Node <code>on_tick</code> Callbacks</h3>
+
+      <p>
+        Every node can register callbacks that fire whenever it processes a
+        sample:
+      </p>
+
+      <pre><code class="language-cpp">
+points->on_tick([points](const Nodes::NodeContext&amp; ctx) {
+    static int frame_count = 0;
+    if (++frame_count % 60 == 0) {  // Every 60 calls
+        points->add_point({
+            glm::vec3(
+                MayaFlux::get_uniform_random(-1.0f, 1.0f),
+                MayaFlux::get_uniform_random(-1.0f, 1.0f),
+                0.0f
+            ),
+            glm::vec3(1.0f),
+            10.0f
+        });
+    }
+});
+      </code></pre>
+
+      <p><strong>When the callback fires:</strong></p>
+
+      <pre><code class="language-cpp">
+// Inside PointCollectionNode::compute_frame() or process_sample():
+void notify_tick(double value) override {
+    m_last_context = create_context(value);
+
+    // Unconditional callbacks
+    for (auto&amp; callback : m_callbacks) {
+        callback(*m_last_context);
+    }
+
+    // Conditional callbacks
+    for (auto&amp; [callback, condition] : m_conditional_callbacks) {
+        if (condition(*m_last_context)) {
+            callback(*m_last_context);
+        }
+    }
+}
+      </code></pre>
+
+      <p><strong>NodeContext contains:</strong></p>
+
+      <pre><code class="language-cpp">
+struct NodeContext {
+    double value;           // Current output value
+    std::string type_id;    // Node type identifier
+    // Derived classes add more info (e.g., FilterContext adds history buffers)
+};
+      </code></pre>
+
+      <p>
+        <strong>When to use:</strong> Tight coupling with node processing.
+        Sample-accurate reactions. Rare for graphics (more common for audio
+        analysis driving visual changes).
+      </p>
+
+      <hr />
+
+      <p><strong>Comparison:</strong></p>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Method</th>
+            <th>Timing Precision</th>
+            <th>Complexity</th>
+            <th>Use Case</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>schedule_metro</code></td>
+            <td>Sample-accurate (~2ms @ 48kHz)</td>
+            <td>Low</td>
+            <td>Periodic updates</td>
+          </tr>
+          <tr>
+            <td><code>EventChain</code></td>
+            <td>Sample-accurate</td>
+            <td>Medium</td>
+            <td>Multi-step sequences</td>
+          </tr>
+          <tr>
+            <td><code>on_tick</code></td>
+            <td>Per-process call</td>
+            <td>Low</td>
+            <td>Node-coupled logic</td>
+          </tr>
+        </tbody>
+      </table>
+    </details>
+
+    <h2>Expansion 4: Clearing vs. Replacing vs. Updating</h2>
+
+    <details>
+      <summary>Click to expand: Four Update Patterns</summary>
+
+      <h3>Pattern 1: Additive Growth (Original Example)</h3>
+
+      <pre><code class="language-cpp">
+MayaFlux::schedule_metro(0.016, [points]() {
+    points->add_point({/* new point */});  // Grows indefinitely
+});
+      </code></pre>
+
+      <p>
+        Points accumulate until cleared. Trail effects, particle emissions,
+        growing forms.
+      </p>
+
+      <hr />
+
+      <h3>Pattern 2: Full Replacement</h3>
+
+      <pre><code class="language-cpp">
+MayaFlux::schedule_metro(0.016, [points]() {
+    std::vector&lt;Nodes::GpuSync::PointVertex> new_points;
+
+    // Generate entirely new point set
+    for (int i = 0; i &lt; 100; i++) {
+        new_points.push_back({/* compute position */});
+    }
+
+    points->set_points(new_points);  // Replace all
+});
+      </code></pre>
+
+      <p><strong>Internally:</strong></p>
+
+      <pre><code class="language-cpp">
+void PointCollectionNode::set_points(const std::vector&lt;PointVertex>&amp; points) {
+    m_points.clear();
+    m_points = points;
+    m_vertex_data_dirty = true;  // Triggers upload next frame
+}
+      </code></pre>
+
+      <p>
+        Entire buffer replaced. Simulations that recompute all positions
+        (physics, flocking).
+      </p>
+
+      <hr />
+
+      <h3>Pattern 3: Selective Updates</h3>
+
+      <pre><code class="language-cpp">
+MayaFlux::schedule_metro(0.016, [points]() {
+    for (size_t i = 0; i &lt; points->get_point_count(); i++) {
+        auto p = points->get_point(i);
+
+        // Modify position
+        p.position.x += std::sin(i * 0.1f) * 0.01f;
+        p.position.y += std::cos(i * 0.1f) * 0.01f;
+
+        points->update_point(i, p);  // Updates single point
+    }
+});
+      </code></pre>
+
+      <p>
+        Modifies existing points in place. Mesh deformations, vertex animations.
+      </p>
+
+      <hr />
+
+      <h3>Pattern 4: Conditional Clearing</h3>
+
+      <pre><code class="language-cpp">
+static float radius = 0.0f;
+
+MayaFlux::schedule_metro(0.016, [points]() {
+    radius += 0.01f;
+
+    if (radius > 1.5f) {
+        points->clear_points();  // Reset
+        radius = 0.0f;
+        return;
+    }
+
+    points->add_point({/* ... */});
+});
+      </code></pre>
+
+      <p>Growth with periodic reset. Cyclical animations.</p>
+    </details>
+
+    <hr />
+
+    <h2>Try It</h2>
+
+    <pre><code class="language-cpp">
+// Pendulum with physics
+void compose() {
+    auto window = MayaFlux::create_window({ "Pendulum Trail", 800, 800 });
+
+    auto trail = vega.PointCollectionNode() | Graphics;
+    auto buffer = vega.GeometryBuffer(trail) | Graphics;
+    buffer->setup_rendering({ .target_window = window });
+    window->show();
+
+    static float angle = 1.5f;
+    static float velocity = 0.0f;
+    const float length = 0.7f;
+    const float gravity = 9.81f;
+    const float dt = 0.016f;
+
+    MayaFlux::schedule_metro(dt, [trail]() {
+        // Physics
+        float acceleration = -(gravity / length) * std::sin(angle);
+        velocity += acceleration * dt;
+        angle += velocity * dt;
+        velocity *= 0.999f;  // Damping
+
+        // Position
+        float x = std::sin(angle) * length;
+        float y = -std::cos(angle) * length;
+
+        // Add to trail
+        float hue = (angle + 3.14f) / 6.28f;
+        trail->add_point({
+            glm::vec3(x, y, 0.0f),
+            glm::vec3(
+                std::sin(hue * 6.28f) * 0.5f + 0.5f,
+                std::sin(hue * 6.28f + 2.09f) * 0.5f + 0.5f,
+                std::sin(hue * 6.28f + 4.19f) * 0.5f + 0.5f
+            ),
+            8.0f
+        });
+
+        // Keep last 500
+        if (trail->get_point_count() > 500) {
+            auto points = trail->get_points();
+            points.erase(points.begin());
+            trail->set_points(points);
+        }
+    });
+}
+    </code></pre>
+
+    <hr />
+
+    <h2>What You've Learned</h2>
+
+    <p>
+      <strong><code>compose()</code> runs once:</strong> Setup, not a loop<br />
+      <strong><code>schedule_metro</code>:</strong> Periodic callbacks via task
+      scheduler<br />
+      <strong>EventChain:</strong> Sequential timed events with coroutines<br />
+      <strong><code>on_tick</code>:</strong> Node-coupled callbacks fired
+      per-process<br />
+      <strong>Update patterns:</strong> Additive, replacement, selective,
+      conditional<br />
+      <strong>Multiple windows:</strong> Separate content, separate targets, no
+      offsets<br />
+      <strong>Dirty flags:</strong> Geometry uploads only when changed
+    </p>
+
+    <p>
+      <strong>Next:</strong> Section 4 crosses domains. Audio nodes drive point
+      positions, i.e live audio analysis controlling visual data. Numbers
+      driving numbers, no artificial boundaries.
+    </p>
+  </section>
+</section>
+
+<!-- ======================= PARENT CARD: AUDIO → GEOMETRY ======================= -->
+
+<section class="tutorial-section">
+  <div class="tutorial-row">
+    <div class="tutorial-card tutorial-parent" data-target="audio-geometry-expanded">
+      <h3 class="tutorial-title">Tutorial: Audio → Geometry</h3>
+      <p class="hint">Click this card to reveal the complete tutorial</p>
+
+      <pre><code class="language-cpp">
+void settings() {
+    auto&amp; stream = MayaFlux::Config::get_global_stream_info();
+    stream.input.enabled = true;
+    stream.input.channels = 1;
+}
+
+void compose() {
+    auto window = MayaFlux::create_window({ "Reactive", 1920, 1080 });
+
+    // Audio source: modulated drone
+    auto carrier = vega.Sine(220.0) | Audio;
+    auto modulator = vega.Sine(0.3) | Audio; // Slow amplitude modulation
+    auto envelope = vega.Polynomial([](double x) { return (x + 1.0) * 0.5; }) | Audio;
+    auto modded = modulator &gt;&gt; envelope; // Convert -1..1 to 0..1
+
+    // Play the modulated audio
+    auto audio_out = vega.Polynomial([modded](double x) {
+        return x * modded-&gt;get_last_output();
+    }) | Audio;
+    carrier &gt;&gt; audio_out;
+
+    // Particles
+    auto particles = vega.ParticleNetwork(
+                         500,
+                         glm::vec3(-1.5f, -1.0f, -0.5f),
+                         glm::vec3(1.5f, 1.0f, 0.5f),
+                         ParticleNetwork::InitializationMode::RANDOM_VOLUME)
+        | Graphics;
+
+    particles-&gt;set_gravity(glm::vec3(0.0f, -2.0f, 0.0f));
+    particles-&gt;set_drag(0.02f);
+    particles-&gt;set_bounds_mode(ParticleNetwork::BoundsMode::BOUNCE);
+    particles-&gt;set_output_mode(NodeNetwork::OutputMode::GRAPHICS_BIND);
+
+    // The crossing: envelope node controls gravity
+    particles-&gt;map_parameter("gravity", envelope, NodeNetwork::MappingMode::BROADCAST);
+
+    auto buffer = vega.NetworkGeometryBuffer(particles) | Graphics;
+    buffer-&gt;setup_rendering({ .target_window = window });
+
+    window-&gt;show();
+}
+      </code></pre>
+
+      <p>Run this. You hear a slowly pulsing drone. Particles fall heavily when the sound swells, float when it recedes. The same envelope shapes both audio amplitude and gravitational force.</p>
+
+      <p>That's the paradigm shift. One node (one stream of numbers) simultaneously controls audio loudness and particle physics. Not because we "routed" audio to visuals. Because they were never separate.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= EXPANDED SECTION ======================= -->
+
+  <section id="audio-geometry-expanded" class="tutorial-expanded">
+    <h2>Expansion 1: What Are NodeNetworks?</h2>
+
+    <details>
+      <summary>Click to expand: Many Nodes, One Structure</summary>
+
+      <p>You've worked with individual <strong>Nodes</strong> i.e sample-by-sample processors. <strong>NodeNetworks</strong> coordinate <em>many</em> nodes with relationships between them.</p>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Aspect</th>
+            <th>Node</th>
+            <th>NodeNetwork</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Scale</td>
+            <td>Single unit</td>
+            <td>100–1000+ internal nodes</td>
+          </tr>
+          <tr>
+            <td>Relationships</td>
+            <td>None (pure function)</td>
+            <td>Topology-defined (spatial, chain, ring)</td>
+          </tr>
+          <tr>
+            <td>Output</td>
+            <td>One value per sample</td>
+            <td>Aggregated or per-node</td>
+          </tr>
+          <tr>
+            <td>Use case</td>
+            <td>Signal processing</td>
+            <td>Emergent behavior, simulations</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p><strong>Available networks:</strong></p>
+
+      <ul>
+        <li><code>ParticleNetwork</code>: N-body physics simulation (particles with forces, velocities, collisions)</li>
+        <li><code>ModalNetwork</code>: Physical modeling (resonant modes, coupled oscillators)</li>
+      </ul>
+
+      <p><strong>ParticleNetwork</strong> treats each particle as a <code>PointNode</code> (geometry) with physics state:</p>
+
+      <pre><code class="language-cpp">
+struct Particle {
+    std::shared_ptr&lt;PointNode&gt; point;  // Position, color, size
+    glm::vec3 velocity;
+    glm::vec3 force;
+    float mass;
+};
+      </code></pre>
+
+      <p>Every frame, physics integrates: forces → velocities → positions. The <code>PointNode</code> positions update. GPU receives new vertex data.</p>
+    </details>
+
+    <h2>Expansion 2: Parameter Mapping from Buffers</h2>
+
+    <details>
+      <summary>Click to expand: How Buffer Data Reaches Particle Physics</summary>
+
+      <p>When you write:</p>
+
+      <pre><code class="language-cpp">
+particles-&gt;map_parameter("gravity", envelope, NodeNetwork::MappingMode::BROADCAST);
+      </code></pre>
+
+      <p>MayaFlux stores the mapping. Each physics step, <code>ParticleNetwork::update_mapped_parameters()</code> reads from the node:</p>
+
+      <pre><code class="language-cpp">
+void ParticleNetwork::update_mapped_parameters() {
+    for (const auto&amp; mapping : m_parameter_mappings) {
+        if (mapping.mode == MappingMode::BROADCAST &amp;&amp; mapping.broadcast_source) {
+            double value = mapping.broadcast_source-&gt;get_last_output();
+            apply_broadcast_parameter(mapping.param_name, value);
+        }
+    }
+}
+      </code></pre>
+
+      <p><strong>The key</strong>: Nodes have <code>get_last_output()</code>, a single queryable value from their most recent sample. The particle network runs at visual rate (60Hz), the node runs at audio rate (48kHz). The network simply reads whatever value the node last computed.</p>
+
+      <p><strong>No conversion, no special routing</strong>. The node doesn't know it's controlling particles. The particles don't know the value came from audio synthesis. Numbers flow through the same substrate.</p>
+    </details>
+
+    <h2>Expansion 3: NetworkGeometryBuffer Aggregates for GPU</h2>
+
+    <details>
+      <summary>Click to expand: 500 Particles, One Draw Call</summary>
+
+      <p><code>NetworkGeometryBuffer</code> does for particle networks what <code>PointCollectionNode</code> did for manual points: aggregate many vertices into one GPU upload.</p>
+
+      <pre><code class="language-cpp">
+auto buffer = std::make_shared&lt;NetworkGeometryBuffer&gt;(particles);
+buffer-&gt;setup_processors(ProcessingToken::GRAPHICS_BACKEND);
+buffer-&gt;setup_rendering({ .target_window = window });
+      </code></pre>
+
+      <p><strong>Each frame:</strong></p>
+
+      <ol>
+        <li><code>NodeGraphManager</code> calls <code>particles-&gt;process_batch(1)</code> (physics step)</li>
+        <li>Physics updates: forces → velocities → positions</li>
+        <li><code>NetworkGeometryProcessor</code> extracts all 500 <code>PointNode</code> positions</li>
+        <li>Uploads to GPU as single contiguous vertex buffer</li>
+        <li>One draw call renders everything</li>
+      </ol>
+
+      <p>Without aggregation, 500 particles would mean 500 buffers, 500 uploads, 500 draw calls. That's GPU-hostile. <code>NetworkGeometryBuffer</code> batches automatically.</p>
+    </details>
+
+    <hr />
+
+    <h2>Try It</h2>
+
+    <pre><code class="language-cpp">
+// Inverse relationship: quiet = chaos, loud = order
+void compose() {
+    auto window = MayaFlux::create_window({ "Inverse", 1920, 1080 });
+
+    // Chaotic source: noise filtered into slow undulation
+    auto noise = vega.Random() | Audio;
+    auto smooth = vega.IIR(std::vector { 0.001 }, std::vector { 1.0, -0.999 }) | Audio; // Very slow smoothing
+    noise &gt;&gt; smooth;
+
+    // Invert: high values → low output, low values → high output
+    auto inverter = vega.Polynomial([](double x) {
+        return 1.0 - std::clamp((x + 1.0) * 0.5, 0.0, 1.0); // Flip and normalize
+    }) | Audio;
+    auto mod = smooth &gt;&gt; inverter;
+
+    // Audio: the raw smoothed noise as drone
+    auto drone = vega.Sine(80.0) | Audio;
+    auto amp = vega.Polynomial([mod](double x) { return x * mod-&gt;get_last_output() * 0.3; }) | Audio;
+    drone &gt;&gt; amp;
+    smooth &gt;&gt; amp;
+
+    auto particles = vega.ParticleNetwork(
+                         400,
+                         glm::vec3(-1.5f, -1.5f, -0.5f),
+                         glm::vec3(1.5f, 1.5f, 0.5f))
+        | Graphics;
+    particles-&gt;set_topology(NodeNetwork::Topology::SPATIAL);
+    particles-&gt;set_interaction_radius(0.6f);
+    particles-&gt;set_spring_stiffness(0.3f);
+    particles-&gt;set_gravity(glm::vec3(0.0f, 0.0f, 0.0f));
+    particles-&gt;set_drag(0.05f);
+    particles-&gt;set_output_mode(NodeNetwork::OutputMode::GRAPHICS_BIND);
+
+    // Inverted signal → turbulence: when audio swells, particles calm; when audio recedes, chaos
+    particles-&gt;map_parameter("turbulence", inverter, NodeNetwork::MappingMode::BROADCAST);
+
+    auto buffer = vega.NetworkGeometryBuffer(particles) | Graphics;
+    buffer-&gt;setup_rendering({ .target_window = window });
+
+    window-&gt;show();
+
+}
+    </code></pre>
+
+    <p>Sound and stillness invert. The drone grows loud, particles settle into structure. The drone fades, particles scatter into turbulence.</p>
+  </section>
+
+
+<!-- ======================= TUTORIAL SECTION ======================= -->
+
+<section class="tutorial-section">
+  <div class="tutorial-row">
+    <div class="tutorial-card" data-target="logic-events-expanded">
+      <h3 class="tutorial-title">Tutorial: Logic Events → Visual Impulse</h3>
+
+        <h4>Logic as Form</h4>
+        <p>
+        <em>
+            In MayaFlux, logic is not control flow glued onto systems after the fact.<br />
+            Logic is data. Events are numerical transitions.<br />
+            This tutorial shows how discrete logical change becomes visual motion.
+        </em>
+        </p>
+
+      <p class="hint">Click this card to reveal full explanation</p>
+
+      <pre><code class="language-cpp">
+void compose() {
+    auto window = MayaFlux::create_window({ "Event Reactive", 1920, 1080 });
+
+    // Irregular pulse source: noise → threshold creates stochastic triggers
+    auto noise = vega.Random();
+    noise->set_amplitude(0.3f);
+    auto slow_filter = vega.IIR(std::vector { 0.01 }, std::vector { 1.0, -0.99 }) | Audio;
+    noise >> slow_filter;
+
+    // Derivative approximation (emphasizes change, not level)
+    auto diff = vega.IIR(std::vector { 1.0, -1.0 }, std::vector { 1.0 }) | Audio;
+    slow_filter >> diff;
+
+    // Rectify and smooth
+    auto rect = vega.Polynomial([](double x) { return std::abs(x); }) | Audio;
+    diff >> rect;
+
+    auto smooth = vega.IIR(std::vector { 0.1 }, std::vector { 1.0, -0.9 }) | Audio;
+    rect >> smooth;
+
+    // Threshold into logic: fires when change exceeds threshold
+    auto event_logic = vega.Logic(LogicOperator::THRESHOLD, 0.008) | Audio;
+    smooth >> event_logic;
+
+    // Particles in spherical formation
+    auto particles = vega.ParticleNetwork(
+                         300,
+                         glm::vec3(-1.0f, -1.0f, -1.0f),
+                         glm::vec3(1.0f, 1.0f, 1.0f),
+                         ParticleNetwork::InitializationMode::SPHERE_SURFACE)
+        | Graphics;
+
+    particles->set_gravity(glm::vec3(0.0f, 0.0f, 0.0f));
+    particles->set_drag(0.04f);
+    particles->set_bounds_mode(ParticleNetwork::BoundsMode::NONE);
+    particles->set_attraction_point(glm::vec3(0.0f, 0.0f, 0.0f));
+
+    auto buffer = vega.NetworkGeometryBuffer(particles) | Graphics;
+    buffer->setup_rendering({ .target_window = window });
+
+    window->show();
+
+    // On logic rising edge: breathing impulse
+    event_logic->on_change_to(true, [particles](const Nodes::NodeContext& ctx) {
+        // Radial expansion from center
+        for (auto& particle : particles->get_particles()) {
+            glm::vec3 pos = particle.point->get_position();
+            glm::vec3 outward = glm::normalize(pos) * 3.0f;
+            particle.velocity += outward;
+        }
+    }); // true = rising edge (false→true)
+}
+      </code></pre>
+
+      <p>
+        Run this. Stochastic events emerge from filtered noise which is unpredictable but fully random.
+        Each event triggers a click and a radial breath. The sphere pulses with emergent rhythm,
+        not metronomic time.
+      </p>
+
+      <p>
+        The chain detects change in the noise contour, not amplitude. Slow drifts pass silently.
+        Sharp inflections trigger events. The same logic detection pattern from the original,
+        but driven by generative source rather than external input.
+      </p>
+    </div>
+  </div>
+
+  <section id="logic-events-expanded" class="tutorial-expanded">
+
+    <h2>Expansion 1: Logic Processor Callbacks</h2>
+
+    <details>
+      <summary>Click to expand: Edge Detection for Discrete Events</summary>
+
+      <p>
+        Logic processors output binary values (0.0 or 1.0). For visual events, you want
+        <em>transitions</em>, not continuous states:
+      </p>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Callback</th>
+            <th>When It Fires</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>on_rising_edge(callback)</code></td>
+            <td>Once per false→true transition</td>
+          </tr>
+          <tr>
+            <td><code>on_falling_edge(callback)</code></td>
+            <td>Once per true→false transition</td>
+          </tr>
+          <tr>
+            <td><code>on_any_edge(callback)</code></td>
+            <td>Any transition</td>
+          </tr>
+          <tr>
+            <td><code>while_true(callback)</code></td>
+            <td>Continuously while state is true</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p><strong>For transient detection, you want the rising edge:</strong></p>
+
+      <pre><code class="language-cpp">
+logic_proc->on_rising_edge([particles]() {
+    // Fires ONCE per detected transient
+    particles->apply_global_impulse(/* ... */);
+});
+      </code></pre>
+
+      <p>
+        If you used <code>while_true()</code>, you'd fire continuously while the transient is detected
+        (potentially many frames). <code>on_rising_edge()</code> fires once, precisely at the moment
+        of detection.
+      </p>
+    </details>
+
+    <h2>Expansion 2: Transient Detection Chain</h2>
+
+    <details>
+      <summary>Click to expand: Derivative → Rectify → Smooth → Threshold</summary>
+
+      <p>The transient detection chain:</p>
+
+      <pre><code>
+mic → diff → rect → smooth → threshold
+      </code></pre>
+
+      <p><strong>Step 1: Derivative (emphasize change)</strong></p>
+
+      <pre><code class="language-cpp">
+auto diff = vega.IIR({1.0, -1.0}, {1.0});
+      </code></pre>
+
+      <p>
+        Output is approximately <code>current - previous</code>. Sustained tones produce near-zero.
+        Sharp attacks produce spikes.
+      </p>
+
+      <p><strong>Step 2: Rectify (absolute value)</strong></p>
+
+      <pre><code class="language-cpp">
+auto rect = vega.Polynomial([](double x) { return std::abs(x); });
+      </code></pre>
+
+      <p>
+        Both positive and negative spikes become positive. We care about
+        <em>magnitude</em> of change, not direction.
+      </p>
+
+      <p><strong>Step 3: Smooth (envelope follower)</strong></p>
+
+      <pre><code class="language-cpp">
+auto smooth = vega.IIR({0.1}, {1.0, -0.9});
+      </code></pre>
+
+      <p>
+        Lowpass on the rectified derivative. Converts rapid spikes into slower contour.
+        The <code>0.9</code> feedback creates ~10ms decay.
+      </p>
+
+      <p><strong>Step 4: Threshold</strong></p>
+
+      <pre><code class="language-cpp">
+auto transient_logic = vega.Logic(LogicOperator::THRESHOLD, 0.15);
+      </code></pre>
+
+      <p>
+        When smoothed derivative exceeds 0.15, output is 1.0. Below, output is 0.0.
+        Tune this to your input sensitivity.
+      </p>
+
+      <p>
+        <strong>This chain detects <em>change</em>, not loudness.</strong>
+        A sustained loud tone won't trigger. A quiet click will.
+      </p>
+    </details>
+
+    <h2>Expansion 3: Per-Particle Impulse vs Global Impulse</h2>
+
+    <details>
+      <summary>Click to expand: Directional vs Uniform Force Application</summary>
+
+      <p><strong>Global impulse (uniform direction):</strong></p>
+
+      <pre><code class="language-cpp">
+particles->apply_global_impulse(glm::vec3(0.0f, 5.0f, 0.0f));
+      </code></pre>
+
+      <p>
+        Every particle gets the same velocity added. Good for waves, directional pushes.
+      </p>
+
+      <p><strong>Per-particle impulse (radial breathing):</strong></p>
+
+      <pre><code class="language-cpp">
+for (auto& particle : particles->get_particles()) {
+    glm::vec3 pos = particle.point->get_position();
+    glm::vec3 outward = glm::normalize(pos) * 3.0f;
+    particle.velocity += outward;
+}
+      </code></pre>
+
+      <p>
+        Each particle moves outward from center. Good for expansion/contraction, breathing forms.
+      </p>
+
+      <p><strong>Combine with audio intensity:</strong></p>
+
+      <pre><code class="language-cpp">
+logic_proc->on_rising_edge([particles, mic]() {
+    double intensity = extract_buffer_rms(mic);
+    float scale = static_cast<float>(intensity) * 10.0f;
+
+    for (auto& particle : particles->get_particles()) {
+        glm::vec3 pos = particle.point->get_position();
+        glm::vec3 outward = glm::normalize(pos) * scale;
+        particle.velocity += outward;
+    }
+});
+      </code></pre>
+
+      <p>Louder transients → bigger breaths.</p>
+    </details>
+
+    <h2>Try It</h2>
+
+    <pre><code class="language-cpp">
+// Spectral splitting: low frequencies → horizontal, high frequencies → vertical
+void compose() {
+    auto window = MayaFlux::create_window({ "Spectral Spatial", 1920, 1080 });
+
+    // Two independent LFOs at different rates
+    auto low_lfo = vega.Sine(0.1); // Slow oscillation
+    auto high_lfo = vega.Sine(0.7); // Faster oscillation
+
+    // Normalize to 0..1
+    auto low_norm = vega.Polynomial([](double x) { return (x + 1.0) * 0.5; }) | Audio;
+    auto high_norm = vega.Polynomial([](double x) { return (x + 1.0) * 0.5; }) | Audio;
+    low_norm->set_input_node(low_lfo);
+    high_norm->set_input_node(high_lfo);
+
+    low_norm->enable_mock_process(true);
+    high_norm->enable_mock_process(true);
+
+    // Audio output: layered tones
+    auto bass = vega.Sine(55.0) | Audio;
+    auto treble = vega.Sine(880.0) | Audio;
+    auto bass_amp = bass * low_norm;
+    auto treble_amp = treble * high_norm;
+    auto mix = bass_amp + treble_amp;
+    mix * 0.3;
+
+    auto particles = vega.ParticleNetwork(
+                         600,
+                         glm::vec3(-2.0f, -1.5f, -0.5f),
+                         glm::vec3(2.0f, 1.5f, 0.5f),
+                         ParticleNetwork::InitializationMode::GRID)
+        | Graphics;
+
+    particles->set_gravity(glm::vec3(0.0f, 0.0f, 0.0f));
+    particles->set_drag(0.08f);
+    particles->set_bounds_mode(ParticleNetwork::BoundsMode::BOUNCE);
+    particles->set_topology(NodeNetwork::Topology::GRID_2D);
+
+    particles->map_parameter("turbulence", low_norm, NodeNetwork::MappingMode::BROADCAST);
+
+    particles->map_parameter("drag", high_norm, NodeNetwork::MappingMode::BROADCAST);
+
+    auto buffer = vega.NetworkGeometryBuffer(particles) | Graphics;
+    buffer->setup_rendering({ .target_window = window });
+
+    window->show();
+}
+    </code></pre>
+
+    <p>
+      Bass makes the form sway side to side. Treble makes it bounce up and down.
+      Spectral content becomes spatial dimension.
+    </p>
+
+  </section>
+</section>
+
+<hr />
+
+
+<section class="tutorial-section">
+  <div class="tutorial-row">
+    <div class="tutorial-card" data-target="topology-emergent-detail">
+      <h3 class="tutorial-title">Tutorial: Topology and Emergent Form</h3>
+      <p class="hint">Click this card to reveal full explanation</p>
+
+      <pre><code class="language-cpp">
+void compose() {
+    auto window = MayaFlux::create_window({ "Emergent", 1920, 1080 });
+
+    // Control signal: slow triangle wave
+    auto control = vega.Phasor(0.15) | Audio;  // 0..1 ramp, ~7 second cycle
+    auto shaped = vega.Polynomial([](double x) {
+        return x < 0.5 ? x * 2.0 : 2.0 - x * 2.0;  // Triangle
+    }) | Audio;
+    control >> shaped;
+
+    // Audio: resonant ping modulated by control
+    auto resonator = vega.Sine(330.0) | Audio;
+    auto env = vega.Polynomial([](double x) {
+        return std::exp(-x * 5.0);
+    }) | Audio;
+    shaped >> env;
+    auto audio_out = resonator * env | Audio;
+    audio_out * 0.3;
+
+    // Particles with spatial interaction
+    auto particles = vega.ParticleNetwork(
+        400,
+        glm::vec3(-1.5f, -1.5f, -0.5f),
+        glm::vec3(1.5f, 1.5f, 0.5f),
+        ParticleNetwork::InitializationMode::GRID
+    ) | Graphics;
+
+    particles->set_topology(NodeNetwork::Topology::SPATIAL);
+    particles->set_interaction_radius(0.5f);
+    particles->set_spring_stiffness(0.2f);
+    particles->set_repulsion_strength(1.0f);
+    particles->set_gravity(glm::vec3(0.0f, 0.0f, 0.0f));
+    particles->set_drag(0.03f);
+    particles->set_bounds_mode(ParticleNetwork::BoundsMode::BOUNCE);
+
+    // Control signal → spring stiffness: rising = rigidifying, falling = softening
+    particles->map_parameter("spring_stiffness", shaped, NodeNetwork::MappingMode::BROADCAST);
+
+    auto buffer = vega.NetworkGeometryBuffer(particles) | Graphics;
+    buffer->setup_rendering({ .target_window = window });
+
+    window->show();
+
+    // Periodic disturbance to reveal stiffness changes
+    MayaFlux::schedule_metro(0.5, [particles]() {
+        particles->apply_global_impulse(glm::vec3(
+            MayaFlux::get_uniform_random(-0.5f, 0.5f),
+            MayaFlux::get_uniform_random(-0.5f, 0.5f),
+            MayaFlux::get_uniform_random(-0.2f, 0.2f)
+        ));
+    });
+}
+      </code></pre>
+
+      <p>
+        Run this. The grid receives periodic disturbances. When you're silent,
+        particles flow fluidly, springs are weak. When you speak, the structure
+        rigidifies, springs tighten. Sound becomes material property.
+      </p>
+    </div>
+  </div>
+
+  <section id="topology-emergent-detail" class="tutorial-expanded">
+
+    <h2>Expansion 1: Topology Types</h2>
+
+    <details>
+      <summary>Click to expand: How Particles Relate</summary>
+
+      <p><code>set_topology()</code> determines which particles interact:</p>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Topology</th>
+            <th>Behavior</th>
+            <th>Use Case</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>INDEPENDENT</code></td>
+            <td>No inter-particle forces</td>
+            <td>Particle storms, rain</td>
+          </tr>
+          <tr>
+            <td><code>SPATIAL</code></td>
+            <td>Neighbors within radius interact</td>
+            <td>Organic clustering, flocking</td>
+          </tr>
+          <tr>
+            <td><code>RING</code></td>
+            <td>Each connects to prev/next</td>
+            <td>Chains, ropes, tentacles</td>
+          </tr>
+          <tr>
+            <td><code>GRID_2D</code></td>
+            <td>2D lattice connections</td>
+            <td>Cloth, membranes</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p>
+        <strong>SPATIAL</strong> is the most general. Particles find neighbors within
+        <code>interaction_radius</code>. Springs pull distant neighbors closer.
+        Repulsion pushes overlapping particles apart.
+      </p>
+
+      <p>
+        <strong>The metaphor:</strong> Sound doesn't just <em>push</em> particles.
+        It changes <em>how they relate to each other</em>. The form itself responds
+        to audio, not just its position.
+      </p>
+    </details>
+
+    <h2>Expansion 2: Material Properties as Audio Targets</h2>
+
+    <details>
+      <summary>Click to expand: Beyond Position: Mapping to Structure</summary>
+
+      <p>
+        Most audio-reactive systems map amplitude → position/size/color. That's valid
+        but limited. MayaFlux lets you map to <em>material properties</em>:
+      </p>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Property</th>
+            <th>Effect</th>
+            <th>Metaphor</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>spring_stiffness</code></td>
+            <td>How rigid connections are</td>
+            <td>Sound as material phase (liquid↔solid)</td>
+          </tr>
+          <tr>
+            <td><code>interaction_radius</code></td>
+            <td>How far influence extends</td>
+            <td>Sound as social distance</td>
+          </tr>
+          <tr>
+            <td><code>repulsion_strength</code></td>
+            <td>How strongly particles avoid overlap</td>
+            <td>Sound as personal space</td>
+          </tr>
+          <tr>
+            <td><code>drag</code></td>
+            <td>How quickly motion decays</td>
+            <td>Sound as viscosity</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p><strong>Example: Sound as temperature</strong></p>
+
+      <p>
+        High temperature = particles move freely, weak bonds.
+        Low temperature = rigid structure.
+      </p>
+
+      <pre><code class="language-cpp">
+// Invert audio: silence = cold/rigid, loud = hot/fluid
+auto inverter = vega.Polynomial([](double x) { return 1.0 - std::clamp(x * 2.0, 0.0, 1.0); });
+MayaFlux::create_processor<PolynomialProcessor>(mic, inverter);
+
+particles->map_buffer_parameter("spring_stiffness", mic, MappingMode::BROADCAST);
+particles->map_buffer_parameter("drag", mic, MappingMode::BROADCAST);
+      </code></pre>
+
+      <p>Now silence freezes the form. Sound melts it.</p>
+    </details>
+
+    <h2>What You've Learned</h2>
+
+    <ul>
+        <li><strong>NodeNetworks:</strong> Collections of nodes with relationships (physics, topology)<br /></li>
+        <li><strong>ParticleNetwork:</strong> N-body simulation with configurable interaction<br /></li>
+        <li><strong>NetworkGeometryBuffer:</strong> Aggregates particle positions → single GPU upload<br /></li>
+        <li><strong>Buffer-to-parameter mapping:</strong> Audio buffers control physics properties<br /></li>
+        <li><strong>Logic processor callbacks:</strong> Edge detection for discrete visual events<br /></li>
+        <li><strong>Topology:</strong> How particles relate—independent, spatial, ring, grid<br /></li>
+        <li><strong>Material property mapping:</strong> Audio controls structure, not just position</li>
+    </ul>
+
+    <p><strong>Pattern:</strong></p>
+
+    <pre><code class="language-cpp">
+// 1. Create audio analysis buffer
+auto mic = MayaFlux::create_input_listener_buffer(0, false);
+// Add processors: envelope, filter, logic, etc.
+
+// 2. Create particle network
+auto particles = std::make_shared<ParticleNetwork>(count, bounds_min, bounds_max);
+particles->set_topology(/* ... */);
+
+// 3. Map audio to physics parameters
+particles->map_buffer_parameter("spring_stiffness", mic, MappingMode::BROADCAST);
+
+// 4. Setup rendering
+auto buffer = std::make_shared<NetworkGeometryBuffer>(particles);
+buffer->setup_rendering({ .target_window = window });
+MayaFlux::register_node_network(particles, ProcessingToken::GRAPHICS_BACKEND);
+    </code></pre>
+
+  </section>
+</section>
+
+
+<section class="tutorial-section">
+  <div class="tutorial-row">
+    <div class="tutorial-card">
+      <h2 class="tutorial-title">Conclusion</h2>
+
+      <h3>The Deeper Point</h3>
+
+      <p>
+        You've crossed the boundary that most frameworks enforce: audio and visuals
+        as separate pipelines, separate mental models, separate codebases.
+      </p>
+
+      <p>
+        In MayaFlux, there is no boundary. A node that shapes amplitude can shape
+        gravity. A logic gate that triggers a click can trigger a breath. The same
+        polynomial that distorts audio can warp spatial relationships.
+      </p>
+
+      <p>
+        This isn't a "feature." It's the consequence of treating all creative data
+        as what it actually is: numbers flowing through transformations.
+      </p>
+
+      <p>
+        The particle systems you've built here demonstrate the principle cross-domain
+        data flow, but they're still working with pre-built physics simulations.
+        The GPU does what <code>ParticleNetwork</code> tells it to do.
+      </p>
+
+      <hr />
+
+      <h3>What Comes Next</h3>
+
+      <p>
+        <strong>Visual Materiality Part II</strong> moves deeper into the GPU itself.
+      </p>
+
+      <p>
+        Instead of mapping audio to physics parameters, you'll bind nodes directly
+        to shader programs. <code>NodeBindingsProcessor</code> writes node outputs
+        to push constants, i.e small, fast values updated every frame.
+        <code>DescriptorBindingsProcessor</code> writes larger data (vectors,
+        matrices, spectra) to UBOs and SSBOs.
+      </p>
+
+      <p>You'll learn:</p>
+
+      <ul>
+        <li><strong>Compute shaders</strong>: Massively parallel data transformation on GPU</li>
+        <li><strong>Push constant bindings</strong>: Node values injected directly into shader execution</li>
+        <li><strong>Descriptor bindings</strong>: Spectrum data, matrices, structured arrays flowing to GPU</li>
+        <li><strong>Custom vertex transformations</strong>: Audio-driven geometry deformation</li>
+        <li><strong>Fragment manipulation</strong>: Color, texture, and pixel-level audio response</li>
+      </ul>
+
+      <p>
+        The architecture you've learned: nodes, buffers, processors, tokens; remains
+        identical. But instead of <code>map_parameter("gravity", envelope)</code>,
+        you'll write:
+      </p>
+
+      <pre><code class="language-cpp">
+auto processor = std::make_shared<NodeBindingsProcessor>("displacement.comp");
+processor->bind_node("amplitude", envelope, offsetof(PushConstants, amplitude));
+      </code></pre>
+
+      <p>And inside your GLSL:</p>
+
+      <pre><code class="language-cpp">
+layout(push_constant) uniform PushConstants {
+    float amplitude;
+};
+
+void main() {
+    vec3 displaced = position + normal * amplitude * 0.5;
+    // ...
+}
+      </code></pre>
+
+      <p>
+        Same <code>get_last_output()</code>. Same data flow. But now you control
+        every vertex, every fragment, every compute thread.
+      </p>
+
+      <p>
+        <strong>The substrate doesn't change. Your access to it deepens.</strong>
+      </p>
+    </div>
+  </div>
+</section>
