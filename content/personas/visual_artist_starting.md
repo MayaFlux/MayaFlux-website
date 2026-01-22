@@ -1474,7 +1474,7 @@ void compose() {
 
     // Multi-tap delay network at audio rate
     auto delay_network = vega.Polynomial(
-                             [noise](const std::deque<double>& history) {
+                             [noise](std::span<double> history) {
                                  double input = noise->get_last_output() * 0.05;
 
                                  double d1 = history[41];
@@ -1493,7 +1493,7 @@ void compose() {
 
     // Feature extraction at audio rate
     auto density_extractor = vega.Polynomial(
-                                 [](const std::deque<double>& history) {
+                                 [](std::span<double> history) {
                                      double sum = 0.0;
                                      for (int i = 0; i < 64 && i < history.size(); i++) {
                                          sum += history[i] * history[i];
@@ -1507,7 +1507,7 @@ void compose() {
     delay_network >> density_extractor;
 
     auto coherence_extractor = vega.Polynomial(
-                                   [](const std::deque<double>& history) {
+                                   [](std::span<double> history) {
                                        int crossings = 0;
                                        for (int i = 1; i < 32 && i < history.size(); i++) {
                                            if ((history[i - 1] > 0.0) != (history[i] > 0.0)) {
@@ -1523,7 +1523,7 @@ void compose() {
     delay_network >> coherence_extractor;
 
     auto tilt_extractor = vega.Polynomial(
-                              [](const std::deque<double>& history) {
+                              [](std::span<double> history) {
                                   double recent = 0.0, distant = 0.0;
                                   for (int i = 0; i < 16; i++)
                                       recent += std::abs(history[i]);
@@ -1702,7 +1702,7 @@ void compose() {
 
     // Rotation accumulator
     auto rotation_accumulator = vega.Polynomial(
-                                    [noise3](const std::deque<double>& history) {
+                                    [noise3](std::span<double> history) {
                                         return history[0] + history[0] * 0.02;
                                     },
                                     PolynomialMode::FEEDFORWARD,
@@ -1875,7 +1875,7 @@ void compose() {
 
     // Velocity tracking
     auto velocity_tracker = vega.Polynomial(
-                                [](const std::deque<double>& history) {
+                                [](std::span<double> history) {
                                     if (history.size() < 4)
                                         return 0.0;
 
@@ -2060,7 +2060,7 @@ void compose() {
 
     // Granular synthesis engine
     auto grain_synthesizer = vega.Polynomial(
-                                 [grain_trigger, pitch_mapper, noise, density_shaper](const std::deque<double>& history) {
+                                 [grain_trigger, pitch_mapper, noise, density_shaper](std::span<double> history) {
                                      static int grain_phase = 0;
                                      static double grain_pitch = 1.0;
 
@@ -2367,7 +2367,7 @@ When you write:
 </p>
 
 ```cpp
-auto process = vega.Polynomial([](const std::deque<double>& history) {
+auto process = vega.Polynomial([](std::span<double> history) {
     // Complex temporal logic
     return computed_value;
 }, PolynomialMode::RECURSIVE, 512)[0] | Audio;

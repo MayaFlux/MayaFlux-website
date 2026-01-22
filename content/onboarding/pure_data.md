@@ -233,7 +233,7 @@ auto waveshaper = vega.Polynomial({0.0, 1.2, -0.4});  // 1.2x - 0.4x²
 ```cpp
 // Recursive mode: Access previous OUTPUTS (like $y1, $y2)
 auto feedback = vega.Polynomial(
-    [](const std::deque<double>& history) {
+    [](std::span<double> history) {
         // history[0] = last output, history[1] = output before that...
         return history[0] * 0.7;  // Simple feedback delay
     },
@@ -245,7 +245,7 @@ auto feedback = vega.Polynomial(
 ```cpp
 // Feedforward mode: Access previous INPUTS (like $x1, $x2)
 auto moving_avg = vega.Polynomial(
-    [](const std::deque<double>& history) {
+    [](std::span<double> history) {
         // history[0] = current input, history[1] = previous...
         double sum = 0.0;
         for (auto val : history) sum += val;
@@ -258,7 +258,7 @@ auto moving_avg = vega.Polynomial(
 
 ```cpp
 auto phase_accum = vega.Polynomial(
-    [&](const std::deque<double>& history) {
+    [&](std::span<double> history) {
         static int index = 0;
         static std::vector<double> accum_values(40);
 
@@ -288,7 +288,7 @@ auto synth = vega.Sine(220.0, 0.3);
 auto buffer = vega.NodeBuffer(0, 512, synth)[0] | Audio;
 
 auto string = vega.Polynomial(
-    [](const std::deque<double>& history) {
+    [](std::span<double> history) {
         return 0.996 * (history[0] + history[1]) / 2.0;  // Lowpass + feedback
     },
     PolynomialMode::RECURSIVE,

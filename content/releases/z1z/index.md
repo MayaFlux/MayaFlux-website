@@ -273,7 +273,7 @@ void compose() {
 
 ```cpp
 auto string = vega.Polynomial(
-    [](const std::deque<double>& history) {
+    [](std::span<double> history) {
         return 0.996 * (history[0] + history[1]) / 2.0;
     },
     PolynomialMode::RECURSIVE,

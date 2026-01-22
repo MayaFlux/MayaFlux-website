@@ -284,7 +284,7 @@ This makes the **data flow** visible. You can see exactly where feedback happens
 
 ```cpp
 auto string = vega.Polynomial(
-    [](const std::deque<double>& history) {
+    [](std::span<double> history) {
         return 0.996 * (history[0] + history[1]) / 2.0;
     },
     PolynomialMode::RECURSIVE,
@@ -488,7 +488,7 @@ But this doesn't work well because:
 ### In MayaFlux: State Is Accessible
 
 ```cpp
-auto envelope_func = [](const std::deque<double>& history) {
+auto envelope_func = [](std::span<double> history) {
     // Access both input history and output history
     double input = history[0];
     double prev_output = history[1];
@@ -556,7 +556,7 @@ You can't do multi-bin FFT analysis in gen~ at all—it requires `[pfft~]` which
 ```cpp
 // Logic node with history-based triggering
 auto spectral_gate = vega.Logic(
-    [](const std::deque<bool>& history) {
+    [](std::span<bool> history) {
         // Custom logic: need 10 consecutive true samples to open
         int consecutive_true = 0;
         for (int i = 0; i < std::min(10, (int)history.size()); i++) {
@@ -617,7 +617,7 @@ pipeline
 // Logic processor with history-based triggering
 auto gate = MayaFlux::create_processor<LogicProcessor>(
     analysis_buffer,
-    [](const std::deque<bool>& history) {
+    [](std::span<bool> history) {
         int consecutive_true = 0;
         for (int i = 0; i < std::min(10, (int)history.size()); i++) {
             if (history[i]) consecutive_true++;
@@ -669,7 +669,7 @@ auto osc = vega.Sine(440.0)[0] | Audio;
 
 // Audio-rate phase distortion modulator
 auto phase_distortion = vega.Polynomial(
-    [](const std::deque<double>& history) {
+    [](std::span<double> history) {
         return std::fmod(history[0] + history[1] * 0.1, 1.0);
     },
     PolynomialMode::RECURSIVE,

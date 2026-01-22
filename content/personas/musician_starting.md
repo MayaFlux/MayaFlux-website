@@ -185,7 +185,7 @@ void compose() {
 
     // Or RECURSIVE mode: bitcrushing through truncation feedback
     // auto crush = vega.Polynomial(
-    //     [](const std::deque<double>& history) {
+    //     [](std::span<double> history) {
     //         // Quantize previous outputs, creating harmonic distortion
     //         double quantized = std::floor(history[0] * 8.0) / 8.0;
     //         return quantized * 0.7 + history[20] * 0.3;
@@ -197,7 +197,7 @@ void compose() {
 
     // Or FEEDFORWARD mode: asymmetric distortion based on trajectory
     // auto trajectory = vega.Polynomial(
-    //     [](const std::deque<double>& inputs) {
+    //     [](std::span<double> inputs) {
     //         // Different distortion based on whether signal is rising or falling
     //         double slope = inputs[0] - inputs[10];
     //         double curve = (slope > 0) ? inputs[0] * inputs[0] * inputs[0] : std::tanh(inputs[0] * 5.0);
