@@ -1,5 +1,6 @@
 ---
 title: "MayaFlux 0.1.0: Infrastructure for Digital Creativity"
+summary: "MayaFlux 0.1.0 is now available. This is not another creative coding framework. This is computational infrastructure built from 15 years of interdisciplinary performance practice, pedagogy, research and production dsp engineering. It treats audio, visual, and control data as unified numerical streams processed through lock-free computation graphs, C++20 coroutines for temporal coordination, and complete LLVM JIT compilation for live coding."
 ---
 
 **January 1, 2026**

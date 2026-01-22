@@ -35,6 +35,11 @@ name = "Docs"
 url = "https://mayaflux.github.io/MayaFlux/"
 weight = 5
 
+[[menu.main]]
+name = "Releases"
+url = "/releases/"
+weight = 6
+
 [markup]
 [markup.goldmark]
 [markup.goldmark.renderer]
