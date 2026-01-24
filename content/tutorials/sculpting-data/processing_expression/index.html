@@ -611,7 +611,7 @@ void compose() {
 
         <p>
         So far, you did not have to manually set inputs because you used
-        <code>ContainerBuffer</code> which automatically feeds audio into processors.
+        <code>SoundContainerBuffer</code> which automatically feeds audio into processors.
         </p>
 
         <p>
@@ -1139,7 +1139,7 @@ Speakers
             <li>Handles data <strong>acquisition</strong> or <strong>generation</strong></li>
             <li>Examples:
                 <ul>
-                    <li><code>ContainerBuffer</code>: reads from file/stream</li>
+                    <li><code>SoundContainerBuffer</code>: reads from file/stream</li>
                     <li><code>NodeBuffer</code>: evaluates a node</li>
                     <li><code>FeedbackBuffer</code>: mixes current + previous buffer</li>
                     <li><code>AudioBuffer</code>: none (generic accumulator)</li>
@@ -1236,7 +1236,7 @@ buffer->set_processing_chain(chain);
       <ul>
         <li><strong>NodeBuffer</strong>: Generate audio from mathematical nodes</li>
         <li><strong>FeedbackBuffer</strong>: Recursive temporal processing with memory</li>
-        <li><strong>StreamWriteProcessor</strong>: Capture processed audio to containers</li>
+        <li><strong>SoundStreamWriter</strong>: Capture processed audio to containers</li>
       </ul>
       <p>Each buffer type has default processors and specific use cases. Click to explore each in detail.</p>
 
@@ -1560,11 +1560,11 @@ vega.NodeBuffer(0, 512, input, false)[1] | Audio;
     </code></pre>
   </section>
 
-  <!-- =================== CHILD CARD 3: StreamWriteProcessor =================== -->
+  <!-- =================== CHILD CARD 3: SoundStreamWriter =================== -->
 
   <div class="tutorial-row">
     <div class="tutorial-card" data-target="streamwrite-detail">
-      <h3 class="tutorial-title">StreamWriteProcessor (Capturing Audio)</h3>
+      <h3 class="tutorial-title">SoundStreamWriter (Capturing Audio)</h3>
       <p class="hint">Click this card to reveal full explanation</p>
 
       <h4>The Pattern</h4>
@@ -1580,7 +1580,7 @@ void compose() {
     auto capture_stream = std::make_shared&lt;DynamicSoundStream&gt;(48000, 2);
 
     // Create a processor that writes buffer data to the stream
-    auto writer = std::make_shared&lt;StreamWriteProcessor&gt;(capture_stream);
+    auto writer = std::make_shared&lt;SoundStreamWriter&gt;(capture_stream);
 
     // Add to buffer's processing chain
     auto chain = buffer-&gt;get_processing_chain();
@@ -1596,18 +1596,18 @@ void compose() {
     </div>
   </div>
 
-  <!-- StreamWriteProcessor Expanded Details -->
+  <!-- SoundStreamWriter Expanded Details -->
   <section id="streamwrite-detail" class="tutorial-expanded">
-    <h2>Expansion 1: What StreamWriteProcessor Does</h2>
+    <h2>Expansion 1: What SoundStreamWriter Does</h2>
 
     <details>
       <summary>Click to expand: Buffers → Containers Bridge</summary>
 
-      <p><code>StreamWriteProcessor</code> is the <strong>inverse</strong> of <code>ContainerBuffer</code>:</p>
+      <p><code>SoundStreamWriter</code> is the <strong>inverse</strong> of <code>SoundContainerBuffer</code>:</p>
 
       <ul>
-        <li><strong>ContainerBuffer</strong>: reads from container → fills buffer (source)</li>
-        <li><strong>StreamWriteProcessor</strong>: reads from buffer → writes to container (sink)</li>
+        <li><strong>SoundContainerBuffer</strong>: reads from container → fills buffer (source)</li>
+        <li><strong>SoundStreamWriter</strong>: reads from buffer → writes to container (sink)</li>
       </ul>
 
       <p><strong>Each cycle:</strong></p>
@@ -1635,7 +1635,7 @@ void compose() {
     <details>
       <summary>Click to expand: Multi-Channel Capture</summary>
 
-      <p><code>StreamWriteProcessor</code> respects buffer channel IDs:</p>
+      <p><code>SoundStreamWriter</code> respects buffer channel IDs:</p>
 
       <pre><code class="language-cpp">
 auto left_buffer = buffers[0];   // channel 0
@@ -1643,8 +1643,8 @@ auto right_buffer = buffers[1];  // channel 1
 
 auto stream = std::make_shared&lt;DynamicSoundStream&gt;(48000, 2);  // stereo
 
-auto writer_L = std::make_shared&lt;StreamWriteProcessor&gt;(stream);
-auto writer_R = std::make_shared&lt;StreamWriteProcessor&gt;(stream);
+auto writer_L = std::make_shared&lt;SoundStreamWriter&gt;(stream);
+auto writer_R = std::make_shared&lt;SoundStreamWriter&gt;(stream);
 
 // Add to respective buffers
 left_buffer-&gt;get_processing_chain()-&gt;add_processor(writer_L);
@@ -1661,7 +1661,7 @@ right_buffer-&gt;get_processing_chain()-&gt;add_processor(writer_R);
     <details>
       <summary>Click to expand: Write Position Control</summary>
 
-      <p><code>StreamWriteProcessor</code> tracks where it's writing:</p>
+      <p><code>SoundStreamWriter</code> tracks where it's writing:</p>
 
       <pre><code class="language-cpp">
 writer-&gt;set_write_position(0);        // Write from start
@@ -1697,7 +1697,7 @@ double time = writer-&gt;get_write_position_time();       // Get current time po
 auto stream = std::make_shared&lt;DynamicSoundStream&gt;(48000, 2);
 stream-&gt;enable_circular_buffer(48000);  // 1 second capacity
 
-auto writer = std::make_shared&lt;StreamWriteProcessor&gt;(stream);
+auto writer = std::make_shared&lt;SoundStreamWriter&gt;(stream);
       </code></pre>
 
       <p><strong>Behavior:</strong></p>
@@ -1727,7 +1727,7 @@ auto buffer = MayaFlux::get_last_created_container_buffers()[0];
 auto stream = std::make_shared&lt;DynamicSoundStream&gt;(48000, 1);
 stream-&gt;ensure_capacity(48000 * 5);  // Pre-allocate 5 seconds
 
-auto writer = std::make_shared&lt;StreamWriteProcessor&gt;(stream);
+auto writer = std::make_shared&lt;SoundStreamWriter&gt;(stream);
 buffer-&gt;get_processing_chain()-&gt;add_processor(writer, buffer);
 
 // After playback, stream contains the audio
@@ -1737,7 +1737,7 @@ buffer-&gt;get_processing_chain()-&gt;add_processor(writer, buffer);
 auto stream2 = std::make_shared&lt;DynamicSoundStream&gt;(48000, 1);
 stream2-&gt;enable_circular_buffer(48000);  // Loop after 1 second
 
-auto writer2 = std::make_shared&lt;StreamWriteProcessor&gt;(stream);
+auto writer2 = std::make_shared&lt;SoundStreamWriter&gt;(stream);
 buffer-&gt;get_processing_chain()-&gt;add_processor(writer, buffer);
 
 // Stream now acts as a 1-second tape loop
@@ -1756,7 +1756,7 @@ buffer-&gt;get_processing_chain()-&gt;add_processor(writer, buffer);
 
   <ul>
     <li><code>AudioBuffer</code>: Generic accumulator</li>
-    <li><code>ContainerBuffer</code>: Reads from files/streams (default: <code>ContainerToBufferAdapter</code>)</li>
+    <li><code>SoundContainerBuffer</code>: Reads from files/streams (default: <code>SoundStreamReader</code>)</li>
     <li><code>NodeBuffer</code>: Generates from nodes (default: <code>NodeSourceProcessor</code>)</li>
     <li><code>FeedbackBuffer</code>: Recursive delay (default: <code>FeedbackProcessor</code>)</li>
   </ul>
@@ -1766,7 +1766,7 @@ buffer-&gt;get_processing_chain()-&gt;add_processor(writer, buffer);
   <ul>
     <li><code>PolynomialProcessor</code>: Waveshaping, filters, recursive math</li>
     <li><code>LogicProcessor</code>: Decisions, gates, triggers</li>
-    <li><code>StreamWriteProcessor</code>: Capture to containers</li>
+    <li><code>SoundStreamWriter</code>: Capture to containers</li>
   </ul>
 
   <p><strong>Processing Flow:</strong></p>
@@ -1938,7 +1938,7 @@ auto mic_capture = MayaFlux::create_input_listener_buffer(0, false);  // false =
 
 // Capture to a stream for analysis
 auto stream = std::make_shared&lt;DynamicSoundStream&gt;(48000, 1);
-auto writer = std::make_shared&lt;StreamWriteProcessor&gt;(stream);
+auto writer = std::make_shared&lt;SoundStreamWriter&gt;(stream);
 mic_capture-&gt;get_processing_chain()-&gt;add_processor(writer);
       </code></pre>
 
@@ -1971,7 +1971,7 @@ MayaFlux::create_processor&lt;LogicProcessor&gt;(mic, gate);
 
 // Record to disk simultaneously
 auto stream = std::make_shared&lt;DynamicSoundStream&gt;(48000, 1);
-auto writer = std::make_shared&lt;StreamWriteProcessor&gt;(stream);
+auto writer = std::make_shared&lt;SoundStreamWriter&gt;(stream);
 mic-&gt;get_processing_chain()-&gt;add_processor(writer, mic);
 // After session: save 'stream' to file
 

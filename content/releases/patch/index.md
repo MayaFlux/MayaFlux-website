@@ -192,7 +192,7 @@ d729ef4e2 chore: bump version to 0.1.1
 
 ## MayaFlux 0.1.2: Buffer Semantics Correction, Deterministic Stochastic Processing, and Shader Fixes
 
-**Released shortly after 0.1.1**
+**23rd January 2026**
 
 MayaFlux 0.1.2 is a corrective release addressing a necessary API break, a critical Vulkan pipeline bug, and several internal performance and determinism improvements.
 

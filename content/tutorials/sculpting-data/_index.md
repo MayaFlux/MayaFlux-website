@@ -33,6 +33,86 @@ It is recommended to read the cards below before starting the tutorials, as it e
 
 </div>
 
+{{< rawhtml >}}
+
+<!-- =======================  TERMINOLOGY NOTE  ======================= -->
+
+<div class="card collapsible">
+
+  <div class="collapsible-header">
+    <h3><b>!IMPORTANT:</b> Terminology Note Across Versions</h3>
+    <p class="hint">Click to expand (read once)</p>
+  </div>
+
+    <p><strong>What changed?</strong></p>
+
+    <ul>
+        <li>(OLD)<code>ContainerBuffer</code> → <code>SoundContainerBuffer</code></li>
+        <li>(OLD)<code>ContainerToBufferAdapter</code> → <code>SoundStreamReader</code></li>
+        <li>(OLD)<code>StreamWriteProcessor</code> → <code>SoundStreamWriter</code></li>
+        <li>(OLD)<code>FileBridgeBuffer</code> → <code>SoundFileBridge</code></li>
+    </ul>
+
+  <div class="collapsible-body">
+
+    <p>
+    MayaFlux is currently in active architectural consolidation.
+    As part of this, several internal classes were renamed to make
+    <strong>domain boundaries explicit</strong> before graphics and
+    multi-domain I/O support arrive.
+    </p>
+
+    <p>
+    You may notice names in this tutorial that differ from those
+    in MayaFlux <strong>0.1.x</strong>.
+    This is intentional.
+    </p>
+
+    <hr>
+
+    <p>
+    These renames do <strong>not</strong> introduce new behavior.
+    They clarify that these components are <em>audio-domain infrastructure</em>,
+    and prevent accidental misuse as graphics and video containers are added.
+    </p>
+
+    <p>
+    MayaFlux is currently in active architectural consolidation.
+    As part of this, several internal classes were renamed to make
+    <strong>domain boundaries explicit</strong> before graphics and
+    multi-domain I/O support arrive.
+    </p>
+
+
+    <hr>
+
+    <p><strong>How to read this tutorial</strong></p>
+
+    <ul>
+      <li>
+        If you are on <strong>MayaFlux 0.1.x</strong>,
+        mentally substitute the older names.
+      </li>
+      <li>
+        If you are on <strong>0.2+</strong>,
+        the names here match the codebase directly.
+      </li>
+      <li>
+        In all cases, the <strong>architecture, data flow, and concepts are identical</strong>.
+      </li>
+    </ul>
+
+    <p>
+    These tutorials describe <em>roles and relationships</em>,
+    not version-specific symbols.
+    </p>
+
+  </div>
+
+</div>
+
+{{< /rawhtml >}}
+
 ---
 
 ## How to Use These Tutorials
