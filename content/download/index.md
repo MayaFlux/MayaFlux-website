@@ -2,7 +2,7 @@
 title: "Download"
 ---
 
-# Get Started with Weave
+# Get Started with Weave (Stable channel)
 
 The unified installer and project creator for **MayaFlux**.
 
@@ -65,8 +65,6 @@ cmake --build . --parallel
 
 </div>
 </div>
-
----
 
 <!-- ====================== -->
 
@@ -142,8 +140,6 @@ cmake --build . --parallel
 </div>
 </div>
 
----
-
 <!-- ====================== -->
 
 <!-- Windows CARD           -->
@@ -206,6 +202,64 @@ cmake --build . --config Release
 </div>
 
 ---
+
+<div class="card wide">
+
+# About development Versions & Tutorials
+
+<p>
+<strong>MayaFlux 0.1.2 is fully stable</strong> and remains a solid foundation.
+However, it represents an earlier stage of the system and <em>lags significantly behind</em>
+the concepts, architecture, and workflows discussed in current talks, tutorials, and workshops.
+</p>
+
+<p>
+If you are following public talks, live demonstrations, or upcoming tutorials,
+you will find that <strong>the above does not include many of the systems being described or explored</strong>.
+</p>
+
+<p>
+For this reason, <strong>the recommended path is the development stream</strong>.
+This is the version used in talks, documentation experiments, and teaching material.
+</p>
+
+<h3>Recommended: Choose "Development" in the resepective OS installer choice</h3>
+
+The rest of the installation process is the same as described above.
+
+<ul>
+  <li>
+    <strong>macOS:</strong>
+    <a href="https://github.com/MayaFlux/Weave/releases/download/v0.2.2-dev/Weave-installer-macos.pkg">
+      Download latest Weave macOS
+    </a>
+  </li>
+  <li>
+    <strong>Linux:</strong>
+    <a href="https://github.com/MayaFlux/Weave/releases/download/v0.2.2-dev/Weave-linux.tar.gz">
+      Download latest Weave for linux
+    </a>
+  </li>
+  <li>
+    <strong>Windows:</strong>
+    <a href="https://github.com/MayaFlux/Weave/releases/download/v0.2.2-dev/Weave-windows.zip">
+      Download latest Weave for windows
+    </a>
+  </li>
+</ul>
+
+<p>
+The development stream may introduce <em>API evolution</em> as new features stabilize.
+There should be <strong>no build failures</strong>, but some APIs may change as systems converge.
+I will reduce disruption as much as possible and document changes clearly.
+</p>
+
+<p>
+If you want to follow MayaFlux as it is <strong>actively taught, discussed, and explored</strong>,
+the development stream is the correct choice.
+</p>
+
+</div>
 
 # Documentation
 
