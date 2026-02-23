@@ -363,19 +363,19 @@ The rest of the installation process is the same as described above.
 <ul>
   <li>
     <strong>macOS:</strong>
-    <a href="https://github.com/MayaFlux/Weave/releases/download/v0.2.2-dev/Weave-installer-macos.pkg">
+    <a href="https://github.com/MayaFlux/Weave/releases/download/v0.3.0-dev/Weave-installer-macos.pkg">
       Download latest Weave macOS
     </a>
   </li>
   <li>
     <strong>Linux:</strong>
-    <a href="https://github.com/MayaFlux/Weave/releases/download/v0.2.2-dev/Weave-linux.tar.gz">
+    <a href="https://github.com/MayaFlux/Weave/releases/download/v0.3.0-dev/Weave-linux.tar.gz">
       Download latest Weave for linux
     </a>
   </li>
   <li>
     <strong>Windows:</strong>
-    <a href="https://github.com/MayaFlux/Weave/releases/download/v0.2.2-dev/Weave-windows.zip">
+    <a href="https://github.com/MayaFlux/Weave/releases/download/v0.3.0-dev/Weave-windows.zip">
       Download latest Weave for windows
     </a>
   </li>
