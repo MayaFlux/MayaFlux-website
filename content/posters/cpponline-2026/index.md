@@ -1,4 +1,7 @@
-# MayaFlux: Multi-Domain Real-Time Scheduling with C++20
+---
+title: "MayaFlux: Multi-Domain Real-Time Scheduling with C++20"
+layout: "single"
+---
 
 **Ranjith Hegde** · [github.com/MayaFlux/MayaFlux](https://github.com/MayaFlux/MayaFlux) · [mayaflux.org](https://mayaflux.org)
 
@@ -6,15 +9,71 @@ C++Online 2026 · Poster
 
 ---
 
-## The Problem
+<div class="two-column-grid breakout">
+  <div class="card section-narrow">
+<h2> Architectural Constraints of Heterogeneous Real-Time Systems </h2>
 
-Real-time multimedia systems must run independent execution contexts simultaneously: audio callbacks at 48 kHz, graphics render loops at 60 Hz, async input polling, and user-defined coroutines with arbitrary timing. Existing approaches either collapse these into a single scheduler (losing domain autonomy) or isolate them entirely (losing coordination).
+Real-time multimedia systems do not run in a single loop. They run several incompatible ones at once: audio callbacks at 48kHz (~20μs per sample) with hard real-time deadlines, graphics render loops at 60–144 FPS (~7–16ms per frame) with soft frame pacing, asynchronous input from MIDI/HID/OSC devices with backend-defined threading, and user-defined coroutines that may demand either sample accuracy or frame-rate granularity depending on intent. These contexts cannot be collapsed into a single abstraction without erasing the constraints that make them correct.
 
-MayaFlux is an open-source C++20/23 framework that lets these contexts coexist in a single process without a unifying abstraction. Each domain keeps its own timing, thread model, and processing semantics. Coordination happens through lock-free patterns, compile-time type unification, and coroutine-based temporal weaving — not shared state behind a mutex.
+Historically, creative computing frameworks addressed this by separation. Pure Data distinguishes control rate from audio rate. Max/MSP sandboxes gen~ from its message scheduler. openFrameworks treats audio as an addon to an OpenGL draw loop. SuperCollider splits synthesis and language into separate processes. These were sound engineering decisions for their time: isolate domains to preserve guarantees.
+
+But isolation introduces friction. Data fragments at boundaries. Scheduling becomes glue code. Coordination requires mutexes, queues, or ad-hoc bridges. Some loops cannot legally block; others can. Some require deterministic timing; others tolerate jitter. When independent execution contexts must cooperate without violating each other’s safety constraints, the architectural problem becomes deeper than “how to schedule.”
+
+The question is not how to unify everything under one scheduler. The question is how independent real-time execution contexts can coexist without collapsing into a single abstraction.
+
+This implies several simultaneous requirements:
+
+- Independent execution loops (audio, graphics, input backends, user code) operating concurrently.
+- Lock-free coordination, because some contexts cannot block or yield.
+- Temporal intent that survives movement across threads and rate domains.
+- Compile-time data unification, so computation does not fragment into domain-specific representations at every boundary.
+
+Without lock-free mutation patterns, independent loops collide. Without coroutines, cross-domain temporal coordination becomes brittle or centralized. Without type-level data abstraction, every boundary degenerates into copying, conversion, and special-case glue.
+
+When these constraints are treated as fundamental rather than incidental, a different class of system emerges: a single computation can exist simultaneously at audio-rate precision, graphics-rate updates, input-driven events, and user-defined timing, without rewriting it per domain and without compromising real-time correctness.
+
+This is not an isolated problem to any single domain programming. Game engines coordinate rendering, physics, and input at mismatched rates. Robotics systems coordinate sensors, actuators, and planners. Any real-time C++ system with heterogeneous execution models faces the same architectural tension.
+
+The problem is coexistence without collapse.
+
+</div>
+
+  <div class="card section-narrow">
+<h2> A Lock-Free, Coroutine-Centric Coordination Architecture </h2>
+
+MayaFlux approaches this problem by designing for coexistence from the outset.
+
+It is an open-source C++20/23 framework (GPL-3.0) built around the idea that independent execution contexts should remain independent. Audio callbacks, graphics threads, input backends, and user-defined coroutines operate within a single process, but they do not share a forced abstraction or centralized scheduler. Each domain retains its own clock, threading model, and evaluation semantics.
+
+The coordination model is architectural, not incidental.
+
+Lock-free mutation patterns allow graph structures to evolve without blocking real-time threads. C++20 coroutines provide a weaving layer through which temporal intent can move across threads and rate domains without inventing a global scheduler. Compile-time data unification treats audio, visual, and control signals as structured numerical data rather than domain-specific types, allowing computation to exist identically across contexts.
+
+The question MayaFlux explores is not how to merge domains, but what coordination patterns become possible when coexistence is treated as a first principle, and when modern C++ facilities make that coexistence structurally expressible.
+
+The result is a system in which heterogeneous real-time loops can coordinate without collapsing into a single timing model, without fragmenting into glue code, and without sacrificing the guarantees that make each domain correct.
+
+</div>
+</div>
 
 ---
 
-## 1 · Lock-Free Coordination Across Thread Boundaries
+# MayaFlux Architecture
+
+<div class="card collapsible">
+
+<div class="collapsible-header">
+<h2>1 · Lock-Free Coordination Across Thread Boundaries</h2>
+<p class="hint">Click to expand</p>
+</div>
+
+<div class="section-preview">
+<p>
+Real-time threads cannot block. But processing graphs must evolve:  nodes added, buffers removed, processors swapped; often while audio callbacks are mid-flight at 48 kHz. MayaFlux solves this with a CAS-based pending operation pattern: any thread can mutate the graph at any time, real-time threads never block, and pending changes drain at cycle boundaries. The same pattern drives nodes, buffers, and processors identically.
+</p>
+</div>
+
+<div class="collapsible-body">
 
 ### The Pattern: CAS-Based Pending Operations
 
@@ -118,9 +177,25 @@ void RootNode::postprocess()
 
 The entire node graph processes inside a `preprocess` → compute → `postprocess` window. Pending operations are drained at the boundary. External threads that attempt registration during processing either claim a pending slot (fast path) or `wait` on the atomic (slow path, rare).
 
+</div>
+</div>
+
 ---
 
-## 2 · C++20 Coroutines Weaving Temporal Intent
+<div class="card collapsible">
+
+<div class="collapsible-header">
+<h2>2 · C++20 Coroutines Weaving Temporal Intent</h2>
+<p class="hint">Click to expand</p>
+</div>
+
+<div class="section-preview">
+<p>
+Traditional real-time systems fragment temporal logic across callbacks, timers, and state machines. Coroutines invert this: a single function body describes a complete temporal narrative: gates, triggers, delays, patterns, as sequential code. The scheduler determines <em>when</em> to resume; the coroutine describes <em>what</em> and <em>how long</em>. Timing is deterministic and jitter-free: one <code>co_await SampleDelay{48000}</code> is exactly one second at 48 kHz, every time.
+</p>
+</div>
+
+<div class="collapsible-body">
 
 ### The Architecture: Vruta (Infrastructure) + Kriya (Patterns)
 
@@ -206,9 +281,25 @@ shape >> Time(2.f);  // Creates coroutine, registers with TaskScheduler
 
 Each of these constructs a `SoundRoutine` internally. `schedule_metro` builds a `SampleDelay` loop. `schedule_pattern` builds a conditional awaiter. The fluent `>>` operator on nodes creates `NodeTimer` coroutines that are automatically registered with the appropriate domain.
 
+</div>
+</div>
+
 ---
 
-## 3 · Compile-Time Data Unification
+<div class="card collapsible">
+
+<div class="collapsible-header">
+<h2>3 · Compile-Time Data Unification</h2>
+<p class="hint">Click to expand</p>
+</div>
+
+<div class="section-preview">
+<p>
+Audio samples, pixel values, vertex positions, control voltages, at the machine level these are all just numbers. MayaFlux's type system treats them that way. Concepts like <code>ArithmeticData</code> and <code>ComputeData</code> constrain computation at compile time without encoding domain assumptions. <code>DataVariant</code> holds any numeric storage type. The same extractor, transformer, or analyzer works identically whether it's processing spectral data or a point cloud.
+</p>
+</div>
+
+<div class="collapsible-body">
 
 ### The Foundation: Universal Concepts in pch.h
 
@@ -338,9 +429,25 @@ CastResult<To> try_convert(const From& value)
 
 No silent truncation. No unchecked casts. The conversion safety is expressed through concepts at compile time and diagnosed through `CastResult` at runtime.
 
+</div>
+</div>
+
 ---
 
-## 4 · Multi-Domain Coexistence: A Working Example
+<div class="card collapsible">
+
+<div class="collapsible-header">
+<h2>4 · Multi-Domain Coexistence: A Working Example</h2>
+<p class="hint">Click to expand</p>
+</div>
+
+<div class="section-preview">
+<p>
+Each subsystem {audio, graphics, input} carries its own <code>ProcessingToken</code> that routes through independent node graphs, buffer hierarchies, and scheduler clocks. These tokens compose into <code>Domain</code> values via bitfield operations, making domain membership decomposable and extensible. A single <code>compose()</code> function can declare audio synthesis, Vulkan rendering, and cross-domain coordination without shared locks or unified timing.
+</p>
+</div>
+
+<div class="collapsible-body">
 
 ### Processing Tokens: Independent Execution Contexts
 
@@ -430,9 +537,25 @@ void compose() {
 
 Audio processing runs at 48 kHz via `AUDIO_BACKEND` token. Graphics rendering runs at display refresh via `GRAPHICS_BACKEND` token. The metro coroutine bridges the two — its callback reads audio-domain state and writes to a graphics-domain node. The `| Audio` and `| Graphics` operators route nodes and buffers to their respective `RootNode` and `RootBuffer` hierarchies. No shared locks. Each domain processes its own graph independently; the coroutine provides temporal coordination.
 
+</div>
+</div>
+
 ---
 
-## 5 · Thread Architecture: Where the Boundaries Actually Are
+<div class="card collapsible">
+
+<div class="collapsible-header">
+<h2>5 · Thread Architecture: Where the Boundaries Actually Are</h2>
+<p class="hint">Click to expand</p>
+</div>
+
+<div class="section-preview">
+<p>
+Three subsystems, three timing models, one coordination pattern. Audio is hardware-driven: RtAudio fires the callback, the sample counter advances. Graphics is self-driven: a dedicated thread ticks a <code>FrameClock</code> and paces its own frames. Input is event-driven: backend polling threads push to lock-free queues consumed by other subsystems. All three use the same <code>SubsystemProcessingHandle</code> interface -> same managers, different token-scoped views. Every thread boundary is crossed via CAS operations, atomic values, or coroutine-based coordination. No mutexes in any processing path.
+</p>
+</div>
+
+<div class="collapsible-body">
 
 ### Engine: Composition, Not Unification
 
@@ -655,6 +778,9 @@ InputSubsystem       │ Event-driven (backend polling threads)
 Each subsystem constructs its `SubsystemTokens` at initialization and receives a `SubsystemProcessingHandle` scoped to those tokens. The handle provides the same `tasks` / `nodes` / `buffers` interface regardless of which subsystem holds it. The subsystem decides when and how to call `process()` — from a hardware callback, a self-timed loop, or not at all (input backends push to queues that other subsystems consume).
 
 Every boundary between these threads is crossed via one of the mechanisms from Sections 1–4: CAS-claimed pending operations for graph mutation, lock-free ring buffers for event queues, atomic values for input→processing bridging, coroutines for temporal coordination, and processing tokens for domain routing. No mutexes in any processing path.
+
+</div>
+</div>
 
 ---
 
