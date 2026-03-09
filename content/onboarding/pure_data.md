@@ -1,5 +1,5 @@
 ---
-title: "From Pure Data to MayaFlux: Unlearning Analog Constraints"
+title: "From Pure Data to MayaFlux: Unlearning Analog Metaphors"
 ---
 
 <div class="card wide">

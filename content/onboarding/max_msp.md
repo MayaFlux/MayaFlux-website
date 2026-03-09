@@ -1,5 +1,5 @@
 ---
-title: "From MaxMSP to MayaFlux: Transcending the sanitized digital realm"
+title: "From MaxMSP to MayaFlux: Thinking Past the Patcher"
 ---
 
 <div class="card wide">
@@ -68,7 +68,7 @@ are the subject of this Rosetta Stone.
 
 <div class="card wide">
 
-## gen~: A Paradigm Trapped Inside Another Paradigm
+## gen~: A Computational Model Inside a Visual Paradigm
 
 <p>
 gen~ was a radical addition to Max/MSP.
@@ -92,7 +92,7 @@ But here's what's rarely said out loud:
 <div class="card-group columns breakout">
 
 <div class="card vertical">
-<h2>What gen~ Was Trying to Be</h2>
+<h2>Where gen~'s Architecture Creates Friction</h2>
 
 gen~ emerged from a simple realization: **the patcher paradigm breaks down when you need to think sample-by-sample.**
 
@@ -232,9 +232,7 @@ This creates friction at every level:
 
 **gen~ is brilliant at what it achieved within these constraints.**
 
-But the constraints remain.
-
-And once you recognize them as **architectural choices, not computational laws**, the question becomes:
+Once you recognize these as architectural choices rather than computational laws, the question becomes:
 
 **What becomes possible when you design for digital-first thinking from the ground up?**
 
