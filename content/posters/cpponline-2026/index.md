@@ -58,6 +58,342 @@ The result is a system in which heterogeneous real-time loops can coordinate wit
 
 ---
 
+<div class="card wide">
+
+<h2>In Practice</h2>
+
+<p>
+MayaFlux is not about producing a particular audiovisual result that cannot be replicated elsewhere.
+Such novelties are neither the point, nor interesting even if true.
+</p>
+
+<p>
+It's about making the structure of computation fluid enough that small changes open entirely different creative possibilities.
+The ideas, their ontology, and how they compose drive the work. Not mastering the API. Not fighting it.
+</p>
+
+<p>
+The two examples below are the same sound engine. The second changes roughly 20 lines.
+What those 20 lines unlock is not a variation on the first, it's a different compositional universe.
+</p>
+
+<a href="https://youtu.be/OecKzGCxpRM" target="_blank">
+<img src="https://img.youtube.com/vi/OecKzGCxpRM/maxresdefault.jpg?v=1"
+alt="Example #1" width="100%" />
+</a>
+
+</div>
+
+</br>
+
+<div class="two-column-grid breakout">
+
+<div class="card collapsible">
+
+<div class="collapsible-header">
+<h3>Example 1: Bouncing Bell</h3>
+<p class="hint">Click to expand code</p>
+</div>
+
+<p>
+A modal resonator body with dynamic spatial identity. A sine oscillator provides continuous motion that becomes a structural timing source via zero-crossing detection.
+Each crossing excites the resonator, randomises its fundamental, and alternates its stereo position.
+</p>
+
+<p>
+Three visual modes share the same audio engine and switch at runtime. Mouse position maps directly to strike position and pitch.
+</p>
+
+<div class="collapsible-body">
+
+```cpp
+void bouncing_bell()
+{
+    // Unified audiovisual playground with multiple representation modes
+    auto window = create_window({ .title = "Bouncing Bell", .width = 1920, .height = 1080 });
+
+    // System memory: timing, spatial alternation, visual accumulation, representation mode
+    struct State {
+        double last_wobble = 0.0; // previous oscillator value for transition detection
+        uint32_t side = 0; // stereo side toggle
+        float angle = 0.0F; // spiral phase memory
+        float radius = 0.0F; // spiral growth memory
+        bool explode = false; // reserved structural flag (future extension)
+        int visual = 0; // 0=spiral, 1=burst, 2=field
+    };
+    auto state = std::make_shared<State>();
+
+    // Single resonant body — spatial identity is dynamic
+    auto bell = vega.ModalNetwork(12, 220.0, ModalNetwork::Spectrum::INHARMONIC);
+
+    // Slow continuous motion becomes structural timing source
+    auto wobble = vega.Sine(0.3, 1.0);
+
+    // Continuous → discrete event (structural bounce)
+    auto swing = vega.Logic([state](double x) {
+        bool crossed = (state->last_wobble < 0.0) && (x >= 0.0);
+        state->last_wobble = x;
+        return crossed;
+    });
+    wobble >> swing;
+
+    // Each bounce excites the body and flips spatial polarity
+    swing->on_change_to(true, [bell, state](auto&) {
+        bell->excite(get_uniform_random(0.5F, 0.9F));
+        bell->set_fundamental(get_uniform_random(200.0F, 800.0F));
+
+        route_network(bell, { state->side }, 0.15);
+        state->side = 1 - state->side; // alternate left/right
+    });
+
+    // Oscillator also shapes decay — timing signal influences physical response
+    bell->map_parameter("decay", wobble, MappingMode::BROADCAST);
+
+    // High-capacity visual field for multiple accumulation strategies
+    auto points = vega.PointCollectionNode(2000) | Graphics;
+    auto geom = vega.GeometryBuffer(points) | Graphics;
+    geom->setup_rendering({ .target_window = window });
+    window->show();
+
+    // Representation layer: same sound, multiple visual ontologies
+    schedule_metro(0.016, [points, bell, wobble, state]() {
+        float energy = bell->get_audio_buffer().has_value()
+            ? (float)rms(bell->get_audio_buffer().value()) * 5.0F
+            : 0.0F;
+
+        auto wobble_val = (float)wobble->get_last_output(); // continuous state influences color and motion
+        float hue = (wobble_val + 1.0F) * 0.5F;
+        float x_pos = (state->side == 0) ? -0.5F : 0.5F;
+
+        if (state->visual == 0) {
+            // Mode 0: spiral accumulation (memory + growth)
+            if (energy > 0.1F) {
+                state->angle += 0.5F + wobble_val * 0.3F;
+                state->radius += 0.002F;
+            } else {
+                state->angle += 0.01F;
+                state->radius += 0.0001F;
+            }
+
+            if (state->radius > 1.0F) {
+                state->radius = 0.0F;
+                points->clear_points(); // visual cycle reset
+            }
+
+            points->add_point({ .position = glm::vec3(
+                                    std::cos(state->angle) * state->radius,
+                                    std::sin(state->angle) * state->radius * (16.0F / 9.0F),
+                                    0.0F),
+                .color = glm::vec3(hue, 0.8F, 1.0F - hue),
+                .size = 8.0F + energy * 15.0F });
+
+        } else if (state->visual == 1) {
+            // Mode 1: localized burst (energy → multiplicity)
+            for (int i = 0; i < (int)(energy * 80); i++) {
+                auto a = (float)get_uniform_random(0.0F, 6.28F);
+                auto r = (float)get_uniform_random(0.01F, 0.05F);
+
+                points->add_point({ .position = glm::vec3(x_pos + std::cos(a) * r, std::sin(a) * r, 0.0F),
+                    .color = glm::vec3(energy, 0.5F, 1.0F - energy),
+                    .size = (float)get_uniform_random(5.0F, 20.0F) });
+            }
+
+            if (points->get_point_count() > 2000) {
+                points->clear_points(); // density control
+            }
+
+        } else {
+            // Mode 2: distributed field (energy → spatial diffusion)
+            for (int i = 0; i < (int)(energy * 60); i++) {
+                points->add_point({ .position = glm::vec3(
+                                        (float)get_uniform_random(-0.8F, 0.8F),
+                                        (float)get_uniform_random(-0.8F, 0.8F),
+                                        0.0F),
+                    .color = glm::vec3(hue, energy, 1.0F - hue),
+                    .size = 3.0F + energy * 5.0F });
+            }
+
+            if (points->get_point_count() > 2000) {
+                points->clear_points(); // prevent runaway accumulation
+            }
+        }
+    });
+
+    // Direct physical interaction: position maps to pitch and intensity
+    on_mouse_pressed(window, IO::MouseButtons::Left, [window, bell](double x, double y) {
+        glm::vec2 pos = normalize_coords(x, y, window);
+        float pitch = 200.0F + ((float)pos.y + 1.0F) * 300.0F;
+        float intensity = 0.3F + std::abs((float)pos.x) * 0.6F;
+        bell->set_fundamental(pitch);
+        bell->excite(intensity);
+    });
+
+    // Switch representation modes (same sound engine, different interpretation)
+    on_key_pressed(window, IO::Keys::N1, [points, state]() { state->visual = 0; points->clear_points(); });
+    on_key_pressed(window, IO::Keys::N2, [points, state]() { state->visual = 1; points->clear_points(); });
+    on_key_pressed(window, IO::Keys::N3, [points, state]() { state->visual = 2; points->clear_points(); });
+
+    // Collapse spatial polarity
+    on_key_pressed(window, IO::Keys::M, [bell]() { route_network(bell, { 0, 1 }, 0.3); });
+}
+```
+
+</div>
+<!-- </div>  -->
+</div>
+
+<div class="card collapsible">
+
+<div class="collapsible-header">
+<h3>Example 1.2: Bouncing Bell Extended</h3>
+<p class="hint">Click to expand code</p>
+</div>
+
+<p>
+The resonator gains modal coupling between adjacent modes, a slow pitch drift oscillator mapped directly into the network's frequency parameter and into visual hue simultaneously, and a runtime-swappable rhythm source (slow sine, fast sine, random noise) wired through the same zero-crossing logic node. Mouse now maps to strike position on the resonator body rather than pitch. Space cycles the rhythm source at runtime without stopping anything.
+
+The audio engine is structurally identical. The relationships between signals changed.
+
+</p>
+
+<div class="collapsible-body">
+
+```cpp
+void bouncing_v2()
+{
+    // Unified audiovisual playground with multiple representation modes
+    auto window = create_window({ .title = "Bouncing Bell", .width = 1920, .height = 1080 });
+
+    // System memory: timing, spatial alternation, visual accumulation, representation mode
+    struct State {
+        double last_wobble = 0.0; // previous oscillator value for transition detection
+        uint32_t side = 0; // stereo side toggle
+        float angle = 0.0F; // spiral phase memory
+        float radius = 0.0F; // spiral growth memory
+        bool explode = false; // reserved structural flag (future extension)
+        int visual = 0; // 0=spiral, 1=burst, 2=field
+    };
+    auto state = std::make_shared<State>();
+
+    // Single resonant body — spatial identity is dynamic
+    auto bell = vega.ModalNetwork(12, 220.0, ModalNetwork::Spectrum::INHARMONIC);
+
+    // Slow continuous motion becomes structural timing source
+    auto wobble = vega.Sine(0.3, 1.0);
+
+    // Continuous → discrete event (structural bounce)
+    auto swing = vega.Logic([state](double x) {
+        bool crossed = (state->last_wobble < 0.0) && (x >= 0.0);
+        state->last_wobble = x;
+        return crossed;
+    });
+    wobble >> swing;
+
+    // Each bounce excites the body and flips spatial polarity
+    swing->on_change_to(true, [bell, state](auto&) {
+        bell->excite(get_uniform_random(0.5F, 0.9F));
+        bell->set_fundamental(get_uniform_random(200.0F, 800.0F));
+
+        route_network(bell, { state->side }, 0.15);
+        state->side = 1 - state->side; // alternate left/right
+    });
+
+    // Oscillator also shapes decay — timing signal influences physical response
+    bell->map_parameter("decay", wobble, MappingMode::BROADCAST);
+
+    // High-capacity visual field for multiple accumulation strategies
+    auto points = vega.PointCollectionNode(2000) | Graphics;
+    auto geom = vega.GeometryBuffer(points) | Graphics;
+    geom->setup_rendering({ .target_window = window });
+    window->show();
+
+    // Representation layer: same sound, multiple visual ontologies
+    schedule_metro(0.016, [points, bell, wobble, state]() {
+        float energy = bell->get_audio_buffer().has_value()
+            ? (float)rms(bell->get_audio_buffer().value()) * 5.0F
+            : 0.0F;
+
+        auto wobble_val = (float)wobble->get_last_output(); // continuous state influences color and motion
+        float hue = (wobble_val + 1.0F) * 0.5F;
+        float x_pos = (state->side == 0) ? -0.5F : 0.5F;
+
+        if (state->visual == 0) {
+            // Mode 0: spiral accumulation (memory + growth)
+            if (energy > 0.1F) {
+                state->angle += 0.5F + wobble_val * 0.3F;
+                state->radius += 0.002F;
+            } else {
+                state->angle += 0.01F;
+                state->radius += 0.0001F;
+            }
+
+            if (state->radius > 1.0F) {
+                state->radius = 0.0F;
+                points->clear_points(); // visual cycle reset
+            }
+
+            points->add_point({ .position = glm::vec3(
+                                    std::cos(state->angle) * state->radius,
+                                    std::sin(state->angle) * state->radius * (16.0F / 9.0F),
+                                    0.0F),
+                .color = glm::vec3(hue, 0.8F, 1.0F - hue),
+                .size = 8.0F + energy * 15.0F });
+
+        } else if (state->visual == 1) {
+            // Mode 1: localized burst (energy → multiplicity)
+            for (int i = 0; i < (int)(energy * 80); i++) {
+                auto a = (float)get_uniform_random(0.0F, 6.28F);
+                auto r = (float)get_uniform_random(0.01F, 0.05F);
+
+                points->add_point({ .position = glm::vec3(x_pos + std::cos(a) * r, std::sin(a) * r, 0.0F),
+                    .color = glm::vec3(energy, 0.5F, 1.0F - energy),
+                    .size = (float)get_uniform_random(5.0F, 20.0F) });
+            }
+
+            if (points->get_point_count() > 2000) {
+                points->clear_points(); // density control
+            }
+
+        } else {
+            // Mode 2: distributed field (energy → spatial diffusion)
+            for (int i = 0; i < (int)(energy * 60); i++) {
+                points->add_point({ .position = glm::vec3(
+                                        (float)get_uniform_random(-0.8F, 0.8F),
+                                        (float)get_uniform_random(-0.8F, 0.8F),
+                                        0.0F),
+                    .color = glm::vec3(hue, energy, 1.0F - hue),
+                    .size = 3.0F + energy * 5.0F });
+            }
+
+            if (points->get_point_count() > 2000) {
+                points->clear_points(); // prevent runaway accumulation
+            }
+        }
+    });
+
+    // Direct physical interaction: position maps to pitch and intensity
+    on_mouse_pressed(window, IO::MouseButtons::Left, [window, bell](double x, double y) {
+        glm::vec2 pos = normalize_coords(x, y, window);
+        float pitch = 200.0F + ((float)pos.y + 1.0F) * 300.0F;
+        float intensity = 0.3F + std::abs((float)pos.x) * 0.6F;
+        bell->set_fundamental(pitch);
+        bell->excite(intensity);
+    });
+
+    // Switch representation modes (same sound engine, different interpretation)
+    on_key_pressed(window, IO::Keys::N1, [points, state]() { state->visual = 0; points->clear_points(); });
+    on_key_pressed(window, IO::Keys::N2, [points, state]() { state->visual = 1; points->clear_points(); });
+    on_key_pressed(window, IO::Keys::N3, [points, state]() { state->visual = 2; points->clear_points(); });
+
+    // Collapse spatial polarity
+    on_key_pressed(window, IO::Keys::M, [bell]() { route_network(bell, { 0, 1 }, 0.3); });
+}
+```
+
+</div> </div> </div>
+
+---
+
 # MayaFlux Architecture
 
 <div class="card collapsible">
