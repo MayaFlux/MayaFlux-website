@@ -16,7 +16,7 @@ title: "MayaFlux"
 
     <div class="collapsible-body">
         <p>
-        Most creative coding tools simulate analog hardware—virtual knobs, cables, circuit boards.
+        Most creative coding tools simulate analog hardware: virtual knobs, cables, circuit boards.
         This imposes constraints that don't exist in computation.
         </p>
 
@@ -40,37 +40,49 @@ title: "MayaFlux"
         <div class="feature-grid">
             <div class="feature-card">
                 <h3>Unified Data Streams</h3>
-                <p>Audio, visual, and control signals are all numerical streams that can interact freely.</p>
+                <p>Audio, visual, and control signals share the same numerical substrate. A node output can route to an RtAudio callback and a Vulkan push constant simultaneously, with no translation layer between them.</p>
             </div>
 
             <hr>
             <div class="feature-card">
-                <h3>Digital-First Thinking</h3>
-                <p>Recursive algorithms, grammar-defined operations, and non-analog logic are first-class citizens.</p>
+                <h3>Cross-Modal Node Bindings</h3>
+                <p>Node outputs bind directly to GPU shader parameters. NodeBindingsProcessor writes scalar values to push constants; DescriptorBindingsProcessor handles vectors, matrices, and structured arrays via UBOs and SSBOs. Audio envelopes, spectral data, and control signals reach the GPU through the same node API, with no bridging code.</p>
+            </div>
+
+            <hr>
+            <div class="feature-card">
+                <h3>Physical Modelling Networks</h3>
+                <p>ModalNetwork, WaveguideNetwork, and ResonatorNetwork implement physical modelling synthesis as first-class node graph citizens. Excitation, coupling, boundary conditions, and spatial routing are all live-configurable parameters.</p>
+            </div>
+
+            <hr>
+            <div class="feature-card">
+                <h3>Live Signal Matrix</h3>
+                <p>IOManager provides a unified interface across the full signal matrix: audio files, video files, live camera devices, and image assets. All sources wire into the same buffer and processor architecture.</p>
             </div>
 
             <hr>
             <div class="feature-card">
                 <h3>Live Coding with Lila</h3>
-                <p>Modify C++ code at runtime via LLVM21 JIT—change algorithms without stopping audio.</p>
+                <p>An embedded Clang interpreter evaluates arbitrary C++20 at runtime via LLVM ORC JIT. Latency is one buffer cycle. Algorithms change without stopping audio or tearing down the graphics context.</p>
             </div>
 
             <hr>
             <div class="feature-card">
                 <h3>Coroutine Temporal Control</h3>
-                <p>C++20 coroutines treat time as compositional material, enabling sample-accurate scheduling.</p>
+                <p>C++20 coroutines are the scheduling primitive. SampleDelay, FrameDelay, and MultiRateDelay awaiters let temporal intent cross domain boundaries. Time is compositional material, not a callback interval.</p>
             </div>
 
             <hr>
             <div class="feature-card">
                 <h3>Lock-Free Architecture</h3>
-                <p>Atomic operations ensure real-time safety without locks or contention.</p>
+                <p>No mutexes in the real-time path. atomic_ref, CAS-based dispatch, and lock-free registration lists coordinate all four execution contexts: RtAudio callbacks, Vulkan render threads, async input backends, and user coroutines.</p>
             </div>
 
             <hr>
             <div class="feature-card">
-                <h3>GPU Compute Integration</h3>
-                <p>Vulkan compute shaders integrate directly into audio streams.</p>
+                <h3>MIDI and HID Input</h3>
+                <p>RtMidi and HIDAPI backends feed an async InputManager that dispatches to InputNode instances in the node graph. Controllers, sensors, and custom HID devices become signal sources with the same routing API as any other node.</p>
             </div>
         </div>
 
@@ -169,13 +181,26 @@ title: "MayaFlux"
 
     <div class="collapsible-body">
 
-        <p><strong>Alpha:</strong> Core audio subsystem stable. Vulkan rendering in active development. Lila JIT working.</p>
+        <p><strong>Version 0.2.0 — Alpha. Stable core.</strong></p>
         <hr>
-        <p><strong>Production-ready:</strong> Audio processing, node graphs, memory management.</p>
+        <p><strong>Stable:</strong> Audio processing, lock-free node graphs, coroutine scheduler, channel routing with crossfade transitions.</p>
         <hr>
-        <p><strong>Validated:</strong> GPU compute routing, cross-modal connectors.</p>
+        <p><strong>Stable:</strong> Vulkan 1.3 dynamic rendering, multi-window, geometry nodes, texture pipeline, compute shaders.</p>
         <hr>
-        <p><strong>Future:</strong> Full 3D graphics stack, networking, OpenCV integration</p>
+        <p><strong>Stable:</strong> Live camera input (Linux, macOS, Windows), video file playback, image loading via IOManager.</p>
+        <hr>
+        <p><strong>Stable:</strong> MIDI and HID input backends, async dispatch, InputNode infrastructure.</p>
+
+        <hr>
+        <p><strong>Stable:</strong> Lila, LLVM ORC JIT for live C++20 evaluation at sub-buffer latency.</p>
+        <hr>
+        <p><strong>In progress:</strong> Kinesis mathematical substrate: spectral analysis, geometric computation, statistical operations.</p>
+        <hr>
+        <p><strong>Next (0.3):</strong> 3D expansion. The mathematical substrate and ViewTransform infrastructure are in place; 0.3 adds dedicated tooling, examples, and the surface area that makes 3D a first-class workflow rather than hooks only.</p>
+        <hr>
+        <p><strong>Planned (0.4):</strong> Kinesis as first-class analysis namespace: Eigen-level linear algebra, FluCoMa-level audio analysis primitives.</p>
+        <hr>
+        <p><strong>Planned (0.5):</strong> Native UI framework, building on existing Region and WindowContainer infrastructure.</p>
 
     </div>
 
@@ -202,11 +227,16 @@ title: "MayaFlux"
         <li><a href="https://mayaflux.github.io/MayaFlux/">Documentation</a></li>
         <li><a href="https://github.com/MayaFlux/MayaFlux">Source Code</a></li>
         <li><a href="/releases/"> Release Notes</a></li>
+        <li><a href="/posters/cpponline-2026/"> C++ Online conference poster</a></li>
         </ul>
 
     </div>
 
 </div>
+
+<!-- ====================================== -->
+<!--  CARD 7 — Quick teaser                 -->
+<!-- ====================================== -->
 
 <div class="card collapsible wide">
     <div class="collapsible-header">
@@ -215,84 +245,105 @@ title: "MayaFlux"
     </div>
 
     <div class="collapsible-body">
-    <pre><code class="language-cpp">
 
-#pragma once
-#define MAYASIMPLE
-#include "MayaFlux/MayaFlux.hpp"
+    <!-- Video will replace this code block when ready -->
 
-void settings() {
-// Low-latency audio setup
-auto& stream = MayaFlux::Config::get_global_stream_info();
-stream.sample_rate = 48000;
-}
+<pre><code class="cpp">
+void camera_warp()
+{
+    auto window = create_window({ .title = "Camera Warp", .width = 1920, .height = 1080 });
 
-void compose() {
+    // Open camera device — platform string: /dev/video0, "0", or "video=Integrated Camera"
+    auto manager = get_io_manager();
+    auto camera = manager->open_camera({ .device_name = "/dev/video0",
+        .target_width = 1920,
+        .target_height = 1080,
+        .target_fps = 30.0 });
 
-    // 1. Create the bell
-    auto bell = vega.ModalNetwork(
-                    12,
-                    220.0,
-                    ModalNetwork::Spectrum::INHARMONIC)[0]
-        | Audio;
-
-    // 2. Create audio-driven logic
-    auto source_sine = vega.Sine(0.2, 1.0f); // 0.2 Hz slow oscillator
-
-    static double last_input = 0.0;
-    auto logic = vega.Logic([](double input) {
-        // Arhythmic: true when sine crosses zero AND going positive
-        bool crossed_zero = (last_input < 0.0) && (input >= 0.0);
-        last_input = input;
-        return crossed_zero;
+    // Wire camera into graphics buffer system
+    auto tex = manager->hook_camera_to_buffer(camera);
+    tex->setup_rendering({
+        .target_window = window,
+        .fragment_shader = "polar_warp.frag",
     });
-
-    source_sine >> logic;
-
-    // 3. When logic fires, excite the bell
-    logic->on_change_to(true, [bell](auto& ctx) {
-        if (ctx.value >= 0) {
-            bell->excite(get_uniform_random(0.5f, 0.9f));
-            bell->set_fundamental(get_uniform_random(220.0f, 1000.0f));
-        }
-    });
-
-    // 4. Graphics (same as before)
-    auto window = MayaFlux::create_window({ "Audio-Driven Bell", 1280, 720 });
-    auto points = vega.PointCollectionNode(500) | Graphics;
-    auto geom = vega.GeometryBuffer(points) | Graphics;
-
-    geom->setup_rendering({ .target_window = window });
+    tex->get_render_processor()->enable_alpha_blending();
     window->show();
 
-    // 5. Visualize: points grow when bell strikes (when logic fires)
-    MayaFlux::schedule_metro(0.016, [points]() {
-        static float angle = 0.0f;
-        static float radius = 0.0f;
+    // Three audio nodes — each drives one shader parameter
+    auto osc = vega.Sine(5.F, 1.0);
 
-        if (last_input != 0) {
-            angle += 0.5f; // Quick burst on strike
-            radius += 0.002f;
-        } else {
-            angle += 0.01f; // Slow growth otherwise
-            radius += 0.0001f;
-        }
+    auto radial_node = vega.Polynomial([](double x) {
+        return std::abs(x) * 0.5;
+    }) | Graphics;
+    radial_node->set_input_node(osc);
 
-        if (radius > 1.0f) {
-            radius = 0.0f;
-            points->clear_points();
-        }
+    auto angular_node = vega.Polynomial([](double x) {
+        return std::abs(x) * 2.5;
+    }) | Graphics;
+    angular_node->set_input_node(osc);
 
-        float x = std::cos(angle) * radius;
-        float y = std::sin(angle) * radius * (16.0f / 9.0f);
-        float brightness = 1.0f - (radius * 0.7f);
+    auto chroma_node = vega.Polynomial([](double x) {
+        return std::abs(x) * 0.15;
+    }) | Graphics;
+    chroma_node->set_input_node(osc);
 
-        points->add_point(Nodes::GpuSync::PointVertex {
-            .position = glm::vec3(x, y, 0.0f),
-            .color = glm::vec3(brightness, brightness * 0.8f, 1.0f),
-            .size = 8.0f + radius * 4.0f });
-    });
-    </code></pre>
+    // Bind node outputs directly to shader push constants — no bridging code
+    struct Params {
+        float radial_scale;
+        float angular_velocity;
+        float chroma_split;
+    };
+
+    auto bindings = create_processor<Buffers::NodeBindingsProcessor>(tex,
+        Buffers::ShaderConfig { "polar_warp.frag" });
+
+    bindings->set_push_constant_size<Params>();
+    bindings->bind_node("radial", radial_node, offsetof(Params, radial_scale), sizeof(float));
+    bindings->bind_node("angular", angular_node, offsetof(Params, angular_velocity), sizeof(float));
+    bindings->bind_node("chroma", chroma_node, offsetof(Params, chroma_split), sizeof(float));
+}
+</code></pre>
+
+</br>
+polar_warp.frag:
+
+<pre><code class="cpp">
+#version 450
+
+layout(location = 0) in vec2 fragTexCoord;
+layout(location = 0) out vec4 outColor;
+
+layout(binding = 0) uniform sampler2D texSampler;
+
+layout(push_constant) uniform Params {
+    float radial_scale;
+    float angular_velocity;
+    float chroma_split;
+};
+
+void main() {
+vec2 center = fragTexCoord - 0.5;
+
+    float dist = length(center);
+    float angle = atan(center.y, center.x);
+
+    float r = dist + radial_scale * 0.1 * sin(dist * 20.0 + angular_velocity);
+    float theta = angle + angular_velocity * 0.3 + sin(dist * 8.0) * radial_scale * 0.5;
+
+    vec2 uv_r = vec2(0.5 + r * cos(theta - chroma_split), 0.5 + r * sin(theta - chroma_split));
+    vec2 uv_g = vec2(0.5 + r * cos(theta), 0.5 + r * sin(theta));
+    vec2 uv_b = vec2(0.5 + r * cos(theta + chroma_split), 0.5 + r * sin(theta + chroma_split));
+
+    float red = texture(texSampler, uv_r).r;
+    float green = texture(texSampler, uv_g).g;
+    float blue = texture(texSampler, uv_b).b;
+
+    outColor = vec4(red, green, blue, 1.0);
+
+}
+
+</code></pre>
+
     </div>
 
 </div>
