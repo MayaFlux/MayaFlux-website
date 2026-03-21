@@ -43,7 +43,7 @@ layout: "tutorial"
       <pre><code class="language-cpp">
 void compose() {
     auto sound = vega.read_audio("path/to/file.wav") | Audio;
-    auto buffers = MayaFlux::get_last_created_container_buffers();
+    auto buffers = get_io_manager::get_audio_buffers();
 
     // Polynomial: x² generates harmonics
     auto poly = vega.Polynomial([](double x) { return x * x; });
@@ -265,7 +265,7 @@ auto poly = vega.Polynomial([](double x) {
             <pre><code class="language-cpp">
 void compose() {
     auto sound = vega.read_audio("path/to/file.wav") | Audio;
-    auto buffers = MayaFlux::get_last_created_container_buffers();
+    auto buffers = get_io_manager::get_audio_buffers(sound);
 
     // Recursive: output depends on previous outputs
     auto recursive = vega.Polynomial(
@@ -620,7 +620,7 @@ void compose() {
 
         <pre><code class="language-cpp">
 auto sound = vega.read_audio("path/to/file.wav") | Audio;
-auto buffers = MayaFlux::get_last_created_container_buffers();
+auto buffers = get_io_manager::get_audio_buffers(sound);
 auto logic = vega.Logic(LogicOperator::THRESHOLD, 0.0);
 
 auto processor = MayaFlux::create_processor&lt;LogicProcessor&gt;(
@@ -789,7 +789,7 @@ proc->set_threshold_remap_values(1.0, 0.3);  // Pumping rhythm
             <pre><code class="language-cpp">
 void compose() {
     auto sound = vega.read_audio("drums.wav") | Audio;
-    auto buffers = MayaFlux::get_last_created_container_buffers();
+    auto buffers = get_io_manager::get_audio_buffers(sound);
 
     auto bitcrush = vega.Logic(LogicOperator::THRESHOLD, 0.0);
     auto crush_proc =
@@ -965,7 +965,7 @@ auto poly_expand =
             <pre><code class="language-cpp">
 void compose() {
     auto sound = vega.read_audio("path/to/file.wav") | Audio;
-    auto buffer = MayaFlux::get_last_created_container_buffers()[0];
+    auto buffer = get_io_manager::get_audio_buffers(sound)[0];
 
     // Create an empty chain
     auto chain = MayaFlux::create_processing_chain();
@@ -1574,7 +1574,7 @@ vega.NodeBuffer(0, 512, input, false)[1] | Audio;
       <pre><code class="language-cpp">
 void compose() {
     auto sound = vega.read_audio("path/to/file.wav") | Audio;
-    auto buffer = MayaFlux::get_last_created_container_buffers()[0];
+    auto buffer = get_io_manager::get_audio_buffers(sound)[0];
 
     // Create a DynamicSoundStream (accumulator for captured audio)
     auto capture_stream = std::make_shared&lt;DynamicSoundStream&gt;(48000, 2);
@@ -1722,7 +1722,7 @@ auto writer = std::make_shared&lt;SoundStreamWriter&gt;(stream);
     <pre><code class="language-cpp">
 // Record 5 seconds of audio
 auto sound = vega.read_audio("path/to/file.wav") | Audio;
-auto buffer = MayaFlux::get_last_created_container_buffers()[0];
+auto buffer = get_io_manager::get_audio_buffers(sound)[0];
 
 auto stream = std::make_shared&lt;DynamicSoundStream&gt;(48000, 1);
 stream-&gt;ensure_capacity(48000 * 5);  // Pre-allocate 5 seconds

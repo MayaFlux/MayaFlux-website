@@ -336,7 +336,7 @@ auto sound_container = vega.read_audio("file.wav");
 
             <pre><code class="language-cpp">
 auto sound_container = vega.read_audio("path/to/file.wav");
-auto buffers = MayaFlux::hook_sound_container_to_buffers(sound_container);
+auto buffers = get_io_manager::hook_audio_container_to_buffers(sound_container);
             </code></pre>
 
             <p>Run this code. Your file plays.</p>
@@ -428,7 +428,7 @@ auto buffers = MayaFlux::hook_sound_container_to_buffers(sound_container);
 
         <p>MayaFlux has a <strong>buffer manager</strong>—a central system that creates, tracks, and coordinates all buffers in your program.</p>
 
-        <p>When you call <code>hook_sound_container_to_buffers()</code>, here's what happens:</p>
+        <p>When you call <code>get_io_manager::hook_audio_container_to_buffers()</code>, here's what happens:</p>
 
         <pre><code class="language-cpp">
 auto buffer_manager = MayaFlux::get_buffer_manager();
@@ -567,8 +567,8 @@ auto container_buffer = buffer_manager->create_audio_buffer<SoundContainerBuffer
         <p>When you call <code>vega.read_audio() | Audio</code>, MayaFlux creates the buffers internally. But now, with the ability to get those buffers back, you have access to them:</p>
 
         <pre><code class="language-cpp">
-auto sound_container = vega.read_audio("path/to/file.wav");
-auto buffers = MayaFlux::get_last_created_container_buffers();
+auto sound_container = vega.read_audio("path/to/file.wav") | Audio;
+auto buffers = get_io_manager::get_audio_buffers(sound_container);
 
 // Now you have the buffers as a vector:
 // buffers[0] → channel 0
@@ -610,8 +610,8 @@ vega.read_audio("path/to/file.wav") | Audio;
     <h3>Explicit (What's actually happening)</h3>
 
     <pre><code class="language-cpp">
-auto sound_container = vega.read_audio("path/to/file.wav");
-auto buffers = MayaFlux::get_last_created_container_buffers();
+auto sound_container = vega.read_audio("path/to/file.wav") | Audio;
+auto buffers = get_io_manager::get_audio_buffers(sound_container);
 // File is loaded, buffers exist, but no connection to hardware yet
 // Buffers have chains, but nothing is using them
 
@@ -675,7 +675,7 @@ void compose() {
 
             <pre><code class="language-cpp">
 auto sound_container = vega.read_audio("path/to/file.wav") | Audio;
-auto buffers = MayaFlux::get_last_created_container_buffers();
+auto buffers = get_io_manager::get_audio_buffers(sound_container);
 
 auto filter = vega.IIR(std::vector{0.1, 0.2, 0.1}, std::vector{1.0, -0.6});
 auto filter_processor = MayaFlux::create_processor<MayaFlux::Buffers::FilterProcessor>(buffers[0], filter);
@@ -943,7 +943,7 @@ auto fp2 = MayaFlux::create_processor<MayaFlux::Buffers::FilterProcessor>(buffer
         <pre><code class="language-cpp">
 void compose() {
     auto sound_container = vega.read_audio("path/to/your/file.wav") | Audio;
-    auto buffers = MayaFlux::get_last_created_container_buffers();
+    auto buffers = get_io_manager::get_audio_buffers(sound_container);
 
     auto filter = vega.IIR(std::vector{0.1, 0.2, 0.1}, std::vector{1.0, -0.6});
     auto filter_processor = MayaFlux::create_processor<MayaFlux::Buffers::FilterProcessor>(buffers[0], filter);
@@ -989,7 +989,7 @@ auto filter = vega.IIR(std::vector{0.05, 0.3, 0.05}, std::vector{1.0, -0.8});
 
             <pre><code class="language-cpp">
 auto sound_container = vega.read_audio("path/to/file.wav") | Audio;
-auto buffers = MayaFlux::get_last_created_container_buffers();
+auto buffers = get_io_manager::get_audio_buffers(sound_container);
 auto filter = vega.IIR(std::vector{0.1, 0.2, 0.1}, std::vector{1.0, -0.6});
 auto fp = MayaFlux::create_processor<MayaFlux::Buffers::FilterProcessor>(buffers[0], filter);
             </code></pre>
