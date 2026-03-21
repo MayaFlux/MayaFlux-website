@@ -419,7 +419,7 @@ void compose() {
             float x = get_uniform_random(-1.0f, 1.0f);
             float y = get_uniform_random(-1.0f, 1.0f);
 
-            points->add_point(Nodes::GpuSync::PointVertex {
+            points->add_point(Nodes::PointVertex {
                 .position = glm::vec3(x, y, 0.0f),
                 .color = glm::vec3(1.0f, 0.8f, 0.2f),
                 .size = 10.0f });

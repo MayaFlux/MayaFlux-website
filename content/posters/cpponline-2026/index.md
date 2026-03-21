@@ -862,7 +862,7 @@ void compose() {
         // Runs at ~60Hz, reads audio state, writes to graphics node
         float x = std::cos(angle) * radius;
         float y = std::sin(angle) * radius;
-        points->add_point(Nodes::GpuSync::PointVertex{
+        points->add_point(Nodes::PointVertex{
             .position = glm::vec3(x, y, 0.0f),
             .color = glm::vec3(brightness, brightness * 0.8f, 1.0f),
             .size = 8.0f + radius * 4.0f

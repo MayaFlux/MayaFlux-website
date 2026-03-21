@@ -152,7 +152,7 @@ Weave downloads the framework, installs dependencies, and sets up your first pro
 <div class="collapsible-header">
 <h2>macOS</h2>
 <p>
-<a href="https://github.com/MayaFlux/Weave/releases/download/v0.2.1/Weave-installer-macos.pkg"><strong>Download for macOS</strong></a>
+<a href="https://github.com/MayaFlux/Weave/releases/download/v0.3.0/Weave-installer-macos.pkg"><strong>Download for macOS</strong></a>
 </p>
 <p class="hint">Click to expand</p>
 </div>
@@ -210,7 +210,7 @@ cmake --build . --parallel
 <div class="collapsible-header">
 <h2>Linux</h2>
 <p>
-<a href="https://github.com/MayaFlux/Weave/releases/download/v0.2.1/Weave-linux.tar.gz"><strong>Download for Linux</strong></a>
+<a href="https://github.com/MayaFlux/Weave/releases/download/v0.3.0/Weave-linux.tar.gz"><strong>Download for Linux</strong></a>
 </p>
 <p class="hint">Click to expand</p>
 </div>
@@ -284,7 +284,7 @@ cmake --build . --parallel
 <div class="collapsible-header">
 <h2>Windows</h2>
 <p>
-<a href="https://github.com/MayaFlux/Weave/releases/download/v0.2.1/Weave-windows.zip"><strong>Download for Windows</strong></a>
+<a href="https://github.com/MayaFlux/Weave/releases/download/v0.3.0/Weave-windows.zip"><strong>Download for Windows</strong></a>
 </p>
 <p class="hint">Click to expand</p>
 </div>
@@ -335,69 +335,6 @@ cmake --build . --config Release
 </div>
 
 ---
-
-<div class="card wide">
-
-# About development Versions & Tutorials
-
-<p>
-<strong>MayaFlux 0.1.2 is fully stable</strong> and remains a solid foundation.
-However, it represents an earlier stage of the system and <em>lags significantly behind</em>
-the concepts, architecture, and workflows discussed in current talks, tutorials, and workshops.
-</p>
-
-<p>
-If you are following public talks, live demonstrations, or upcoming tutorials,
-you will find that <strong>the above does not include many of the systems being described or explored</strong>.
-</p>
-
-<p>
-For this reason, <strong>the recommended path is the development stream</strong>.
-This is the version used in talks, documentation experiments, and teaching material.
-</p>
-
-<h3>Recommended: Choose "Development" in the resepective OS installer choice</h3>
-
-The rest of the installation process is the same as described above.
-
-<ul>
-  <li>
-    <strong>macOS:</strong>
-    <a href="https://github.com/MayaFlux/Weave/releases/download/v0.3.0-dev/Weave-installer-macos.pkg">
-      Download latest Weave macOS
-    </a>
-  </li>
-  <li>
-    <strong>Linux:</strong>
-    <a href="https://github.com/MayaFlux/Weave/releases/download/v0.3.0-dev/Weave-linux.tar.gz">
-      Download latest Weave for linux
-    </a>
-  </li>
-  <li>
-    <strong>Windows:</strong>
-    <a href="https://github.com/MayaFlux/Weave/releases/download/v0.3.0-dev/Weave-windows.zip">
-      Download latest Weave for windows
-    </a>
-  </li>
-</ul>
-
-<p>
-⚠️ <strong>Platform Note (macOS):</strong><br>
-<strong>0.2.0-dev onward</strong> requires macOS 15.6 or higher (Sequoia) on both Intel and Apple Silicon.
-</p>
-
-<p>
-The development stream may introduce <em>API evolution</em> as new features stabilize.
-There should be <strong>no build failures</strong>, but some APIs may change as systems converge.
-I will reduce disruption as much as possible and document changes clearly.
-</p>
-
-<p>
-If you want to follow MayaFlux as it is <strong>actively taught, discussed, and explored</strong>,
-the development stream is the correct choice.
-</p>
-
-</div>
 
 # Documentation
 
