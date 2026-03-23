@@ -801,6 +801,172 @@ This isn't "MayaFlux is more powerful." It's: **different architecture enables d
 
 ---
 
+
+# Beyond Hand-Rolled DSP: Physical Modelling Networks
+
+The Karplus-Strong example above shows the principle: recursive algorithms expressed as literal mathematics. But hand-rolling every physical model from Polynomial nodes would be like building every gen~ patch from `[+]` and `[history]`. Sometimes you want the algorithm exposed. Sometimes you want the structure.
+
+MayaFlux provides three dedicated network types for physical modelling, each covering a different physical domain. These sit alongside the Polynomial approach, not above it: you choose the abstraction level your idea needs.
+
+---
+
+## WaveguideNetwork: The Karplus-Strong You Already Know, Extended
+
+The Polynomial string from earlier was a simplified Karplus-Strong. WaveguideNetwork is the complete model: shaped initial displacement, configurable loop filters, boundary reflections, pickup position, and bidirectional propagation for tube instruments.
+
+```cpp
+// Plucked string: same algorithm, richer control
+auto string = vega.WaveguideNetwork(
+    WaveguideNetwork::WaveguideType::STRING, 220.0
+)[0] | Audio;
+
+// Pluck position controls spectral content
+// 0.5 = center (warm, fundamental-heavy)
+// near 0 or 1 = bridge (bright, harmonic-rich)
+string->pluck(0.3, 0.8);
+
+// Pickup position: where along the string you "listen"
+string->set_pickup_position(0.7);
+
+// Loss factor: how quickly the string decays
+string->set_loss_factor(0.998);
+
+// Replace the loop filter entirely
+auto custom_filter = vega.Filter(FilterType::LOWPASS, 4000.0);
+string->set_loop_filter(custom_filter);
+```
+
+The `STRING` type is unidirectional: a single delay loop with one termination filter. This is extended Karplus-Strong.
+
+The `TUBE` type is bidirectional: two delay rails with independent boundary reflections at each end, producing the odd-harmonic spectrum characteristic of cylindrical bores.
+
+```cpp
+// Clarinet-like tube: bidirectional wave propagation
+auto tube = vega.WaveguideNetwork(
+    WaveguideNetwork::WaveguideType::TUBE, 146.8
+)[1] | Audio;
+
+// Strike injects a Gaussian-windowed noise burst
+tube->strike(0.1, 0.9);
+
+// Continuous excitation: bowing or blowing
+auto breath = vega.Random();
+tube->set_exciter_type(WaveguideNetwork::ExciterType::CONTINUOUS);
+tube->set_exciter_node(breath);
+```
+
+Five exciter types: `IMPULSE` (single sample), `NOISE_BURST` (default for pluck), `FILTERED_NOISE` (spectrally shaped), `SAMPLE` (user-provided waveform), and `CONTINUOUS` (external node, for sustained excitation like bowing or blowing).
+
+If you built Karplus-Strong in gen~, you understand the algorithm. WaveguideNetwork gives you the complete physical model without the `[history]` sprawl.
+
+---
+
+## ModalNetwork: Frequency-Domain Complement
+
+Where WaveguideNetwork simulates wave propagation in the time domain, ModalNetwork decomposes resonance into independent frequency-domain modes. Each mode has its own frequency, decay rate, and amplitude. The sum produces timbres characteristic of struck objects: bells, bars, membranes.
+
+```cpp
+auto bell = vega.ModalNetwork(
+    12, 220.0, ModalNetwork::Spectrum::INHARMONIC
+)[0] | Audio;
+
+bell->excite(0.8);
+```
+
+gen~ users who built additive synthesis from oscillator banks will recognize the concept. The difference: mode relationships are a first-class parameter.
+
+```cpp
+// Spatial excitation: strike position determines which modes ring
+// Center strike excites all modes equally
+// Edge strike excites odd modes only (like striking a drumhead at the rim)
+bell->excite_at_position(0.2, 0.8);
+
+// Modal coupling: energy bleeds between adjacent modes over time
+bell->set_coupling_enabled(true);
+bell->set_mode_coupling(0, 1, 0.3);
+bell->set_mode_coupling(1, 2, 0.2);
+```
+
+Spatial excitation and modal coupling create the evolving shimmer that makes physical sounds alive. In gen~, you would wire coupling as cross-feedback between oscillators with gain coefficients, managing each connection manually. Here the coupling topology is a parameter.
+
+---
+
+## ResonatorNetwork: Time-Domain Spectral Shaping
+
+ResonatorNetwork is a bank of IIR biquad bandpass filters. Feed it a signal, it shapes the spectrum toward the target formant profile. Feed noise for breathy textures, a pitched pulse for vowels, an arbitrary signal for spectral morphing.
+
+```cpp
+auto voice = vega.ResonatorNetwork(
+    5, ResonatorNetwork::FormantPreset::VOWEL_A
+)[0] | Audio;
+
+auto pulse = vega.Phasor(120.0f);
+voice->set_exciter(pulse);
+
+// Switch vowels at runtime
+voice->apply_preset(ResonatorNetwork::FormantPreset::VOWEL_E);
+
+// Or control individual resonators
+voice->set_frequency(2, 2400.0);
+voice->set_q(2, 80.0);
+```
+
+---
+
+## Networks Feeding Networks
+
+The payoff of having three network types in a unified architecture: one network's output can excite another. This creates compound physical structures that have no gen~ equivalent without massive external routing.
+
+```cpp
+auto string = vega.WaveguideNetwork(
+    WaveguideNetwork::WaveguideType::STRING, 220.0
+)[0] | Audio;
+string->set_output_mode(OutputMode::AUDIO_COMPUTE);
+
+auto formants = vega.ResonatorNetwork(
+    5, ResonatorNetwork::FormantPreset::VOWEL_A
+)[0] | Audio;
+
+// Feed the plucked string's output into the resonator as excitation
+formants->set_network_exciter(string);
+
+// Pluck the string: its output now shapes through vowel formants
+string->pluck(0.5, 0.9);
+```
+
+`AUDIO_COMPUTE` mode means the waveguide processes audio internally but doesn't route to hardware. It exists purely as a data source for the resonator network.
+
+A plucked string shaped by vowel formants. A bell's partials fed through a tube resonator. A noise source filtered by modal resonance then reshaped by formant profiles. These are compound structures assembled from modular components.
+
+In gen~, you would build each model from primitives, then route audio between gen~ instances through Max's signal domain (losing the ability to coordinate at sample rate across instances). Here the networks are peers in the same processing graph.
+
+```cpp
+// Switch excitation source at runtime
+on_key_pressed(window, IO::Keys::N1, [formants, pulse]() {
+    formants->clear_network_exciter();
+    formants->set_exciter(pulse);       // Simple phasor
+});
+
+on_key_pressed(window, IO::Keys::N2, [formants, string]() {
+    formants->clear_exciter();
+    formants->set_network_exciter(string);  // Waveguide output
+});
+```
+
+The same resonator network, different excitation sources, switchable at runtime. The network doesn't care what feeds it. It shapes whatever signal arrives.
+
+---
+
+## The Connection to Polynomial Nodes
+
+These networks don't replace the Polynomial approach from earlier. They complement it.
+
+Polynomial nodes give you the algorithm itself: full control, arbitrary recursive logic, any mathematical relationship you can express. WaveguideNetwork, ModalNetwork, and ResonatorNetwork give you physical models with musically meaningful parameters (pickup position, mode coupling, formant presets) already wired.
+
+Use Polynomial when your idea is an algorithm. Use networks when your idea is a physical structure. Use both when your idea is a physical structure with custom internal logic.
+
+The gen~ analogy: Polynomial is like writing gen~ codebox expressions. Networks are like using well-designed gen~ abstractions. The difference is that both live in the same processing graph with full mutual access.
+
 # A Note on Visuals and Cross-Modal Work
 
 <div class="card subtle">
