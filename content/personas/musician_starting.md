@@ -221,6 +221,56 @@ The same polynomial creates wildly different results depending on the processing
 ---
 
 <div class="card">
+<h2>Node Chains and Composition</h2>
+
+<p>
+Nodes can be chained in series using the <code>>></code> operator.
+The output of each node becomes the input to the next.
+</p>
+
+```cpp
+void compose() {
+    auto osc = vega.Sine(440.0f, 0.3f);
+    auto filter = vega.Filter(FilterType::LOWPASS, 2000.0);
+    auto shaper = vega.Polynomial(std::vector{0.0, 1.5, -0.5});
+
+    // Chain: oscillator -> filter -> waveshaper
+    auto chain = osc >> filter >> shaper;
+    auto buffer = vega.NodeBuffer(0, 512, chain)[0] | Audio;
+}
+```
+
+<p>
+The <code>>></code> operator creates a <code>ChainNode</code>: a sequential processing pipeline of arbitrary length.
+This is not "routing" in the Max/MSP sense. It's function composition: <code>shaper(filter(osc(x)))</code> evaluated at sample rate.
+</p>
+
+<p>For combining multiple signals, <code>CompositeOpNode</code> takes N inputs and a combine function:</p>
+
+```cpp
+void compose() {
+    auto osc_a = vega.Sine(220.0f, 0.3f);
+    auto osc_b = vega.Sine(221.0f, 0.3f);
+    auto osc_c = vega.Sine(330.0f, 0.2f);
+
+    auto mix = vega.CompositeOpNode(
+        {osc_a, osc_b, osc_c},
+        [](std::span<const double> inputs) {
+            return (inputs[0] + inputs[1]) * 0.5 + inputs[2] * 0.3;
+        }
+    )[0] | Audio;
+}
+```
+
+<p>
+No mixer object. No bus. Just a function that receives all inputs and returns a number.
+The combine logic is whatever you write.
+</p>
+</div>
+
+---
+
+<div class="card">
 <h2>Time as Compositional Material</h2>
 
 <p>
@@ -276,117 +326,313 @@ void compose() {
 <code>pattern</code> generates events based on beat-conditional logic.
 The scheduler manages all temporal coordination, you just describe the relationships.
 
-EventChains for temporal choreography:
+<p>EventChain for temporal choreography:</p>
 
 ```cpp
 void compose() {
     auto synth = vega.Sine(440.0f, 0.3f)[0] | Audio;
 
-    auto chain = Kriya::EventChain{}
+    auto chain = Kriya::EventChain(*get_scheduler())
         .then([synth]() { synth->set_frequency(220.0f); }, 0.0)
         .then([synth]() { synth->set_frequency(440.0f); }, 0.5)
         .then([synth]() { synth->set_frequency(880.0f); }, 1.0)
-        .then([synth]() { synth->set_frequency(220.0f); }, 1.5);
+        .then([synth]() { synth->set_frequency(220.0f); }, 1.5)
+        .repeat(4);
 
     chain.start();
 }
 ```
 
+<p>
 Each <code>.then()</code> schedules an action at a specific time offset from the previous event.
-The entire sequence runs once, executing actions at precise moments. You're composing with temporal relationships.
+<code>.repeat(4)</code> runs the entire sequence four times.
+EventChain also supports <code>.times()</code>, <code>.wait()</code>, and <code>.every()</code> for richer temporal patterns.
+You're composing with temporal relationships, not programming a clock.
+</p>
 
 </div>
 
 ---
 
 <div class="card">
-<h2>Buffer Pipelines: Data Flow as Process</h2>
+<h2>Physical Modelling: Networks, Not Oscillators</h2>
 
 <p>
-Buffers aren't just storage. They're temporal gatherers that accumulate moments, transform them, then release.
-<code>BufferPipeline</code> lets you compose complex data flow patterns declaratively.
+Traditional synthesis uses banks of oscillators.
+MayaFlux treats physical models as networks of parallel data transformations,
+with three distinct network types covering different physical domains.
 </p>
 
-<p>Simple capture from file:</p>
+<h3>Modal: Resonant Modes (Bells, Bars, Membranes)</h3>
 
 ```cpp
 void compose() {
-    auto capture_buffer = vega.AudioBuffer()[0] | Audio;
-    auto pipeline = create_buffer_pipeline();
+    auto bell = vega.ModalNetwork(
+        12,
+        220.0,
+        ModalNetwork::Spectrum::INHARMONIC
+    )[0] | Audio;
 
-    pipeline
-        >> BufferOperation::capture_file_from("res/audio.wav", 0)
-            .for_cycles(1)
-        >> BufferOperation::route_to_buffer(capture_buffer);
+    // Spatial excitation: strike position affects which modes ring
+    schedule_metro(2.0, [bell]() {
+        double position = get_uniform_random(0.0, 1.0);
+        bell->excite_at_position(position, 0.8);
+        bell->set_fundamental(get_uniform_random(220.0f, 880.0f));
+    }, "bell_strikes");
 
-    pipeline->execute_buffer_rate();
+    // Modal coupling: energy transfers between adjacent modes
+    bell->set_coupling_enabled(true);
+    bell->set_mode_coupling(0, 1, 0.3);
+    bell->set_mode_coupling(1, 2, 0.2);
 }
 ```
 
 <p>
-<code>capture_file_from</code> reads from audio file.
-<code>route_to_buffer</code> sends it to a buffer that plays.
-<code>execute_buffer_rate</code> runs the pipeline synchronized to audio hardware boundaries.
+<code>ModalNetwork</code> creates 12 resonant modes with inharmonic frequency ratios (bell-like).
+<code>excite_at_position()</code> uses spatial mode shapes: striking at the center excites all modes,
+striking at the edge excites odd modes only. This is physical geometry controlling spectral content.
 </p>
 
-<p>Accumulation and batch processing:</p>
+<p>
+Modal coupling transfers energy between modes over time: a struck bell's partials shift and bleed
+into each other, creating the evolving shimmer that makes physical sounds alive.
+No analog equivalent exists for this. It's computational physics.
+</p>
+
+<h3>Waveguide: Wave Propagation (Strings, Tubes)</h3>
 
 ```cpp
 void compose() {
-    Config::get_global_stream_info().input.enabled = true;
-    Config::get_global_stream_info().input.channels = 1;
-}
+    auto string = vega.WaveguideNetwork(
+        WaveguideNetwork::WaveguideType::STRING, 220.0
+    )[0] | Audio;
 
-void compose() {
-    auto output = vega.AudioBuffer()[0] | Audio;
-    auto pipeline = create_buffer_pipeline();
-    pipeline->with_strategy(ExecutionStrategy::PHASED);
+    auto tube = vega.WaveguideNetwork(
+        WaveguideNetwork::WaveguideType::TUBE, 146.8
+    )[1] | Audio;
 
-    pipeline
-        >> BufferOperation::capture_input_from(get_buffer_manager(), 0)
-            .for_cycles(20)
-        >> BufferOperation::transform([](const auto& data, uint32_t cycle) {
-            auto samples = std::get<std::vector<double>>(data);
-            // Process all 20 buffer cycles as one batch
-            for (auto& sample : samples) {
-                sample *= 0.5;
-            }
-            return samples;
-        })
-        >> BufferOperation::route_to_buffer(output);
+    // Pluck the string: position and strength control the attack spectrum
+    schedule_metro(1.5, [string]() {
+        string->pluck(
+            get_uniform_random(0.1, 0.9),
+            get_uniform_random(0.5, 1.0)
+        );
+    }, "pluck");
 
-    pipeline->execute_buffer_rate();
+    // Strike the tube: Gaussian noise burst excitation
+    schedule_metro(2.0, [tube]() {
+        tube->strike(0.1, 0.9);
+    }, "blow");
 }
 ```
 
 <p>
-<code>.for_cycles(20)</code> captures 20 times, concatenating into a single buffer.  
-The <code>transform</code> sees all accumulated samples at once.  
-<code>PHASED</code> means capture happens first, then all processing.
+Where ModalNetwork decomposes resonance into independent modes (frequency domain),
+WaveguideNetwork simulates wave propagation through delay lines (time domain).
+<code>STRING</code> models Karplus-Strong plucked strings.
+<code>TUBE</code> models cylindrical bores (clarinet-like) with bidirectional wave propagation
+and boundary reflections that produce the characteristic odd-harmonic spectrum.
 </p>
 
-<p>Windowed analysis:</p>
+<h3>Resonator: Spectral Shaping (Voice, Formants)</h3>
 
 ```cpp
 void compose() {
-    auto pipeline = create_buffer_pipeline();
+    auto voice = vega.ResonatorNetwork(
+        5,
+        ResonatorNetwork::FormantPreset::VOWEL_A
+    )[0] | Audio;
 
-    pipeline
-        >> BufferOperation::capture_input_from(get_buffer_manager(), 0)
-            .for_cycles(10)
-            .with_window(2048, 0.5f)
-            .on_data_ready([](const auto& data, uint32_t cycle) {
-                const auto& windowed = std::get<std::vector<double>>(data);
-                std::cout << "Cycle " << cycle << ": " << windowed.size() << " samples\n";
-            });
+    // Feed it a pitched exciter (glottal pulse simulation)
+    auto pulse = vega.Phasor(120.0f);
+    voice->set_exciter(pulse);
 
-    pipeline->execute_buffer_rate();
+    // Switch vowels with keyboard
+    auto window = create_window({ "Vowel Synth", 800, 600 });
+    window->show();
+
+    on_key_pressed(window, IO::Keys::A, [voice]() {
+        voice->apply_preset(ResonatorNetwork::FormantPreset::VOWEL_A);
+    });
+
+    on_key_pressed(window, IO::Keys::E, [voice]() {
+        voice->apply_preset(ResonatorNetwork::FormantPreset::VOWEL_E);
+    });
+
+    on_key_pressed(window, IO::Keys::O, [voice]() {
+        voice->apply_preset(ResonatorNetwork::FormantPreset::VOWEL_O);
+    });
 }
 ```
 
 <p>
-<code>with_window</code> creates overlapping capture windows —
-use it for spectral analyzers, feature extraction, and sliding-window transforms.
+ResonatorNetwork operates purely in the time domain: IIR biquad bandpass filters shape
+whatever signal you inject. Feed white noise for breathy formants, a pitched pulse for vowels,
+or an arbitrary signal for spectral morphing toward the target formant profile.
+</p>
+
+</div>
+
+---
+
+<div class="card">
+<h2>Networks Feeding Networks</h2>
+
+<p>
+Physical models are not isolated instruments. They're data sources.
+One network's output can excite another network, creating compound physical structures
+that have no analog equivalent.
+</p>
+
+```cpp
+void compose() {
+    // A waveguide string produces the raw excitation signal
+    auto string = vega.WaveguideNetwork(
+        WaveguideNetwork::WaveguideType::STRING, 220.0
+    )[0] | Audio;
+    string->set_output_mode(OutputMode::AUDIO_COMPUTE);
+    string->set_output_scale(2);
+
+    // A modal network adds bell-like resonance
+    auto modes = vega.ModalNetwork(
+        9, 220.0, ModalNetwork::Spectrum::INHARMONIC
+    )[0] | Audio;
+    modes->set_output_mode(OutputMode::AUDIO_COMPUTE);
+    modes->set_output_scale(2);
+
+    // A resonator network shapes the combined result as formants
+    auto formants = vega.ResonatorNetwork(
+        5, ResonatorNetwork::FormantPreset::VOWEL_A
+    )[0] | Audio;
+    formants->add_channel_usage(1);
+
+    // Default exciter: a simple phasor
+    auto pulse = vega.Phasor(120.0f);
+    formants->set_exciter(pulse);
+
+    // Switch excitation source at runtime
+    on_key_pressed(window, IO::Keys::N1, [formants, pulse]() {
+        formants->clear_network_exciter();
+        formants->set_exciter(pulse);
+    });
+
+    // Feed the waveguide output into the resonator
+    on_key_pressed(window, IO::Keys::N2, [formants, string]() {
+        formants->clear_exciter();
+        formants->set_network_exciter(string);
+    });
+
+    // Feed the modal output into the resonator
+    on_key_pressed(window, IO::Keys::N3, [formants, modes]() {
+        formants->clear_exciter();
+        formants->set_network_exciter(modes);
+    });
+
+    // Pluck the string
+    on_key_pressed(window, IO::Keys::Enter, [string]() {
+        string->pluck(0.9, 0.9);
+    });
+
+    // Strike the bell
+    on_key_pressed(window, IO::Keys::Tab, [modes]() {
+        modes->excite(0.6);
+    });
+}
+```
+
+<p>
+<code>set_network_exciter()</code> feeds one network's audio output as excitation into another.
+<code>AUDIO_COMPUTE</code> mode means the network processes audio internally but doesn't route to hardware directly:
+it exists as a computational data source for other networks.
+</p>
+
+<p>
+A plucked string's output shaped by vowel formants. A bell's partials feeding a tube resonator.
+These are compound physical structures assembled from modular computational components.
+The same network architecture that models a guitar string also models a clarinet bore,
+and you can pipe one into the other because they're all just numbers.
+</p>
+</div>
+
+---
+
+<div class="card">
+<h2>Channels and Routing</h2>
+
+<p>
+<code>[0]</code> in <code>vega.Sine(440.0f, 0.3f)[0] | Audio</code> assigns the node to channel 0.
+But channels are not fixed. Nodes, networks, and buffers can all be moved between channels at runtime
+with smooth crossfade transitions. This is not "panning." It's data routing with temporal safety.
+</p>
+
+<p>Three routing functions cover three entity types:</p>
+
+```cpp
+void compose() {
+    auto synth = vega.Sine(440.0f, 0.3f)[0] | Audio;
+
+    // Route a node to channels 0 and 1 with 0.5s crossfade
+    route_node(synth, {0, 1}, 0.5);
+
+    // Route a network to multiple channels
+    auto bell = vega.ModalNetwork(12, 220.0,
+        ModalNetwork::Spectrum::INHARMONIC)[0] | Audio;
+    route_network(bell, {0, 1}, 1.0);
+
+    // Route a buffer to a different channel
+    auto buffer = vega.NodeBuffer(0, 512, synth)[0] | Audio;
+    route_buffer(buffer, 1, 0.5);
+}
+```
+
+<p>
+<code>route_node()</code> moves a node from its current channel(s) to the target channel(s).
+<code>route_network()</code> does the same for entire physical model networks.
+<code>route_buffer()</code> moves a buffer between channels.
+All three accept either seconds or raw sample counts for the crossfade duration.
+The routing system manages fade-in/fade-out at block boundaries to prevent clicks.
+</p>
+
+<p>
+For static multi-channel registration (no fade needed), networks can declare channel presence directly:
+</p>
+
+```cpp
+void compose() {
+    auto formants = vega.ResonatorNetwork(
+        5, ResonatorNetwork::FormantPreset::VOWEL_A
+    )[0] | Audio;
+
+    // Output to both channels from the start
+    formants->add_channel_usage(1);
+}
+```
+
+<p>
+<code>add_channel_usage(1)</code> registers the network on channel 1 in addition to channel 0, immediately.
+</p>
+
+<p>
+Routing is compositional. You can schedule routing changes over time:
+</p>
+
+```cpp
+void compose() {
+    auto synth = vega.Sine(440.0f, 0.3f)[0] | Audio;
+
+    auto chain = Kriya::EventChain(*get_scheduler())
+        .then([synth]() { route_node(synth, {0}, 0.5); }, 0.0)
+        .then([synth]() { route_node(synth, {1}, 0.5); }, 2.0)
+        .then([synth]() { route_node(synth, {0, 1}, 0.5); }, 2.0)
+        .repeat(0);
+
+    chain.start();
+}
+```
+
+<p>
+A node that migrates between left, right, and stereo on a timed cycle.
+Routing becomes another dimension of compositional control, not a static mixer setting.
 </p>
 </div>
 
@@ -428,13 +674,35 @@ void compose() {
 ```
 
 <p>
-Audio peaks trigger visual particle spawns. Sample-accurate coordination between domains. 
+Audio peaks trigger visual particle spawns. Sample-accurate coordination between domains.
 You can't do this in analog hardware. There's no physical equivalent to "audio amplitude directly spawns GPU geometry."
 </p>
 
 <p>
-This is digital-native thinking: all data is just numbers, so audio streams, 
-visual transforms, and control logic are the same substrate.
+Per-window keyboard and mouse input adds interactive control:
+</p>
+
+```cpp
+void compose() {
+    auto window = create_window({ "Interactive", 1920, 1080 });
+    auto synth = vega.Sine(440.0f, 0.3f)[0] | Audio;
+    window->show();
+
+    on_key_pressed(window, IO::Keys::Space, [synth]() {
+        synth->set_frequency(get_uniform_random(220.0f, 880.0f));
+    });
+
+    on_mouse_pressed(window, IO::MouseButtons::Left,
+        [synth, window](double x, double y) {
+            auto coords = normalize_coords(x, y, window);
+            synth->set_frequency(220.0f + coords.y * 660.0f);
+        });
+}
+```
+
+<p>
+This is digital-native thinking: all data is just numbers, so audio streams,
+visual transforms, keyboard events, and control logic are the same substrate.
 </p>
 </div>
 
@@ -476,9 +744,9 @@ void compose() {
 ```
 
 <p>
-Buffers aren't just "storage." They're moments of accumulated time. 
+Buffers aren't just "storage." They're moments of accumulated time.
 Each cycle, 512 samples gather, get transformed by the chain, then release.
-Order matters: noise → shaping → feedback creates different results than feedback → shaping → noise.
+Order matters: noise -> shaping -> feedback creates different results than feedback -> shaping -> noise.
 
 Buffer size (512, 1024, 2048 samples) becomes a rhythmic parameter.
 Larger buffers = slower transformation update rate = more "smeared" or "granular" results.
@@ -489,56 +757,94 @@ Larger buffers = slower transformation update rate = more "smeared" or "granular
 ---
 
 <div class="card">
-<h2>Modal Synthesis</h2>
+<h2>Buffer Pipelines: Data Flow as Process</h2>
 
 <p>
-Traditional synthesis uses banks of oscillators. 
-MayaFlux treats resonant modes as parallel data transformations.
+Buffers aren't just storage. They're temporal gatherers that accumulate moments, transform them, then release.
+<code>BufferPipeline</code> lets you compose complex data flow patterns declaratively.
 </p>
+
+<p>Simple capture from file:</p>
 
 ```cpp
 void compose() {
-    auto bell = vega.ModalNetwork(
-        12,
-        220.0,
-        ModalNetwork::Spectrum::INHARMONIC
-    )[0] | Audio;
+    auto capture_buffer = vega.AudioBuffer()[0] | Audio;
+    auto pipeline = create_buffer_pipeline();
 
-    schedule_metro(2.0, [bell]() {
-        bell->excite(0.8);
-        bell->set_fundamental(get_uniform_random(220.0f, 880.0f));
-    }, "bell_strikes");
+    *pipeline
+        >> BufferOperation::capture_file_from("res/audio.wav", 0)
+            .for_cycles(1)
+        >> BufferOperation::route_to_buffer(capture_buffer);
+
+    pipeline->execute_buffer_rate();
 }
 ```
 
 <p>
-<code>ModalNetwork</code> creates 12 resonant modes with inharmonic frequency ratios (bell-like). 
-Each `excite()` call strikes all modes simultaneously. `set_fundamental()` changes the base frequency, all modes adjust proportionally.
-
-The same network with different spectrum types produces completely different timbres:
-
+<code>capture_file_from</code> reads from audio file.
+<code>route_to_buffer</code> sends it to a buffer that plays.
+<code>execute_buffer_rate</code> runs the pipeline synchronized to audio hardware boundaries.
 </p>
+
+<p>Accumulation and batch processing:</p>
 
 ```cpp
 void compose() {
-    auto string = vega.ModalNetwork(
-        8,
-        440.0,
-        ModalNetwork::Spectrum::HARMONIC
-    )[0] | Audio;
+    Config::get_global_stream_info().input.enabled = true;
+    Config::get_global_stream_info().input.channels = 1;
+}
 
-    auto sifi_synth = vega.ModalNetwork(
-        16,
-        220.0,
-        ModalNetwork::Spectrum::STRETCHED
-    )[1] | Audio;
+void compose() {
+    auto output = vega.AudioBuffer()[0] | Audio;
+    auto pipeline = create_buffer_pipeline();
+    pipeline->with_strategy(ExecutionStrategy::PHASED);
+
+    *pipeline
+        >> BufferOperation::capture_input_from(get_buffer_manager(), 0)
+            .for_cycles(20)
+        >> BufferOperation::transform([](const auto& data, uint32_t cycle) {
+            auto samples = std::get<std::vector<double>>(data);
+            // Process all 20 buffer cycles as one batch
+            for (auto& sample : samples) {
+                sample *= 0.5;
+            }
+            return samples;
+        })
+        >> BufferOperation::route_to_buffer(output);
+
+    pipeline->execute_buffer_rate();
 }
 ```
 
 <p>
-<code>HARMONIC</code> creates integer frequency ratios (string-like). 
-<code>STRETCHE</code> creates slightly sharp harmonics (piano-like stiffness). 
-Same computational structure, different mathematical relationships produce different musical results.
+<code>.for_cycles(20)</code> captures 20 times, concatenating into a single buffer.
+The <code>transform</code> sees all accumulated samples at once.
+<code>PHASED</code> means capture happens first, then all processing.
+<code>STREAMING</code> strategy is also available: each capture flows through immediately for lower latency.
+</p>
+
+<p>Windowed analysis:</p>
+
+```cpp
+void compose() {
+    auto pipeline = create_buffer_pipeline();
+
+    *pipeline
+        >> BufferOperation::capture_input_from(get_buffer_manager(), 0)
+            .for_cycles(10)
+            .with_window(2048, 0.5f)
+            .on_data_ready([](const auto& data, uint32_t cycle) {
+                const auto& windowed = std::get<std::vector<double>>(data);
+                std::cout << "Cycle " << cycle << ": " << windowed.size() << " samples\n";
+            });
+
+    pipeline->execute_buffer_rate();
+}
+```
+
+<p>
+<code>with_window</code> creates overlapping capture windows:
+use it for spectral analyzers, feature extraction, and sliding-window transforms.
 </p>
 </div>
 
@@ -554,47 +860,55 @@ Same computational structure, different mathematical relationships produce diffe
 <li>truth conditions generating rhythm</li>
 <li>data transformations instead of control signals</li>
 <li>compositional temporal relationships</li>
-<li>cross-domain coordination</li>
+<li>physical models as composable networks (modal, waveguide, resonator)</li>
+<li>networks feeding networks: compound physical structures</li>
+<li>cross-domain coordination with interactive input</li>
 <li>temporal accumulation patterns</li>
-<li>modal networks instead of oscillators</li>
+<li>channel routing as compositional control: nodes, networks, and buffers all routable with crossfades</li>
 </ul>
 
 <p>
-This is digital-first thinking — not “how do I recreate analog workflows” but “what becomes possible when sound is computational data?”
 This is digital-first thinking. Not "how do I make MayaFlux behave like my analog synth?" but "what becomes possible when I treat sound as computational data?"
 </p>
 
 <p>
-Everything you know about music still applies.  
+Everything you know about music still applies.
 But the foundation shifts from signal flow to data transformation.
 </p>
 </div>
 
 <div class="card wide">
-<h2>Immediate Next Steps</h2>
+<h2>Continue Learning</h2>
 
-<p>Immediate next steps:</p>
+<p>
+This page introduced concepts through compact examples.
+The <strong>Sculpting Data</strong> tutorial series builds each idea systematically with runnable code:
+</p>
 
 <ol>
-<li>Live coding: modify these transformations while audio is running (Lila JIT system)</li>
-<li>Recursive structures: feedback not as "delay line" but "previous computational state informing current decision"</li>
-<li>Grammar-driven processing: defining transformation rules as formal grammars</li>
+<li><strong><a href="../../tutorials/sculpting-data/foundations/">Foundations of Form</a></strong>: File IO, containers, buffers, how data is organized and flows through the system</li>
+<li><strong><a href="../../tutorials/sculpting-data/processing_expression/">Processing Expression</a></strong>: Processors, chains, supply, copy, logic, polynomial transforms, and the full buffer operation vocabulary</li>
+<li><strong><a href="../../tutorials/sculpting-data/visual_materiality_i/">Visual Materiality</a></strong>: Graphics basics, windows, point clouds, geometry buffers, and rendering setup</li>
 </ol>
 
 <p>Deeper paradigm shifts:</p>
 
 <ol>
-<li>Coroutine-based temporal coordination: suspending/resuming computations based on musical conditions</li>
+<li>Live coding: modify these transformations while audio is running (Lila JIT system)</li>
+<li>Recursive structures: feedback not as "delay line" but "previous computational state informing current decision"</li>
+<li>Grammar-driven processing: defining transformation rules as formal grammars (Yantra compute engine)</li>
 <li>Container-based composition: treating entire audio files as multi-dimensional data to slice/transform/recombine</li>
-<li>Network topologies: spatial relationships between synthesis elements creating emergent behaviors</li>
+<li>GPU compute pipelines: audio analysis driving shader parameters, network history buffers as descriptor bindings</li>
 </ol>
 
 <p>Cross-domain expansion:</p>
 
 <ol>
-<li>Audio analysis → particle physics parameters</li>
-<li>Logic gates → shader compute triggers</li>
-<li>Polynomial transforms → texture coordinate warping</li>
+<li>Audio network history -> GPU storage buffer -> fragment shader visualization</li>
+<li>Logic gates -> shader compute triggers</li>
+<li>Polynomial transforms -> texture coordinate warping</li>
+<li>MIDI/HID input nodes as first-class signal sources (<code>vega.read_midi()</code>, <code>vega.read_hid()</code>)</li>
+<li>Camera input through IOManager into the same buffer architecture as audio</li>
 </ol>
 
 <p>
