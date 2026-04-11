@@ -152,7 +152,7 @@ Weave downloads the framework, installs dependencies, and sets up your first pro
 <div class="collapsible-header">
 <h2>macOS</h2>
 <p>
-<a href="https://github.com/MayaFlux/Weave/releases/download/v0.3.0/Weave-installer-macos.pkg"><strong>Download for macOS</strong></a>
+<a href="https://github.com/MayaFlux/Weave/releases/download/v0.3.0/Weave-macos.dmg"><strong>Download for macOS</strong></a>
 </p>
 <p class="hint">Click to expand</p>
 </div>
@@ -161,26 +161,25 @@ Weave downloads the framework, installs dependencies, and sets up your first pro
 
 ### Install
 
-1. Download the `.pkg` file
-2. Double-click to open
-3. If macOS shows **“unverified developer”**:
+1. Download and open `Weave-macos.dmg`
+2. Double-click **Weave.app**
+3. If macOS shows **"unverified developer"**:
    - Close dialog
    - System Settings → **Privacy & Security**
-   - Find **Weave.pkg** → **Open Anyway**
-4. Run installer normally
-5. A Terminal window will open and complete setup
-6. When it closes, Weave is ready
+   - Find **Weave** → **Open Anyway**
+4. Choose **"Install MayaFlux"**
+5. Select a release channel and follow the prompts
+6. Restart your terminal when done
 
 ### Prerequisites
 
-- **Apple Silicon:** macOS 14.0 (Sonoma) or later
-- **Intel:** macOS 15.0 (Sequoia) or later
+- macOS 15.0 (Sequoia) or later
 
 ### Contents
 
-- **Weave.app** and CLI (`~/.local/bin/weave`)
 - **MayaFlux** via Homebrew
-- Environment variables in `~/.zshenv`
+- CLI tool (`~/.local/bin/weave`)
+- Environment configured in `~/.zshenv`
 
 ### Create & Build a Project
 
