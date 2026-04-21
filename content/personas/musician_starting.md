@@ -23,7 +23,7 @@ when you treat sound as numbers flowing through precise computational decisions 
 
 ```cpp
 void compose() {
-    auto wave = vega.Sine(440.0f, 0.2f)[0] | Audio;
+    auto wave = vega.Sine(440.0f, 0.2f) | Audio[0];
 }
 ```
 
@@ -47,7 +47,7 @@ In traditional systems, you use a clock or metronome to trigger events. In MayaF
 
 ```cpp
 void compose() {
-    auto clock = vega.Sine(2.0f, 0.3f)[0] | Audio;
+    auto clock = vega.Sine(2.0f, 0.3f) | Audio[0];
 
     clock->on_tick_if(
         [](NodeContext ctx) { return ctx.value > 0.0; },
@@ -66,10 +66,10 @@ void compose() {
 
 ```cpp
 void compose() {
-    auto synth = vega.Sine(220.0f, 0.3f)[0] | Audio;
+    auto synth = vega.Sine(220.0f, 0.3f) | Audio[0];
 
     // Updates from polynomial peaks
-    auto envelope = vega.Polynomial(std::vector{1.0, -0.8, 0.2})[1] | Audio;
+    auto envelope = vega.Polynomial(std::vector{1.0, -0.8, 0.2}) | Audio[1];
     envelope->on_tick_if(
         [](NodeContext ctx) { return ctx.value > 0.5; },
         [synth](NodeContext ctx) {
@@ -96,7 +96,7 @@ You know gates as "open/closed" switches on audio signals. MayaFlux treats gates
 ```cpp
 void compose() {
     auto synth = vega.Sine(220.0f, 0.3f);
-    auto buffer = vega.NodeBuffer(0, 512, synth)[0] | Audio;
+    auto buffer = vega.NodeBuffer(0, 512, synth) | Audio[0];
 
     auto gate_lfo = vega.Sine(0.5f, 1.0f);
     auto gate = vega.Logic(LogicOperator::THRESHOLD, 0.3);
@@ -118,7 +118,7 @@ Result: granular stuttering effect. The audio repeats frozen moments.
 ```cpp
 void compose() {
     auto synth = vega.Sine(120.0f, 0.3f);
-    auto buffer = vega.NodeBuffer(0, 512, synth)[0] | Audio;
+    auto buffer = vega.NodeBuffer(0, 512, synth) | Audio[0];
 
     auto gate = vega.Logic(LogicOperator::THRESHOLD, 0.0);
     auto processor = create_processor<LogicProcessor>(buffer, gate);
@@ -131,7 +131,7 @@ void compose() {
     // processor->set_modulation_type(LogicProcessor::ModulationType::INVERT_ON_TRUE);
 
     // Or granular freeze + crossfade
-    // auto tick = vega.Impulse(4.0f)[0] | Audio;
+    // auto tick = vega.Impulse(4.0f) | Audio[0];
     // gate->set_input_node(tick);
     // processor->set_modulation_type(LogicProcessor::ModulationType::CROSSFADE);
 }
@@ -156,7 +156,7 @@ MayaFlux: Envelope is a data transformation function applied directly.
 ```cpp
 void compose() {
     auto synth = vega.Sine(440.0f, 0.3f);
-    auto buffer = vega.NodeBuffer(0, 512, synth)[0] | Audio;
+    auto buffer = vega.NodeBuffer(0, 512, synth) | Audio[0];
 
     auto envelope = vega.Polynomial(std::vector{0.1, 0.9, -0.3, 0.05});
     auto processor = create_processor<PolynomialProcessor>(buffer, envelope);
@@ -174,7 +174,7 @@ No separate "envelope follower" or "modulation routing." The data is the shape.
 ```cpp
 void compose() {
     auto synth = vega.Sine(220.0f, 0.3f);
-    auto buffer = vega.NodeBuffer(0, 512, synth)[0] | Audio;
+    auto buffer = vega.NodeBuffer(0, 512, synth) | Audio[0];
 
     // Create polynomial in DIRECT mode (default)
     // auto curve = vega.Polynomial(std::vector { 0.0, 1.2, -0.4 });
@@ -236,7 +236,7 @@ void compose() {
 
     // Chain: oscillator -> filter -> waveshaper
     auto chain = osc >> filter >> shaper;
-    auto buffer = vega.NodeBuffer(0, 512, chain)[0] | Audio;
+    auto buffer = vega.NodeBuffer(0, 512, chain) | Audio[0];
 }
 ```
 
@@ -279,7 +279,7 @@ Traditional DAWs treat time as a fixed grid. MayaFlux treats time as something y
 
 ```cpp
 void compose() {
-    auto synth = vega.Sine(440.0f, 0.3f)[0] | Audio;
+    auto synth = vega.Sine(440.0f, 0.3f) | Audio[0];
 
     // Regular pulse
     schedule_metro(0.5, [synth]() {
@@ -330,7 +330,7 @@ The scheduler manages all temporal coordination, you just describe the relations
 
 ```cpp
 void compose() {
-    auto synth = vega.Sine(440.0f, 0.3f)[0] | Audio;
+    auto synth = vega.Sine(440.0f, 0.3f) | Audio[0];
 
     auto chain = Kriya::EventChain(*get_scheduler())
         .then([synth]() { synth->set_frequency(220.0f); }, 0.0)
@@ -560,7 +560,7 @@ and you can pipe one into the other because they're all just numbers.
 <h2>Channels and Routing</h2>
 
 <p>
-<code>[0]</code> in <code>vega.Sine(440.0f, 0.3f)[0] | Audio</code> assigns the node to channel 0.
+<code>[0]</code> in <code>vega.Sine(440.0f, 0.3f) | Audio[0]</code> assigns the node to channel 0.
 But channels are not fixed. Nodes, networks, and buffers can all be moved between channels at runtime
 with smooth crossfade transitions. This is not "panning." It's data routing with temporal safety.
 </p>
@@ -569,7 +569,7 @@ with smooth crossfade transitions. This is not "panning." It's data routing with
 
 ```cpp
 void compose() {
-    auto synth = vega.Sine(440.0f, 0.3f)[0] | Audio;
+    auto synth = vega.Sine(440.0f, 0.3f) | Audio[0];
 
     // Route a node to channels 0 and 1 with 0.5s crossfade
     route_node(synth, {0, 1}, 0.5);
@@ -580,7 +580,7 @@ void compose() {
     route_network(bell, {0, 1}, 1.0);
 
     // Route a buffer to a different channel
-    auto buffer = vega.NodeBuffer(0, 512, synth)[0] | Audio;
+    auto buffer = vega.NodeBuffer(0, 512, synth) | Audio[0];
     route_buffer(buffer, 1, 0.5);
 }
 ```
@@ -618,7 +618,7 @@ Routing is compositional. You can schedule routing changes over time:
 
 ```cpp
 void compose() {
-    auto synth = vega.Sine(440.0f, 0.3f)[0] | Audio;
+    auto synth = vega.Sine(440.0f, 0.3f) | Audio[0];
 
     auto chain = Kriya::EventChain(*get_scheduler())
         .then([synth]() { route_node(synth, {0}, 0.5); }, 0.0)
@@ -649,7 +649,7 @@ This is where MayaFlux diverges completely from analog paradigms. Audio data can
 void compose() {
     auto synth = vega.Sine(220.0f, 0.3f);
 
-    auto peaks = vega.Logic(LogicOperator::THRESHOLD, 0.2)[0] | Audio;
+    auto peaks = vega.Logic(LogicOperator::THRESHOLD, 0.2) | Audio[0];
     peaks->enable_mock_process(true);
     peaks->set_input_node(synth);
 
@@ -685,7 +685,7 @@ Per-window keyboard and mouse input adds interactive control:
 ```cpp
 void compose() {
     auto window = create_window({ "Interactive", 1920, 1080 });
-    auto synth = vega.Sine(440.0f, 0.3f)[0] | Audio;
+    auto synth = vega.Sine(440.0f, 0.3f) | Audio[0];
     window->show();
 
     on_key_pressed(window, IO::Keys::Space, [synth]() {
@@ -719,7 +719,7 @@ MayaFlux: Audio accumulates in temporal chunks, gets transformed, then releases.
 ```cpp
 void compose() {
     auto synth = vega.Sine(220.0f, 0.3f);
-    auto buffer = vega.NodeBuffer(0, 512, synth)[0] | Audio;
+    auto buffer = vega.NodeBuffer(0, 512, synth) | Audio[0];
 
     // First transformation: add noise
     auto noise = vega.Random();
@@ -768,7 +768,7 @@ Buffers aren't just storage. They're temporal gatherers that accumulate moments,
 
 ```cpp
 void compose() {
-    auto capture_buffer = vega.AudioBuffer()[0] | Audio;
+    auto capture_buffer = vega.AudioBuffer() | Audio[0];
     auto pipeline = create_buffer_pipeline();
 
     *pipeline
@@ -795,7 +795,7 @@ void compose() {
 }
 
 void compose() {
-    auto output = vega.AudioBuffer()[0] | Audio;
+    auto output = vega.AudioBuffer() | Audio[0];
     auto pipeline = create_buffer_pipeline();
     pipeline->with_strategy(ExecutionStrategy::PHASED);
 

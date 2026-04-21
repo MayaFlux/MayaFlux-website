@@ -1322,7 +1322,7 @@ DynamicSoundStream (accumulates output)
             <pre><code class="language-cpp">
         void compose() {
             // Create an empty audio buffer (will hold captured data)
-            auto capture_buffer = vega.AudioBuffer()[1] | Audio;
+            auto capture_buffer = vega.AudioBuffer() | Audio[1];
             // Create a pipeline
             auto pipeline = MayaFlux::create_buffer_pipeline();
             // Set strategy to streaming (process as data arrives)

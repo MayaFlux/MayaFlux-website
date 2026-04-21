@@ -1468,8 +1468,8 @@ void compose() {
     window->show();
 
     // Audio-rate processing
-    auto noise = vega.Random()[0] | Audio;
-    auto sparse_trigger = vega.Logic(LogicOperator::THRESHOLD, 0.97)[0] | Audio;
+    auto noise = vega.Random() | Audio[0];
+    auto sparse_trigger = vega.Logic(LogicOperator::THRESHOLD, 0.97) | Audio[0];
     sparse_trigger->set_input_node(noise);
 
     // Multi-tap delay network at audio rate

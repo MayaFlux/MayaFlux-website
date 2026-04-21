@@ -71,7 +71,7 @@ schedule_metro(0.5, []() {
 }, "my_timer");
 
 // OR Want sample-accurate? Just declare it
-auto tick = vega.Impulse(2.0)[0] | Audio;  // 2Hz = every 0.5 seconds
+auto tick = vega.Impulse(2.0) | Audio[0];  // 2Hz = every 0.5 seconds
 
 tick->on_impulse([](auto& ctx) {
     trigger_something();
@@ -104,7 +104,7 @@ MayaFlux expresses everything as data whose evaluation frequency is adjustable.
 
 ```cpp
 // Rhythm generator evaluated at 48kHz
-auto rhythm = vega.Impulse(4.0)[0] | Audio;
+auto rhythm = vega.Impulse(4.0) | Audio[0];
 
 // Its output can control ANYTHING
 rhythm->on_tick([](NodeContext ctx) {
@@ -138,7 +138,7 @@ Pure Data’s `[osc~ 440]` sensibly abstracts away details so you can reason abo
 MayaFlux lets you reach into those details when that becomes part of the creative gesture.
 
 ```cpp
-auto wave = vega.Sine(440.0, 0.3)[0] | Audio;
+auto wave = vega.Sine(440.0, 0.3) | Audio[0];
 
 // Hook into processing—48,000 times per second
 wave->on_tick([](NodeContext ctx) {
@@ -285,7 +285,7 @@ PD offered a predictable window of history for efficiency. MayaFlux expands this
 ```cpp
 // Karplus-Strong string via recursive polynomial on buffer
 auto synth = vega.Sine(220.0, 0.3);
-auto buffer = vega.NodeBuffer(0, 512, synth)[0] | Audio;
+auto buffer = vega.NodeBuffer(0, 512, synth) | Audio[0];
 
 auto string = vega.Polynomial(
     [](std::span<double> history) {
@@ -319,7 +319,7 @@ MayaFlux: Buffers gather temporal slices that can be transformed before release.
 
 ```cpp
 auto synth = vega.Sine(220.0, 0.3);
-auto buffer = vega.NodeBuffer(0, 512, synth)[0] | Audio;
+auto buffer = vega.NodeBuffer(0, 512, synth) | Audio[0];
 
 // Processors transform accumulated data
 auto feedback = create_processor<FeedbackProcessor>(buffer);
@@ -349,8 +349,8 @@ Buffer size becomes compositional parameter. Larger = slower update rate = more 
 <h3>Buffer Pipelines</h3>
 
 ```cpp
-auto capture = vega.AudioBuffer()[0] | Audio;
-auto analysis = vega.AudioBuffer()[1] | Audio;
+auto capture = vega.AudioBuffer() | Audio[0];
+auto analysis = vega.AudioBuffer() | Audio[1];
 
 auto pipeline = create_buffer_pipeline();
 pipeline->with_strategy(ExecutionStrategy::PHASED);
@@ -560,7 +560,7 @@ Try the simplest pattern:
 
 ```cpp
 void compose() {
-    auto wave = vega.Sine(440.0, 0.3)[0] | Audio;
+    auto wave = vega.Sine(440.0, 0.3) | Audio[0];
     wave->on_tick([](NodeContext ctx) {
         if (ctx.value > 0.9) std::cout << "Peak!\n";
     });

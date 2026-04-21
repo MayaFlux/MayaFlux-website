@@ -314,8 +314,8 @@ Once you have the string, new patterns open up. Here's sample-accurate rhythmic 
 auto rhythm_pattern = [](Vruta::TaskScheduler& sched) -> Vruta::SoundRoutine {
     auto& promise = co_await Kriya::GetPromise{};
 
-    auto string1 = vega.Polynomial(/*...Karplus-Strong 1...*/)[0] | Audio;
-    auto string2 = vega.Polynomial(/*...Karplus-Strong 2...*/)[1] | Audio;
+    auto string1 = vega.Polynomial(/*...Karplus-Strong 1...*/) | Audio[0];
+    auto string2 = vega.Polynomial(/*...Karplus-Strong 2...*/) | Audio[1];
 
     while (!promise.should_terminate) {
         // Pluck first string
@@ -343,8 +343,8 @@ This is temporal composition as code. The timing relationships are explicit. The
 Complex buffer operations become declarative:
 
 ```cpp
-auto input = vega.AudioBuffer()[0] | Audio;
-auto output = vega.AudioBuffer()[1] | Audio;
+auto input = vega.AudioBuffer() | Audio[0];
+auto output = vega.AudioBuffer() | Audio[1];
 
 auto pipeline = MayaFlux::create_buffer_pipeline();
 pipeline->with_strategy(ExecutionStrategy::PHASED);
@@ -514,7 +514,7 @@ auto envelope_follower = vega.Polynomial(
 <summary><strong>or at buffer level directly:</strong></summary>
 
 ```cpp
-auto buffer = vega.NodeBuffer(vega.Sine(200))[0] | Audio;
+auto buffer = vega.NodeBuffer(vega.Sine(200)) | Audio[0];
 
 auto env_processor = MayaFlux::create_processor<PolynomialProcessor>(
     buffer,
@@ -568,7 +568,7 @@ auto spectral_gate = vega.Logic(
 )[0] | Audio;
 
 // Feed it spectral analysis data
-auto buffer = vega.AudioBuffer()[0] | Audio;
+auto buffer = vega.AudioBuffer() | Audio[0];
 
 // Process buffer with spectral analysis, then threshold
 auto pipeline = MayaFlux::create_buffer_pipeline();
@@ -599,7 +599,7 @@ spectral_gate->on_change_to(false, [synth]() {
 <summary><strong>Or using buffer level processors directly:</strong></summary>
 
 ```cpp
-auto buffer = vega.AudioBuffer()[0] | Audio;
+auto buffer = vega.AudioBuffer() | Audio[0];
 auto analysis_buffer = vega.AudioBuffer();
 
 auto pipeline = MayaFlux::create_buffer_pipeline();
@@ -660,10 +660,10 @@ gen~ runs everything at audio rate. There's no "slow rate" for LFOs. So:
 
 ```cpp
 // Slow LFO (evaluated 10 times per second, not 48000)
-auto lfo = vega.Sine(0.5)[0] | Time(10);  // 10Hz update rate
+auto lfo = vega.Sine(0.5) | Audio[0] | Time(10);  // 10Hz update rate
 
 // Audio-rate oscillator
-auto osc = vega.Sine(440.0)[0] | Audio;
+auto osc = vega.Sine(440.0) | Audio[0];
 
 // Audio-rate phase distortion modulator
 auto phase_distortion = vega.Polynomial(

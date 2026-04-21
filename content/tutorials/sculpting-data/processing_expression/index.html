@@ -525,7 +525,7 @@ auto comb = vega.Polynomial(
 
             <pre><code class="language-cpp">
 void compose() {
-    auto buffer = vega.AudioBuffer()[0] | Audio;
+    auto buffer = vega.AudioBuffer() | Audio[0];
 
     // Logic node: threshold detection
     auto logic = vega.Logic(LogicOperator::THRESHOLD, 0.0);
@@ -1262,7 +1262,7 @@ void compose() {
     auto sine = vega.Sine(440.0);
 
     // Create a NodeBuffer that captures the sine's output
-    auto node_buffer = vega.NodeBuffer(0, 512, sine)[0] | Audio;
+    auto node_buffer = vega.NodeBuffer(0, 512, sine) | Audio[0];
 
     // Add processing to the generated audio
     auto distortion = vega.Polynomial([](double x) { return x * x * x; });
@@ -1338,10 +1338,10 @@ auto node_buffer = vega.NodeBuffer(0, 512, sine, true);  // Clear first (default
 
       <pre><code class="language-cpp">
 auto sine = vega.Sine(440.0);
-auto buffer = vega.NodeBuffer(0, 512, sine, true)[0] | Audio;  // First node clears
+auto buffer = vega.NodeBuffer(0, 512, sine, true) | Audio[0];  // First node clears
 
 auto noise = vega.Random();
-auto noise_buffer = vega.NodeBuffer(0, 512, noise, false)[0] | Audio;  // Adds to sine
+auto noise_buffer = vega.NodeBuffer(0, 512, noise, false) | Audio[0];  // Adds to sine
       </code></pre>
 
       <p>Result: sine + noise.</p>
@@ -1379,13 +1379,13 @@ auto fund = vega.Sine(220.0);
 auto harm2 = vega.Sine(440.0);
 auto harm3 = vega.Sine(660.0);
 
-auto buffer = vega.NodeBuffer(0, 512, fund, true)[0] | Audio;   // First clears
-vega.NodeBuffer(0, 512, harm2, false)[0] | Audio;  // Adds harmonic 2
-vega.NodeBuffer(0, 512, harm3, false)[0] | Audio;  // Adds harmonic 3
+auto buffer = vega.NodeBuffer(0, 512, fund, true) | Audio[0];   // First clears
+vega.NodeBuffer(0, 512, harm2, false) | Audio[0];  // Adds harmonic 2
+vega.NodeBuffer(0, 512, harm3, false) | Audio[0];  // Adds harmonic 3
 
 // Waveshaping a generated tone
 auto sine = vega.Sine(110.0);
-auto buffer2 = vega.NodeBuffer(0, 512, sine)[1] | Audio;
+auto buffer2 = vega.NodeBuffer(0, 512, sine) | Audio[1];
 auto waveshape = vega.Polynomial([](double x) { return std::tanh(x * 10.0); });
 MayaFlux::create_processor&lt;PolynomialProcessor&gt;(buffer2, waveshape);
     </code></pre>
@@ -1405,11 +1405,11 @@ MayaFlux::create_processor&lt;PolynomialProcessor&gt;(buffer2, waveshape);
       <pre><code class="language-cpp">
 void compose() {
     // FeedbackBuffer: 70% feedback, 512 samples delay
-    auto feedback_buf = vega.FeedbackBuffer(0, 512, 0.7f, 512)[0] | Audio;
+    auto feedback_buf = vega.FeedbackBuffer(0, 512, 0.7f, 512) | Audio[0];
 
     // Feed an impulse into the buffer to kick-start resonance
     auto impulse = vega.Impulse(2.0);  // 2 Hz pulse train
-    vega.NodeBuffer(0, 512, impulse, false)[0] | Audio;  // Adds to feedback buffer
+    vega.NodeBuffer(0, 512, impulse, false) | Audio[0];  // Adds to feedback buffer
 
     // WARN: Remember to turn OFF after a few seconds as feedback can build up!
 }
@@ -1543,20 +1543,20 @@ auto filtered_feedback = vega.Polynomial(
 
     <pre><code class="language-cpp">
 // Karplus-Strong string (plucked string synthesis)
-auto feedback_buf = vega.FeedbackBuffer(0, 512, 0.996f, 100)[0] | Audio;  // ~480 Hz
+auto feedback_buf = vega.FeedbackBuffer(0, 512, 0.996f, 100) | Audio[0];  // ~480 Hz
 // Excite with noise burst
 auto noise = vega.Random();
-vega.NodeBuffer(0, 512, noise, false)[0] | Audio;
+vega.NodeBuffer(0, 512, noise, false) | Audio[0];
 
 // Ping-pong delay (requires two buffers—teaser for later)
-// auto left = vega.FeedbackBuffer(0, 512, 0.6f, 2400)[0] | Audio;
-// auto right = vega.FeedbackBuffer(1, 512, 0.6f, 2400)[1] | Audio;
+// auto left = vega.FeedbackBuffer(0, 512, 0.6f, 2400) | Audio[0];
+// auto right = vega.FeedbackBuffer(1, 512, 0.6f, 2400) | Audio[1];
 // Route left → right, right → left (needs BufferPipeline)
 
 // Resonant comb filter
-auto feedback_buf2 = vega.FeedbackBuffer(0, 512, 0.95f, 50)[1] | Audio;
+auto feedback_buf2 = vega.FeedbackBuffer(0, 512, 0.95f, 50) | Audio[1];
 auto input = vega.Sine(220.0);
-vega.NodeBuffer(0, 512, input, false)[1] | Audio;
+vega.NodeBuffer(0, 512, input, false) | Audio[1];
     </code></pre>
   </section>
 
@@ -1893,7 +1893,7 @@ Your listener buffers
 
       <pre><code class="language-cpp">
 // Create your own buffer
-auto buffer = vega.AudioBuffer()[0] | Audio;
+auto buffer = vega.AudioBuffer() | Audio[0];
 
 // Register it as input listener
 MayaFlux::read_from_audio_input(buffer, 0);  // Listen to input channel 0
@@ -1913,7 +1913,7 @@ MayaFlux::detach_from_audio_input(buffer, 0);
       <p><strong>Example: Record button</strong></p>
 
       <pre><code class="language-cpp">
-auto recorder = vega.AudioBuffer()[0] | Audio;
+auto recorder = vega.AudioBuffer() | Audio[0];
 
 // Start recording
 MayaFlux::read_from_audio_input(recorder, 0);
@@ -1999,7 +1999,7 @@ auto trigger_proc = MayaFlux::create_processor&lt;LogicProcessor&gt;(mic_silent,
       <pre><code class="language-cpp">
 void compose() {
     auto sine = vega.Sine(440.0);
-    auto buffer = vega.NodeBuffer(0, 512, sine)[0] | Audio;  // Registered to channel 0
+    auto buffer = vega.NodeBuffer(0, 512, sine) | Audio[0];  // Registered to channel 0
 
     // Supply this buffer to channels 1 and 2 as well
     MayaFlux::supply_buffer_to_channels(buffer, {1, 2}, 0.5);  // 50% mix level
@@ -2019,7 +2019,7 @@ void compose() {
     <details>
       <summary>Click to expand: The Difference Between Registration and Supply</summary>
 
-      <p><strong>Registration</strong> (<code>vega.AudioBuffer()[0] | Audio</code>):</p>
+      <p><strong>Registration</strong> (<code>vega.AudioBuffer() | Audio[0]</code>):</p>
 
       <ul>
         <li>Adds buffer as a <strong>child</strong> of <code>RootAudioBuffer[0]</code></li>
@@ -2074,7 +2074,7 @@ MayaFlux::supply_buffer_to_channel(buffer, 3, 0.1);  // 10% (quiet)
 
       <pre><code class="language-cpp">
 auto mono_source = vega.Sine(440.0);
-auto buffer = vega.NodeBuffer(0, 512, mono_source)[0] | Audio;
+auto buffer = vega.NodeBuffer(0, 512, mono_source) | Audio[0];
 
 // Send to left (full) and right (half) for asymmetric stereo
 MayaFlux::supply_buffer_to_channel(buffer, 0, 1.0);  // Left
@@ -2084,7 +2084,7 @@ MayaFlux::supply_buffer_to_channel(buffer, 1, 0.5);  // Right (quieter)
       <p><strong>Use case: Send effects</strong></p>
 
       <pre><code class="language-cpp">
-auto dry = vega.NodeBuffer(0, 512, sine)[0] | Audio;  // Dry signal, channel 0
+auto dry = vega.NodeBuffer(0, 512, sine) | Audio[0];  // Dry signal, channel 0
 
 // Send 30% to reverb channel
 MayaFlux::supply_buffer_to_channel(dry, 2, 0.3);  // Channel 2 = reverb bus
@@ -2101,7 +2101,7 @@ MayaFlux::supply_buffer_to_channel(dry, 2, 0.3);  // Channel 2 = reverb bus
       <p>You can remove supply relationships:</p>
 
       <pre><code class="language-cpp">
-auto buffer = vega.NodeBuffer(0, 512, sine)[0] | Audio;
+auto buffer = vega.NodeBuffer(0, 512, sine) | Audio[0];
 MayaFlux::supply_buffer_to_channel(buffer, 1);
 
 // Later: stop sending to channel 1
@@ -2137,7 +2137,7 @@ if (user_pressed_button_A) {
     <pre><code class="language-cpp">
 // Quad panning (4-channel surround)
 auto source = vega.Sine(220.0);
-auto buffer = vega.NodeBuffer(0, 512, source)[0] | Audio;
+auto buffer = vega.NodeBuffer(0, 512, source) | Audio[0];
 
 // Distribute to 4 corners with different levels (panning)
 MayaFlux::supply_buffer_to_channel(buffer, 0, 0.7);  // Front-left
@@ -2146,9 +2146,9 @@ MayaFlux::supply_buffer_to_channel(buffer, 2, 0.2);  // Rear-left
 MayaFlux::supply_buffer_to_channel(buffer, 3, 0.1);  // Rear-right
 
 // Send effects architecture
-auto guitar = vega.NodeBuffer(0, 512, source)[0] | Audio;  // Channel 0 = dry
-auto reverb_bus = vega.FeedbackBuffer(1, 512, 0.7f, 4800)[1] | Audio;  // Channel 1 = reverb
-auto delay_bus = vega.FeedbackBuffer(2, 512, 0.6f, 9600)[2] | Audio;   // Channel 2 = delay
+auto guitar = vega.NodeBuffer(0, 512, source) | Audio[0];  // Channel 0 = dry
+auto reverb_bus = vega.FeedbackBuffer(1, 512, 0.7f, 4800) | Audio[1];  // Channel 1 = reverb
+auto delay_bus = vega.FeedbackBuffer(2, 512, 0.6f, 9600) | Audio[2];   // Channel 2 = delay
 
 MayaFlux::supply_buffer_to_channel(guitar, 1, 0.4);  // 40% to reverb
 MayaFlux::supply_buffer_to_channel(guitar, 2, 0.2);  // 20% to delay
@@ -2216,7 +2216,7 @@ void compose() {
 
       <pre><code class="language-cpp">
 // One reverb output to stereo speakers
-auto reverb = vega.FeedbackBuffer(0, 512, 0.8f, 4800)[0] | Audio;
+auto reverb = vega.FeedbackBuffer(0, 512, 0.8f, 4800) | Audio[0];
 MayaFlux::supply_buffer_to_channel(reverb, 1);  // Copy to right channel
 // Cost: 1× reverb processing
       </code></pre>
