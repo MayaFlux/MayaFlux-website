@@ -113,7 +113,7 @@ void rhythm_topology()
     auto kick_phasor = vega.Phasor(20.0, 1.0);
     auto kick_env    = vega.Polynomial([](double x) { return std::exp(-x * 15.0); });
     kick_env->set_input_node(kick_phasor);
-    auto kick_tone   = vega.Sine(55.0)[0] | Audio;
+    auto kick_tone   = vega.Sine(55.0) | Audio[0];
     kick_tone->set_amplitude_modulator(kick_env);
 
     auto snare_phasor = vega.Phasor(30.0, 1.0);
@@ -162,7 +162,7 @@ void rhythm_topology()
 void vowel_body()
 {
     auto noise    = vega.Random(-1.0, 1.0);
-    auto formants = vega.ResonatorNetwork(5)[0] | Audio;
+    auto formants = vega.ResonatorNetwork(5) | Audio[0];
     formants->set_exciter(noise);
     formants->set_resonator(0,  730.0, 12.0);
     formants->set_resonator(1, 1090.0, 10.0);
@@ -206,7 +206,7 @@ void tube_resonance()
 void midi_formants()
 {
     auto cc_mod   = vega.read_midi(MIDIConfig::cc(1), InputBinding::midi("UM-ONE"));
-    auto formants = vega.ResonatorNetwork(4)[0] | Audio;
+    auto formants = vega.ResonatorNetwork(4) | Audio[0];
     formants->set_exciter(vega.Random(-1.0, 1.0));
     formants->map_parameter("q", cc_mod, MappingMode::BROADCAST);
 }
