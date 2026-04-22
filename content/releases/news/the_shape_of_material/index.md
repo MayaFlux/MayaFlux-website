@@ -653,8 +653,7 @@ A mesh is two spans: vertex bytes and triangle indices, with independent dirty f
     // 3rd harmonic: 84 Hz, FM by sub for slight instability.
     auto h3_mod = vega.Polynomial([sub](double x) {
         return sub->get_last_output() * 3.0;
-    })[0]
-        | Audio;
+    }) | Audio[0];
     auto h3 = vega.Sine(h3_mod, 84.0f, 0.55) | Audio[{ 0, 1 }];
 
     // 5th harmonic: 140 Hz, AM by a mid-rate LFO on a different cycle.
@@ -665,15 +664,13 @@ A mesh is two spans: vertex bytes and triangle indices, with independent dirty f
     // 7th harmonic: 196 Hz, FM by h3 — cross-modulation between harmonics.
     auto h7_mod = vega.Polynomial([h3](double x) {
         return h3->get_last_output() * 5.0;
-    })[0]
-        | Audio;
+    }) | Audio[0];
     auto h7 = vega.Sine(h7_mod, 196.0f, 0.3) | Audio[{ 0, 1 }];
 
     // Inharmonic grind: 243 Hz (not in the series), FM by h2, creates beating.
     auto grind_mod = vega.Polynomial([h2](double x) {
         return h2->get_last_output() * 6.5;
-    })[0]
-        | Audio;
+    }) | Audio[0];
     auto grind = vega.Sine(grind_mod, 243.0f, 0.25) | Audio[{ 0, 1 }];
 
     // Gentle tanh saturation — adds upper partials without noise.
@@ -685,8 +682,7 @@ A mesh is two spans: vertex bytes and triangle indices, with independent dirty f
             + h7->get_last_output()
             + grind->get_last_output();
         return std::tanh(sum * 1.6) * 0.65;
-    })[{ 0, 1 }]
-        | Audio;
+    }) | Audio[{ 0, 1 }];
 
     // Spatial routing: layers orbit between channels on slow independent cycles.
     // Sub stays centred. Upper harmonics drift across the stereo field.

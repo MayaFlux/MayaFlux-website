@@ -287,7 +287,7 @@ auto string = vega.Polynomial(
     },
     PolynomialMode::RECURSIVE,
     100  // delay length determines pitch (~480Hz at 48kHz)
-)[0] | Audio;
+) | Audio[0];
 
 // Excite with noise burst
 string->set_initial_conditions(
@@ -505,7 +505,7 @@ auto envelope_follower = vega.Polynomial(
     envelope_func,
     PolynomialMode::RECURSIVE,
     3  // track current input, previous output, previous input
-)[0] | Audio;
+) | Audio[0];
 
 ```
 
@@ -565,7 +565,7 @@ auto spectral_gate = vega.Logic(
     },
     LogicMode::SEQUENTIAL,
     10
-)[0] | Audio;
+) | Audio[0];
 
 // Feed it spectral analysis data
 auto buffer = vega.AudioBuffer() | Audio[0];
@@ -672,7 +672,7 @@ auto phase_distortion = vega.Polynomial(
     },
     PolynomialMode::RECURSIVE,
     2
-)[0] | Audio;
+) | Audio[0];
 
 // Connect: LFO modulates oscillator frequency
 osc->set_frequency_node(lfo);
@@ -818,7 +818,7 @@ The Polynomial string from earlier was a simplified Karplus-Strong. WaveguideNet
 // Plucked string: same algorithm, richer control
 auto string = vega.WaveguideNetwork(
     WaveguideNetwork::WaveguideType::STRING, 220.0
-)[0] | Audio;
+) | Audio[0];
 
 // Pluck position controls spectral content
 // 0.5 = center (warm, fundamental-heavy)
@@ -844,7 +844,7 @@ The `TUBE` type is bidirectional: two delay rails with independent boundary refl
 // Clarinet-like tube: bidirectional wave propagation
 auto tube = vega.WaveguideNetwork(
     WaveguideNetwork::WaveguideType::TUBE, 146.8
-)[1] | Audio;
+) | Audio[1];
 
 // Strike injects a Gaussian-windowed noise burst
 tube->strike(0.1, 0.9);
@@ -868,7 +868,7 @@ Where WaveguideNetwork simulates wave propagation in the time domain, ModalNetwo
 ```cpp
 auto bell = vega.ModalNetwork(
     12, 220.0, ModalNetwork::Spectrum::INHARMONIC
-)[0] | Audio;
+) | Audio[0];
 
 bell->excite(0.8);
 ```
@@ -898,7 +898,7 @@ ResonatorNetwork is a bank of IIR biquad bandpass filters. Feed it a signal, it 
 ```cpp
 auto voice = vega.ResonatorNetwork(
     5, ResonatorNetwork::FormantPreset::VOWEL_A
-)[0] | Audio;
+) | Audio[0];
 
 auto pulse = vega.Phasor(120.0f);
 voice->set_exciter(pulse);
@@ -920,12 +920,12 @@ The payoff of having three network types in a unified architecture: one network'
 ```cpp
 auto string = vega.WaveguideNetwork(
     WaveguideNetwork::WaveguideType::STRING, 220.0
-)[0] | Audio;
+) | Audio[0];
 string->set_output_mode(OutputMode::AUDIO_COMPUTE);
 
 auto formants = vega.ResonatorNetwork(
     5, ResonatorNetwork::FormantPreset::VOWEL_A
-)[0] | Audio;
+) | Audio[0];
 
 // Feed the plucked string's output into the resonator as excitation
 formants->set_network_exciter(string);

@@ -577,7 +577,7 @@ void compose() {
     window->show();
 
     // Create parameter nodes - processed at graphics rate
-    auto time_node = vega.Phasor(50)[0] | Graphics; // Time accumulator
+    auto time_node = vega.Phasor(50) | Graphics; // Time accumulator
 
     // For constant values, use Polynomial in DIRECT mode with constant function
     auto freq_poly = vega.Polynomial([](double x) { return 10.0; }) | Graphics;
@@ -679,7 +679,7 @@ void compose() {
 
     window->show();
 
-    auto time_node = vega.Phasor(30)[0] | Graphics;
+    auto time_node = vega.Phasor(30) | Graphics;
 
     // Modulated intensity: 0.5 + 0.3 * sin(time * 0.5)
     auto intensity_osc = vega.Sine(0.015, 0.3) | Graphics; // 0.5Hz * 0.03 = 0.015, amp 0.3
@@ -688,8 +688,8 @@ void compose() {
 
     // Modulated zoom: 1.0 + 0.2 * cos(time * 0.3)
     // Note: We don't have cosine, so use Sine with phase offset or Polynomial
-    auto zoom_base = vega.Polynomial([](double x) { return 1.0; })[0] | Graphics;
-    auto zoom_osc = vega.Sine(0.009, 0.2)[0] | Graphics; // Approximate cos behavior
+    auto zoom_base = vega.Polynomial([](double x) { return 1.0; }) | Graphics;
+    auto zoom_osc = vega.Sine(0.009, 0.2) | Graphics; // Approximate cos behavior
     auto zoom_node = zoom_base + zoom_osc;
 
     struct SpiralParams {
@@ -769,15 +769,15 @@ void compose() {
 
     window->show();
 
-    auto time_node = vega.Phasor(0.2)[0] | Graphics;
+    auto time_node = vega.Phasor(0.2) | Graphics;
 
     // Segments: 6.0 + 4.0 * sin(time * 0.3)
-    auto seg_base = vega.Polynomial([](double x) { return 6.0; })[0] | Graphics;
-    auto seg_osc = vega.Sine(0.006, 4.0)[0] | Graphics; // 0.3Hz * 0.02 = 0.006
+    auto seg_base = vega.Polynomial([](double x) { return 6.0; }) | Graphics;
+    auto seg_osc = vega.Sine(0.006, 4.0) | Graphics; // 0.3Hz * 0.02 = 0.006
     auto segments_node = seg_base + seg_osc;
 
     // Rotation: time * 0.5
-    auto rotation_scale = vega.Polynomial([](double x) { return 0.5; })[0] | Graphics;
+    auto rotation_scale = vega.Polynomial([](double x) { return 0.5; }) | Graphics;
     auto rotation_node = time_node * rotation_scale;
 
     struct KaleidoscopeParams {
@@ -972,9 +972,9 @@ void compose() {
 
     window->show();
 
-    auto time_node = vega.Phasor(100)[0] | Graphics;
-    auto radius_node = vega.Polynomial([](double x) { return 1.5; })[0] | Graphics;
-    auto speed_node = vega.Polynomial([](double x) { return 0.3; })[0] | Graphics;
+    auto time_node = vega.Phasor(100) | Graphics;
+    auto radius_node = vega.Polynomial([](double x) { return 1.5; }) | Graphics;
+    auto speed_node = vega.Polynomial([](double x) { return 0.3; }) | Graphics;
 
     struct SpiralParams {
         float time;
@@ -1059,10 +1059,10 @@ void compose() {
 
     window->show();
 
-    auto time_node = vega.Phasor(20)[0] | Graphics;
-    auto freq_x = vega.Polynomial([](double x) { return 3.0; })[0] | Graphics;
-    auto freq_y = vega.Polynomial([](double x) { return 5.0; })[0] | Graphics;
-    auto phase = vega.Polynomial([](double x) { return 0.0; })[0] | Graphics;
+    auto time_node = vega.Phasor(20) | Graphics;
+    auto freq_x = vega.Polynomial([](double x) { return 3.0; }) | Graphics;
+    auto freq_y = vega.Polynomial([](double x) { return 5.0; }) | Graphics;
+    auto phase = vega.Polynomial([](double x) { return 0.0; }) | Graphics;
 
     struct LissajousParams {
         float time;
@@ -1486,8 +1486,7 @@ void compose() {
                                  return input + d1 * 0.35 + d2 * 0.28 - d3 * 0.21 + d4 * 0.15 - d5 * 0.12;
                              },
                              PolynomialMode::RECURSIVE,
-                             600)[0]
-        | Audio;
+                             600) | Audio[0];
 
     delay_network->set_initial_conditions({ 0.8, -0.3, 0.5, -0.2, 0.4 });
 
@@ -1501,8 +1500,7 @@ void compose() {
                                      return std::sqrt(sum / 64.0);
                                  },
                                  PolynomialMode::FEEDFORWARD,
-                                 128)[0]
-        | Audio;
+                                 128) | Audio[0];
 
     delay_network >> density_extractor;
 
@@ -1517,8 +1515,7 @@ void compose() {
                                        return 1.0 - (crossings / 32.0);
                                    },
                                    PolynomialMode::FEEDFORWARD,
-                                   64)[0]
-        | Audio;
+                                   64) | Audio[0];
 
     delay_network >> coherence_extractor;
 
@@ -1532,8 +1529,7 @@ void compose() {
                                   return (recent - distant) / (recent + distant + 0.001);
                               },
                               PolynomialMode::FEEDFORWARD,
-                              128)[0]
-        | Audio;
+                              128) | Audio[0];
 
     delay_network >> tilt_extractor;
 
@@ -1666,8 +1662,7 @@ void compose() {
     auto density1 = vega.Polynomial(
                         [](double x) {
                             return std::pow(std::abs(x), 3.0) * (x > 0 ? 1.0 : -1.0);
-                        })[0]
-        | Audio;
+                        }) | Audio[0];
 
     noise1 >> density1;
 
@@ -1675,8 +1670,7 @@ void compose() {
     auto segment_correlator = vega.Polynomial(
                                   [](double x) {
                                       return x * x * 0.5 + std::tanh(x + x) * 0.5;
-                                  })[0]
-        | Audio;
+                                  }) | Audio[0];
 
     segment_correlator->set_input_node(noise2);
 
@@ -1686,8 +1680,7 @@ void compose() {
     auto segment_mapper = vega.Polynomial(
                               [](double x) {
                                   return 3.0 + std::abs(x) * 9.0;
-                              })[0]
-        | Audio;
+                              }) | Audio[0];
 
     segment_correlator >> segment_mapper;
 
@@ -1695,8 +1688,7 @@ void compose() {
     auto mirror_prob = vega.Polynomial(
                            [](double x) {
                                return (x + 1.0) * 0.5;
-                           })[0]
-        | Audio;
+                           }) | Audio[0];
 
     density1 >> mirror_prob;
 
@@ -1706,8 +1698,7 @@ void compose() {
                                         return history[0] + history[0] * 0.02;
                                     },
                                     PolynomialMode::FEEDFORWARD,
-                                    64)[0]
-        | Audio;
+                                    64) | Audio[0];
 
     rotation_accumulator->set_input_node(noise3);
 
@@ -1718,8 +1709,7 @@ void compose() {
                            [noise3](double x) {
                                double n3 = noise3->get_last_output();
                                return (x + x + n3) / 3.0;
-                           })[0]
-        | Audio;
+                           }) | Audio[0];
 
     color_shift->set_input_node(noise2);
 
@@ -1728,8 +1718,7 @@ void compose() {
     auto color_mapper = vega.Polynomial(
                             [](double x) {
                                 return std::abs(x) * 0.5;
-                            })[0]
-        | Audio;
+                            }) | Audio[0];
 
     color_shift >> color_mapper;
 
@@ -1852,8 +1841,7 @@ void compose() {
     auto u_envelope = vega.Polynomial(
                           [](double x) {
                               return 0.85 + (x + 1.0) * 0.075;
-                          })[0]
-        | Audio;
+                          }) | Audio[0];
     u_envelope->set_input_node(u_modulator);
 
     // Chaotic trajectory generation
@@ -1868,8 +1856,7 @@ void compose() {
                                    y = y_new;
 
                                    return (x + y) * 0.1;
-                               })[0]
-        | Audio;
+                               }) | Audio[0];
 
     chaos_generator->set_input_node(u_envelope);
 
@@ -1884,8 +1871,7 @@ void compose() {
                                     return std::sqrt(dx * dx + dy * dy);
                                 },
                                 PolynomialMode::FEEDFORWARD,
-                                16)[0]
-        | Audio;
+                                16) | Audio[0];
 
     chaos_generator >> velocity_tracker;
 
@@ -2027,8 +2013,7 @@ void compose() {
     auto density_shaper = vega.Polynomial(
                               [](double x) {
                                   return std::pow((x + 1.0) * 0.5, 2.0);
-                              })[0]
-        | Audio;
+                              }) | Audio[0];
     density_shaper->set_input_node(density_lfo);
 
     // Grain trigger logic
@@ -2036,8 +2021,7 @@ void compose() {
                              [density_shaper](double x) {
                                  double threshold = 1.0 - density_shaper->get_last_output();
                                  return x > threshold;
-                             })[0]
-        | Audio;
+                             }) | Audio[0];
     grain_trigger->set_input_node(noise);
 
     // Pitch dispersion
@@ -2045,8 +2029,7 @@ void compose() {
     auto pitch_mapper = vega.Polynomial(
                             [](double x) {
                                 return std::abs(x);
-                            })[0]
-        | Audio;
+                            }) | Audio[0];
     pitch_mapper->set_input_node(pitch_lfo);
 
     // Spatial spread
@@ -2054,8 +2037,7 @@ void compose() {
     auto spread_mapper = vega.Polynomial(
                              [](double x) {
                                  return 0.3 + (x + 1.0) * 0.35;
-                             })[0]
-        | Audio;
+                             }) | Audio[0];
     spread_mapper->set_input_node(spread_lfo);
 
     // Granular synthesis engine
@@ -2080,8 +2062,7 @@ void compose() {
                                      return 0.0;
                                  },
                                  PolynomialMode::FEEDFORWARD,
-                                 1024)[0]
-        | Audio;
+                                 1024) | Audio[0];
 
     // Graphics-rate extraction with time accumulator
     auto time_accum = vega.Phasor(60.0) | Graphics; // 60 Hz for smooth animation
@@ -2370,7 +2351,7 @@ When you write:
 auto process = vega.Polynomial([](std::span<double> history) {
     // Complex temporal logic
     return computed_value;
-}, PolynomialMode::RECURSIVE, 512)[0] | Audio;
+}, PolynomialMode::RECURSIVE, 512) | Audio[0];
 ```
 
 <p>

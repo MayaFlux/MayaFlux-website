@@ -191,7 +191,7 @@ void camera_feed()
 void tube_resonance()
 {
     auto tube = vega.WaveguideNetwork(
-        WaveguideNetwork::WaveguideType::TUBE, 110.0)[0] | Audio;
+        WaveguideNetwork::WaveguideType::TUBE, 110.0) | Audio[0];
     tube->strike(0.1, 0.9);
 
     auto mod = vega.Sine(0.05, 1.0);
@@ -218,7 +218,7 @@ void midi_formants()
 void waveguide_sequence()
 {
     auto str = vega.WaveguideNetwork(
-        WaveguideNetwork::WaveguideType::STRING, 220.0)[0] | Audio;
+        WaveguideNetwork::WaveguideType::STRING, 220.0) | Audio[0];
 
     EventChain chain(get_scheduler(), "pluck_seq");
     chain.then([str]() { str->pluck(0.3, 1.0); })

@@ -258,7 +258,7 @@ void compose() {
         [](std::span<const double> inputs) {
             return (inputs[0] + inputs[1]) * 0.5 + inputs[2] * 0.3;
         }
-    )[0] | Audio;
+    ) | Audio[0];
 }
 ```
 
@@ -371,7 +371,7 @@ void compose() {
         12,
         220.0,
         ModalNetwork::Spectrum::INHARMONIC
-    )[0] | Audio;
+    ) | Audio[0];
 
     // Spatial excitation: strike position affects which modes ring
     schedule_metro(2.0, [bell]() {
@@ -405,11 +405,11 @@ No analog equivalent exists for this. It's computational physics.
 void compose() {
     auto string = vega.WaveguideNetwork(
         WaveguideNetwork::WaveguideType::STRING, 220.0
-    )[0] | Audio;
+    ) | Audio[0];
 
     auto tube = vega.WaveguideNetwork(
         WaveguideNetwork::WaveguideType::TUBE, 146.8
-    )[1] | Audio;
+    ) | Audio[1];
 
     // Pluck the string: position and strength control the attack spectrum
     schedule_metro(1.5, [string]() {
@@ -441,7 +441,7 @@ void compose() {
     auto voice = vega.ResonatorNetwork(
         5,
         ResonatorNetwork::FormantPreset::VOWEL_A
-    )[0] | Audio;
+    ) | Audio[0];
 
     // Feed it a pitched exciter (glottal pulse simulation)
     auto pulse = vega.Phasor(120.0f);
@@ -489,21 +489,21 @@ void compose() {
     // A waveguide string produces the raw excitation signal
     auto string = vega.WaveguideNetwork(
         WaveguideNetwork::WaveguideType::STRING, 220.0
-    )[0] | Audio;
+    ) | Audio[0];
     string->set_output_mode(OutputMode::AUDIO_COMPUTE);
     string->set_output_scale(2);
 
     // A modal network adds bell-like resonance
     auto modes = vega.ModalNetwork(
         9, 220.0, ModalNetwork::Spectrum::INHARMONIC
-    )[0] | Audio;
+    ) | Audio[0];
     modes->set_output_mode(OutputMode::AUDIO_COMPUTE);
     modes->set_output_scale(2);
 
     // A resonator network shapes the combined result as formants
     auto formants = vega.ResonatorNetwork(
         5, ResonatorNetwork::FormantPreset::VOWEL_A
-    )[0] | Audio;
+    ) | Audio[0];
     formants->add_channel_usage(1);
 
     // Default exciter: a simple phasor
@@ -576,7 +576,7 @@ void compose() {
 
     // Route a network to multiple channels
     auto bell = vega.ModalNetwork(12, 220.0,
-        ModalNetwork::Spectrum::INHARMONIC)[0] | Audio;
+        ModalNetwork::Spectrum::INHARMONIC) | Audio[0];
     route_network(bell, {0, 1}, 1.0);
 
     // Route a buffer to a different channel
@@ -601,7 +601,7 @@ For static multi-channel registration (no fade needed), networks can declare cha
 void compose() {
     auto formants = vega.ResonatorNetwork(
         5, ResonatorNetwork::FormantPreset::VOWEL_A
-    )[0] | Audio;
+    ) | Audio[0];
 
     // Output to both channels from the start
     formants->add_channel_usage(1);

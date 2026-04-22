@@ -390,7 +390,7 @@ auto bell = vega.ModalNetwork(
     12,                                      // 12 modes
     220.0,                                   // Fundamental
     ModalNetwork::Spectrum::INHARMONIC       // Non-integer ratios
-)[0] | Audio;
+) | Audio[0];
 
 schedule_metro(2.0, [bell]() {
     bell->excite(0.8);
@@ -402,12 +402,12 @@ schedule_metro(2.0, [bell]() {
 // String-like harmonic spectrum
 auto string = vega.ModalNetwork(
     8, 440.0, ModalNetwork::Spectrum::HARMONIC
-)[0] | Audio;
+) | Audio[0];
 
 // Piano-like stretched harmonics
 auto piano = vega.ModalNetwork(
     16, 220.0, ModalNetwork::Spectrum::STRETCHED
-)[1] | Audio;
+) | Audio[1];
 ```
 
 Pure Data's one-oscillator-per-partial approach directly reflected modular synthesis practice, giving each mode a visible, manipulable identity. This explicitness made the technique intuitive and pedagogically strong, because you understood modal synthesis by assembling it yourself. MayaFlux's `ModalNetwork` offers a complementary approach: the mathematical structure of the modes becomes a first-class parameter, so you shape relationships between modes rather than wiring each one individually. Both approaches illuminate different aspects of the same idea.
