@@ -12,6 +12,8 @@
 <a href="release/010"><strong>0.1.0</strong></a>
 <br>
 <a href="release/020"><strong>0.2.0</strong></a>
+<br>
+<a href="release/030"><strong>0.3.0</strong></a>
 </p>
 </div>
 </div>
