@@ -18,202 +18,7 @@ Some of these things exist in other tools in limited forms. None of them exist t
 </p>
 </div>
 
-
 <br>
-
-
-<div class="card ">
-<h2> Sampling pipelines </h2>
-
-<p>
-A stream is an addressable region of data. SamplingPipeline gives you independent cursors into that region - each with its own position, speed, and loop state - all running simultaneously from a single loaded file.
-</p>
-
-```cpp
-    auto ch = create_samplers("res/audio.wav", 48000 * 30);
-
-    const auto frames = make_persistent(ch[0]->slice_from_stream().end_frame());
-    const auto third = make_persistent(frames / 3);
-
-    store(ch);
-
-    ch[0]->play_continuous(0, ch[0]->slice_from_range(0, third).with_looping(true));
-    ch[0]->play_continuous(1, ch[0]->slice_from_range(third, third * 2).with_speed(0.75).with_looping(true));
-    ch[1]->play_continuous(0, ch[1]->slice_from_range(third * 2, frames).with_looping(true));
-    ch[1]->play_continuous(1, ch[1]->slice_from_range(0, frames).with_speed(1.5).with_looping(true));
-
-    schedule_sequence({
-        { 6.0, [ch, third]() {
-            ch[0]->load(1, ch[0]->slice_from_range(0, third / 4).with_speed(2.0).with_looping(true));
-            ch[0]->play(1);
-        } },
-        { 12.0, [ch, third, frames]() {
-            ch[1]->load(0, ch[1]->slice_from_range(third, third * 2).with_speed(0.5).with_looping(true));
-            ch[1]->play(0);
-        } },
-        { 18.0, [ch, frames]() {
-            ch[0]->load(0, ch[0]->slice_from_range(0, frames).with_speed(1.25).with_looping(true));
-            ch[0]->play(0);
-            ch[1]->load(1, ch[1]->slice_from_range(0, frames).with_speed(0.66).with_looping(true));
-            ch[1]->play(1);
-        } },
-    }, "evolve");
-```
-
-<br>
-
-<p>
-Musique concrète gave composers the idea that any recorded sound is raw material - that the identity of a sound is not fixed, that a recording of a train is not a train, it is a waveform, and a waveform is numbers, and numbers can be cut, reversed, layered, transposed, destroyed and rebuilt.
-
-That idea was radical in 1948 because the tools were physical and the transformations were irreversible. Here the source file is never touched. You have cursors. You have regions. You have speed as a continuous parameter, not a pitch shifter, not a resampler with a musical interface bolted on top.
-You can read the same moment in a recording from four different positions simultaneously at four different rates and recombine the results into something that has no name yet.
-
-And then at a precise moment in time, scheduled to the sample, you can redefine what every one of those cursors is reading. This is not a sampler. This is what sampling actually is when you remove the DAW from in front of it.
-</p>
-
-</div>
-
-
-<br>
-
-<div class="card ">
-<h2> Granular workflow </h2>
-
-<p>
-GranularWorkflow treats a recording not as a piece of audio but as a population of moments. You define what makes a moment interesting - its energy, its spectral brightness, its internal variance - and the system reorganises the material entirely according to that definition.
-</p>
-
-```cpp
-auto src = get_io_manager()->load_audio("res/1.wav");
-    auto container = std::dynamic_pointer_cast<Kakshya::SignalSourceContainer>(src);
-
-    // --- Pass 1: RMS ascending, synchronous ---
-    // Quietest grains first. Plays immediately.
-
-    auto rms_out = Granular::process_to_container(
-        container,
-        AnalysisType::FEATURE,
-        Granular::GranularConfig {
-            .grain_size = 1024,
-            .hop_size = 512,
-            .feature_key = "rms",
-            .channel = 0,
-            .ascending = true,
-            .attribution_context = ComputationContext::SPECTRAL,
-        },
-        "rms");
-
-    std::cout << "Starting phase 1\n";
-    get_io_manager()->hook_audio_container_to_buffers(rms_out);
-
-    // --- Pass 2: Brightness descending, Hann taper, async ---
-    // Source plays underneath while reconstruction runs in the background.
-    // Callback is the handle - fires when done, installs and starts the sampler.
-
-    std::shared_ptr<Kriya::SamplingPipeline> bright_sampler;
-    store(bright_sampler);
-
-    auto bright_matrix = Granular::make_granular_matrix(
-        ComputationContext::SPECTRAL,
-        Granular::GranularOutput::STREAM_ADDITIVE,
-        [](std::span<double> g) { Kinesis::Discrete::apply_hann(g); });
-
-    Granular::process_to_stream_async(
-        bright_matrix,
-        container,
-        AnalysisType::FEATURE,
-        // Capture by reference or pointer
-        [&bright_sampler](std::shared_ptr<Kakshya::DynamicSoundStream> stream) {
-            if (!stream)
-                return;
-            bright_sampler = create_sampler_from_stream(stream, 0);
-            bright_sampler->play_continuous(0, bright_sampler->slice_from_stream().with_looping(true).with_scale(0.3F));
-            std::cout << "Starting phase 2\n";
-        },
-        Granular::GranularConfig {
-            .grain_size = 2048,
-            .hop_size = 512,
-            .feature_key = "brightness",
-            .channel = 0,
-            .ascending = false,
-            .attribution_context = ComputationContext::SPECTRAL,
-            .taper = [](std::span<double> g) { Kinesis::Discrete::apply_hann(g); },
-        },
-        "brightness",
-        Granular::GranularOutput::STREAM_ADDITIVE);
-
-    // --- Pass 3: Variance descending, no taper, additive ---
-    // Most chaotic grains first. Raw amplitude buildup in overlap regions.
-    // Output feeds directly into the polyphonic sampler infrastructure.
-
-    auto var_matrix = Granular::make_granular_matrix(
-        ComputationContext::SPECTRAL,
-        Granular::GranularOutput::STREAM_ADDITIVE);
-
-    auto var_stream = Granular::process_to_stream(
-        container,
-        Granular::AttributeExecutor([](std::span<const double> samples, const ExecutionContext&) -> double {
-            if (samples.empty())
-                return 0.0;
-            StatisticalAnalyzer<std::vector<Kakshya::DataVariant>,
-                std::vector<Kakshya::DataVariant>>
-                az;
-            az.set_method(StatisticalMethod::VARIANCE);
-            std::vector<Kakshya::DataVariant> in {
-                Kakshya::DataVariant(std::vector<double>(samples.begin(), samples.end()))
-            };
-            auto r = az.analyze_statistics(in);
-            return r.channel_statistics.empty() ? 0.0 : r.channel_statistics[0].stat_variance;
-        }),
-        Granular::GranularConfig {
-            .grain_size = 1536,
-            .hop_size = 384,
-            .feature_key = "variance",
-            .channel = 0,
-            .ascending = false,
-            .attribution_context = ComputationContext::SPECTRAL,
-        },
-        Granular::GranularOutput::STREAM_ADDITIVE);
-
-    if (var_stream) {
-
-        std::cout << "Starting phase 3\n";
-        auto var_ch0 = create_sampler_from_stream(var_stream, 0);
-        auto var_ch1 = create_sampler_from_stream(var_stream, 1);
-        store(var_ch0);
-        store(var_ch1);
-
-        var_ch0->play_continuous(0, var_ch0->slice_from_stream().with_looping(true));
-        var_ch1->play_continuous(0, var_ch1->slice_from_stream().with_speed(0.75).with_looping(true));
-    }
-```
-
-<br>
-
-<p>
-In Max, SuperCollider, Pure Data - granular synthesis is a playback paradigm. You have a buffer, you have a phasor scrubbing through it, you have parameters: grain size, scatter, density, position randomisation, envelope shape. You tune these numbers and you get a texture. The grains are not objects. They have no identity.
-
-They are anonymous windows into a buffer, generated and discarded at playback rate, defined entirely by where the phasor happens to be pointing when the scheduler decides to spawn one. The composition happens in the parameter space of the engine, not in the material itself. You are not working with the recording - you are working with a set of dials that determine how the engine chews through it.
-
-Here there are no dials. There is no scrubbing phasor. There is no real-time grain scheduler making anonymous decisions about what to play next.
-Instead: the recording is decomposed into a population of discrete, named, characterised moments. Each grain is an object. It has a position in the source, a duration, and any number of attributes you choose to compute - spectral centroid, RMS energy, zero crossing rate, variance, anything you can express as a function from samples to a number. 
-
-Once attributed, the population can be sorted, filtered, reordered, partitioned, passed through any algorithm that operates on sequences. The order in which grains play is not a consequence of a phasor and a scatter parameter - it is the result of an explicit analytical decision about the structure of the material.
-
----
-
-
-When you sort by brightness descending, you are not applying an effect. You are making an argument about the recording - that its most spectrally dense moments should be heard first, and that the reconstruction should be built from that ordering. That argument is code. It is inspectable, reproducible, composable with anything else in the system. 
-
-You can write a sort key that depends on the output of a neural network, on the position of a cursor in a completely different stream, on the result of a Vulkan compute shader that ran over the frequency data. The grain population is just data. It lives in the same substrate as everything else.
-
-This is not a faster or more flexible granular engine. It is a different thing entirely - one that only becomes possible when you stop treating audio as a special domain with special tools and start treating it as what it actually is: numbers, addressable, composable, and open to any algorithm you care to write.
-</p>
-
-</div>
-
-<br>
-
 
 <div class="card ">
 <h2> MeshNetwork : Shared State, Closed Loop </h2>
@@ -225,6 +30,9 @@ A mesh loaded from a file. Waveguide string voices, one per submesh slot. Not ma
 <br>
 {{< youtube AJvscScCYPk >}}
 <br>
+
+<details>
+<summary> Code</summary>
 
 ```cpp
 auto window = MayaFlux::create_window({ "mesh network", 1920, 1080 });
@@ -448,7 +256,7 @@ auto window = MayaFlux::create_window({ "mesh network", 1920, 1080 });
     bind_viewport_preset(window, buf->get_render_processor(),
         ViewportPresetMode::Fly, {}, "mesh_net");
 ```
-
+</details>
 <br>
 
 <p>
@@ -475,6 +283,9 @@ A mesh is two spans: vertex bytes and triangle indices, with independent dirty f
 <br>
 {{< youtube BhsETQyYRkk >}}
 <br>
+
+<details>
+<summary> Code</summary>
 
 ```cpp
     constexpr int W = 48;
@@ -770,7 +581,7 @@ A mesh is two spans: vertex bytes and triangle indices, with independent dirty f
 
     bind_viewport_preset(window, buf->get_render_processor(), ViewportPresetMode::Fly, {}, "drone_disintegration");
 ```
-
+</details>
 <br>
 
 <p>
@@ -801,6 +612,9 @@ Nexus is a layer for relationships between things in space. Not a scene graph. N
 Skip ahead in the video for line and triangle rendering modes.
 {{< youtube 83Lv4GAogd0 >}}
 <br>
+
+<details>
+<summary> Code</summary>
 
 ```cpp
 std::vector<LineVertex> cuboid_wireframe(
@@ -1159,7 +973,7 @@ void nexa()
     e2->get_render_processor(window)->set_view_transform_source(shared_source);
 }
 ```
-
+</details>
 <br>
 
 <p>
@@ -1188,6 +1002,9 @@ A glyph is a quad. A quad is four numbers. Four numbers can go anywhere.
 </p>
 
 ![Text Animated GIF](output.gif)
+
+<details>
+<summary> Code</summary>
 
 ```cpp
     auto window = MayaFlux::create_window({ "text", 1920, 1080 });
@@ -1344,7 +1161,7 @@ A glyph is a quad. A quad is four numbers. Four numbers can go anywhere.
                 { rgb.r, rgb.g, rgb.b, 1.0f });
         } }, "text_animate");
 ```
-
+</details>
 <br>
 
 <p>
@@ -1368,6 +1185,9 @@ A rendered window surface is a SignalSourceContainer. That means it is data.
 <br>
 {{< youtube TRqSM659XAc >}}
 <br>
+
+<details>
+<summary> Code</summary>
 
 ```cpp
     auto window = MayaFlux::create_window({ "source", 1920, 1080 });
@@ -1446,7 +1266,7 @@ A rendered window surface is a SignalSourceContainer. That means it is data.
         display_buf->set_gpu_texture((*history)[static_cast<size_t>(cursor)]);
     });
 ```
-
+</details>
 <br>
 
 <p>
@@ -1465,12 +1285,223 @@ You can sample from render history the same way GranularWorkflow samples from au
 
 <br>
 
+
+<div class="card ">
+<h2> Sampling pipelines </h2>
+
+<p>
+A stream is an addressable region of data. SamplingPipeline gives you independent cursors into that region - each with its own position, speed, and loop state - all running simultaneously from a single loaded file.
+</p>
+
+<br>
+{{< youtube Uktq5FqyKlM >}}
+<br>
+
+<details>
+<summary> Code</summary>
+
+```cpp
+    auto ch = create_samplers("res/audio.wav", 48000 * 30);
+
+    const auto frames = make_persistent(ch[0]->slice_from_stream().end_frame());
+    const auto third = make_persistent(frames / 3);
+
+    store(ch);
+
+    ch[0]->play_continuous(0, ch[0]->slice_from_range(0, third).with_looping(true));
+    ch[0]->play_continuous(1, ch[0]->slice_from_range(third, third * 2).with_speed(0.75).with_looping(true));
+    ch[1]->play_continuous(0, ch[1]->slice_from_range(third * 2, frames).with_looping(true));
+    ch[1]->play_continuous(1, ch[1]->slice_from_range(0, frames).with_speed(1.5).with_looping(true));
+
+    schedule_sequence({
+        { 6.0, [ch, third]() {
+            ch[0]->load(1, ch[0]->slice_from_range(0, third / 4).with_speed(2.0).with_looping(true));
+            ch[0]->play(1);
+        } },
+        { 12.0, [ch, third, frames]() {
+            ch[1]->load(0, ch[1]->slice_from_range(third, third * 2).with_speed(0.5).with_looping(true));
+            ch[1]->play(0);
+        } },
+        { 18.0, [ch, frames]() {
+            ch[0]->load(0, ch[0]->slice_from_range(0, frames).with_speed(1.25).with_looping(true));
+            ch[0]->play(0);
+            ch[1]->load(1, ch[1]->slice_from_range(0, frames).with_speed(0.66).with_looping(true));
+            ch[1]->play(1);
+        } },
+    }, "evolve");
+```
+</details>
+<br>
+
+<p>
+Musique concrète gave composers the idea that any recorded sound is raw material - that the identity of a sound is not fixed, that a recording of a train is not a train, it is a waveform, and a waveform is numbers, and numbers can be cut, reversed, layered, transposed, destroyed and rebuilt.
+
+That idea was radical in 1948 because the tools were physical and the transformations were irreversible. Here the source file is never touched. You have cursors. You have regions. You have speed as a continuous parameter, not a pitch shifter, not a resampler with a musical interface bolted on top.
+You can read the same moment in a recording from four different positions simultaneously at four different rates and recombine the results into something that has no name yet.
+
+And then at a precise moment in time, scheduled to the sample, you can redefine what every one of those cursors is reading. This is not a sampler. This is what sampling actually is when you remove the DAW from in front of it.
+</p>
+
+</div>
+
+
+<br>
+
+<div class="card ">
+<h2> Granular workflow </h2>
+
+<p>
+GranularWorkflow treats a recording not as a piece of audio but as a population of moments. You define what makes a moment interesting - its energy, its spectral brightness, its internal variance - and the system reorganises the material entirely according to that definition.
+</p>
+
+<br>
+{{< youtube C2GYKMoOw0o >}}
+<br>
+
+<details>
+<summary> Code</summary>
+
+```cpp
+auto src = get_io_manager()->load_audio("res/1.wav");
+    auto container = std::dynamic_pointer_cast<Kakshya::SignalSourceContainer>(src);
+
+    // --- Pass 1: RMS ascending, synchronous ---
+    // Quietest grains first. Plays immediately.
+
+    auto rms_out = Granular::process_to_container(
+        container,
+        AnalysisType::FEATURE,
+        Granular::GranularConfig {
+            .grain_size = 1024,
+            .hop_size = 512,
+            .feature_key = "rms",
+            .channel = 0,
+            .ascending = true,
+            .attribution_context = ComputationContext::SPECTRAL,
+        },
+        "rms");
+
+    std::cout << "Starting phase 1\n";
+    get_io_manager()->hook_audio_container_to_buffers(rms_out);
+
+    // --- Pass 2: Brightness descending, Hann taper, async ---
+    // Source plays underneath while reconstruction runs in the background.
+    // Callback is the handle - fires when done, installs and starts the sampler.
+
+    std::shared_ptr<Kriya::SamplingPipeline> bright_sampler;
+    store(bright_sampler);
+
+    auto bright_matrix = Granular::make_granular_matrix(
+        ComputationContext::SPECTRAL,
+        Granular::GranularOutput::STREAM_ADDITIVE,
+        [](std::span<double> g) { Kinesis::Discrete::apply_hann(g); });
+
+    Granular::process_to_stream_async(
+        bright_matrix,
+        container,
+        AnalysisType::FEATURE,
+        // Capture by reference or pointer
+        [&bright_sampler](std::shared_ptr<Kakshya::DynamicSoundStream> stream) {
+            if (!stream)
+                return;
+            bright_sampler = create_sampler_from_stream(stream, 0);
+            bright_sampler->play_continuous(0, bright_sampler->slice_from_stream().with_looping(true).with_scale(0.3F));
+            std::cout << "Starting phase 2\n";
+        },
+        Granular::GranularConfig {
+            .grain_size = 2048,
+            .hop_size = 512,
+            .feature_key = "brightness",
+            .channel = 0,
+            .ascending = false,
+            .attribution_context = ComputationContext::SPECTRAL,
+            .taper = [](std::span<double> g) { Kinesis::Discrete::apply_hann(g); },
+        },
+        "brightness",
+        Granular::GranularOutput::STREAM_ADDITIVE);
+
+    // --- Pass 3: Variance descending, no taper, additive ---
+    // Most chaotic grains first. Raw amplitude buildup in overlap regions.
+    // Output feeds directly into the polyphonic sampler infrastructure.
+
+    auto var_matrix = Granular::make_granular_matrix(
+        ComputationContext::SPECTRAL,
+        Granular::GranularOutput::STREAM_ADDITIVE);
+
+    auto var_stream = Granular::process_to_stream(
+        container,
+        Granular::AttributeExecutor([](std::span<const double> samples, const ExecutionContext&) -> double {
+            if (samples.empty())
+                return 0.0;
+            StatisticalAnalyzer<std::vector<Kakshya::DataVariant>,
+                std::vector<Kakshya::DataVariant>>
+                az;
+            az.set_method(StatisticalMethod::VARIANCE);
+            std::vector<Kakshya::DataVariant> in {
+                Kakshya::DataVariant(std::vector<double>(samples.begin(), samples.end()))
+            };
+            auto r = az.analyze_statistics(in);
+            return r.channel_statistics.empty() ? 0.0 : r.channel_statistics[0].stat_variance;
+        }),
+        Granular::GranularConfig {
+            .grain_size = 1536,
+            .hop_size = 384,
+            .feature_key = "variance",
+            .channel = 0,
+            .ascending = false,
+            .attribution_context = ComputationContext::SPECTRAL,
+        },
+        Granular::GranularOutput::STREAM_ADDITIVE);
+
+    if (var_stream) {
+
+        std::cout << "Starting phase 3\n";
+        auto var_ch0 = create_sampler_from_stream(var_stream, 0);
+        auto var_ch1 = create_sampler_from_stream(var_stream, 1);
+        store(var_ch0);
+        store(var_ch1);
+
+        var_ch0->play_continuous(0, var_ch0->slice_from_stream().with_looping(true));
+        var_ch1->play_continuous(0, var_ch1->slice_from_stream().with_speed(0.75).with_looping(true));
+    }
+```
+</details>
+<br>
+
+<p>
+In Max, SuperCollider, Pure Data - granular synthesis is a playback paradigm. You have a buffer, you have a phasor scrubbing through it, you have parameters: grain size, scatter, density, position randomisation, envelope shape. You tune these numbers and you get a texture. The grains are not objects. They have no identity.
+
+They are anonymous windows into a buffer, generated and discarded at playback rate, defined entirely by where the phasor happens to be pointing when the scheduler decides to spawn one. The composition happens in the parameter space of the engine, not in the material itself. You are not working with the recording - you are working with a set of dials that determine how the engine chews through it.
+
+Here there are no dials. There is no scrubbing phasor. There is no real-time grain scheduler making anonymous decisions about what to play next.
+Instead: the recording is decomposed into a population of discrete, named, characterised moments. Each grain is an object. It has a position in the source, a duration, and any number of attributes you choose to compute - spectral centroid, RMS energy, zero crossing rate, variance, anything you can express as a function from samples to a number. 
+
+Once attributed, the population can be sorted, filtered, reordered, partitioned, passed through any algorithm that operates on sequences. The order in which grains play is not a consequence of a phasor and a scatter parameter - it is the result of an explicit analytical decision about the structure of the material.
+
+---
+
+
+When you sort by brightness descending, you are not applying an effect. You are making an argument about the recording - that its most spectrally dense moments should be heard first, and that the reconstruction should be built from that ordering. That argument is code. It is inspectable, reproducible, composable with anything else in the system. 
+
+You can write a sort key that depends on the output of a neural network, on the position of a cursor in a completely different stream, on the result of a Vulkan compute shader that ran over the frequency data. The grain population is just data. It lives in the same substrate as everything else.
+
+This is not a faster or more flexible granular engine. It is a different thing entirely - one that only becomes possible when you stop treating audio as a special domain with special tools and start treating it as what it actually is: numbers, addressable, composable, and open to any algorithm you care to write.
+</p>
+
+</div>
+
+<br>
+
+
 <div class="card ">
 <h2> Networking </h2>
 
 <p>
 Networking in MayaFlux is not a separate subsystem you interface with. It is two things: a coroutine that fires when data arrives, and an input node that lives in the graph like any other node.
 </p>
+
+<details>
+<summary> Code</summary>
 
 ```cpp
     // -------------------------------------------------------------------------
@@ -1565,7 +1596,7 @@ Networking in MayaFlux is not a separate subsystem you interface with. It is two
     auto bytes = Portal::Network::serialize_osc("/sensor/pressure", {{ val }});
     sink->send({ bytes.data(), bytes.size() }); }, "sender");
 ```
-
+</details>
 <br>
 
 <p>
