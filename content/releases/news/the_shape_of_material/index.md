@@ -1187,6 +1187,8 @@ This is not a game engine with audio bolted on. It is not an audio engine with a
 A glyph is a quad. A quad is four numbers. Four numbers can go anywhere.
 </p>
 
+![Text Animated GIF](output.gif)
+
 ```cpp
     auto window = MayaFlux::create_window({ "text", 1920, 1080 });
     window->show();
@@ -1362,6 +1364,10 @@ The same audio input that drove the sampler in the first example is here driving
 <p>
 A rendered window surface is a SignalSourceContainer. That means it is data.
 </p>
+
+<br>
+{{< youtube TRqSM659XAc >}}
+<br>
 
 ```cpp
     auto window = MayaFlux::create_window({ "source", 1920, 1080 });
