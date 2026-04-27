@@ -797,6 +797,11 @@ The harmonic content of a 48-partial synthesis network is one such system. So is
 Nexus is a layer for relationships between things in space. Not a scene graph. Not an actor system. A positioned entity, a function that fires on a schedule, and outputs that route to wherever you point them.
 </p>
 
+<br>
+Skip ahead in the video for line and triangle rendering modes.
+{{< youtube 83Lv4GAogd0 >}}
+<br>
+
 ```cpp
 std::vector<LineVertex> cuboid_wireframe(
     const glm::vec3& centre, const glm::vec3& half)
@@ -821,16 +826,20 @@ std::vector<LineVertex> cuboid_wireframe(
     };
 }
 
-void nexus()
+void nexa()
 {
     auto window = MayaFlux::create_window({ "nexus", 1920, 1080 });
     window->show();
 
-    auto& mgr = *MayaFlux::get_buffer_manager();
-    auto& sched = *MayaFlux::get_scheduler();
-    auto& evmgr = *MayaFlux::get_event_manager();
+    auto tapestry = make_persistent_shared<Nexus::Tapestry>(get_scheduler(), get_event_manager());
 
-    auto fabric = make_persistent_shared<Nexus::Fabric>(sched, evmgr);
+    auto& mgr = *MayaFlux::get_buffer_manager();
+    // auto& sched = *MayaFlux::get_scheduler();
+    // auto& evmgr = *MayaFlux::get_event_manager();
+    //
+    // auto fabric = make_persistent_shared<Nexus::Fabric>(sched, evmgr);
+
+    auto fabric = tapestry->create_fabric("nexa_fabric");
 
     // -------------------------------------------------------------------------
     // Particle field: the thing being influenced.
@@ -848,13 +857,28 @@ void nexus()
     physics->set_gravity(glm::vec3(0.0f));
     physics->set_drag(0.03f);
     physics->set_interaction_radius(0.3f);
+    physics->set_bounds(glm::vec3(-2.0f), glm::vec3(2.0f));
+    physics->set_bounds_mode(PhysicsOperator::BoundsMode::BOUNCE);
+    // physics->enable_spatial_interactions(true);
 
     auto particle_buf = vega.NetworkGeometryBuffer(particles) | Graphics;
     particle_buf->setup_rendering({
         .target_window = window,
         .vertex_shader = "point_lit.vert",
         .fragment_shader = "point_lit.frag",
+
+        // TOGGLE THESE FOR FUN WITH RENDERING MODES
+
+        // .vertex_shader = "line_lit.vert",
+        // .fragment_shader = "line_lit.frag",
+        // .geometry_shader = "line_lit.geom",
+        // .topology = Portal::Graphics::PrimitiveTopology::LINE_STRIP,
+
+        // .vertex_shader = "triangle_lit.vert",
+        // .fragment_shader = "triangle_lit.frag",
+        // .topology = Portal::Graphics::PrimitiveTopology::TRIANGLE_LIST,
     });
+    // physics->set_point_size(2);
 
     // -------------------------------------------------------------------------
     // Three Emitters on choreographed paths.
@@ -979,8 +1003,8 @@ void nexus()
             const float n = static_cast<float>(ctx.spatial_results.size());
 
             // Physics: proximity drives turbulence and repulsion.
-            const float t = std::min(n * 1.2f, 6.0f);
-            const float r = std::min(n * 0.8f, 4.0f);
+            const float t = std::min(n * 0.3f, 1.5f);
+            const float r = std::min(n * 0.1f, 0.5f);
             physics->set_turbulence_strength(t);
             physics->set_repulsion_strength(r);
             turbulence->store(t, std::memory_order_relaxed);
@@ -1036,6 +1060,88 @@ void nexus()
             const glm::vec3 p = normalize_coords(x, y, window);
             s0->set_position(glm::vec3(p.x, p.y, 0.5f));
         });
+
+    // -------------------------------------------------------------------------
+    // Interactivity: pulse, speed, scatter.
+    // All shared state is plain value types - no atomics needed on the
+    // scheduler thread.
+    // -------------------------------------------------------------------------
+
+    auto speed_scale = std::make_shared<float>(1.0f);
+    auto orbits_frozen = std::make_shared<bool>(false);
+
+    // Scroll: scale orbit speed. Clamped to [0.05, 4.0].
+    on_scroll(window, [speed_scale](double /*dx*/, double dy) { *speed_scale = std::clamp(*speed_scale + static_cast<float>(dy) * 0.08f, 0.05f, 4.0f); }, "scroll_speed");
+
+    // Patch the orbit metros to respect speed_scale and frozen flag.
+    // Replace the three schedule_metro lambdas above with these:
+    //   (remove the originals and use these instead)
+    schedule_metro(1.0 / 60.0, [e0, t0, speed_scale, orbits_frozen]() {
+        if (*orbits_frozen) return;
+        *t0 += 0.008f * *speed_scale;
+        e0->set_position({
+            std::cos(*t0) * 1.5f,
+            std::sin(*t0 * 0.7f) * 0.6f,
+            std::sin(*t0) * 0.4f }); }, "orbit_e0");
+
+    schedule_metro(1.0 / 60.0, [e1, t1, speed_scale, orbits_frozen]() {
+        if (*orbits_frozen) return;
+        *t1 += 0.011f * *speed_scale;
+        e1->set_position({
+            std::sin(*t1 * 1.3f) * 0.5f,
+            std::cos(*t1) * 0.4f,
+            std::cos(*t1) * 1.5f }); }, "orbit_e1");
+
+    schedule_metro(1.0 / 60.0, [e2, t2, speed_scale, orbits_frozen, update_gizmo]() {
+        if (*orbits_frozen) return;
+        *t2 += 0.006f * *speed_scale;
+        const glm::vec3 p {
+            std::sin(*t2 * 2.0f) * 1.2f,
+            std::sin(*t2) * 1.0f,
+            std::cos(*t2 * 1.4f) * 0.5f };
+        e2->set_position(p);
+        update_gizmo(p); }, "orbit_e2");
+
+    // Middle click: freeze/unfreeze orbits.
+    on_mouse_pressed(window, IO::MouseButtons::Middle, [orbits_frozen](double, double) { *orbits_frozen = !*orbits_frozen; }, "freeze_orbits");
+
+    // Space: pulse s0 radius then decay back over ~1.5s at 60Hz.
+    auto pulse_t = std::make_shared<float>(-1.0f); // negative = inactive
+    constexpr float k_pulse_base_radius = 1.8f;
+    constexpr float k_pulse_peak_radius = 4.5f;
+    constexpr float k_pulse_decay = 4.0f; // units per second
+
+    schedule_metro(1.0 / 60.0, [s0, pulse_t]() {
+        if (*pulse_t < 0.0f) return;
+        *pulse_t += 1.0f / 60.0f;
+        const float r = k_pulse_peak_radius
+            * std::exp(-k_pulse_decay * *pulse_t);
+        s0->set_query_radius(k_pulse_base_radius + r);
+        if (r < 0.02f) {
+            s0->set_query_radius(k_pulse_base_radius);
+            *pulse_t = -1.0f;
+        } }, "pulse_decay");
+
+    on_key_pressed(window, IO::Keys::Space, [pulse_t, s0]() {
+        s0->set_query_radius(k_pulse_peak_radius);
+        *pulse_t = 0.0f; }, "pulse_trigger");
+
+    // R: scatter - brief high turbulence spike then clear.
+    auto scatter_t = std::make_shared<float>(-1.0f);
+    constexpr float k_scatter_duration = 0.4f;
+    constexpr float k_scatter_strength = 14.0f;
+
+    schedule_metro(1.0 / 60.0, [physics, scatter_t, turbulence]() {
+        if (*scatter_t < 0.0f) return;
+        *scatter_t += 1.0f / 60.0f;
+        if (*scatter_t >= k_scatter_duration) {
+            physics->set_turbulence_strength(turbulence->load(std::memory_order_relaxed));
+            *scatter_t = -1.0f;
+        } }, "scatter_decay");
+
+    on_key_pressed(window, IO::Keys::R, [physics, scatter_t]() {
+        physics->set_turbulence_strength(k_scatter_strength);
+        *scatter_t = 0.0f; }, "scatter_trigger");
 
     // -------------------------------------------------------------------------
     // View
