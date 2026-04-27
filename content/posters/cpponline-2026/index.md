@@ -834,7 +834,7 @@ All dispatch is compile-time via `if constexpr`. `LockFreePolicy` uses `alignas(
 void compose() {
     // Audio domain: modal synthesis driven by logic
     auto bell = vega.ModalNetwork(12, 220.0,
-        ModalNetwork::Spectrum::INHARMONIC)[0] | Audio;
+        ModalNetwork::Spectrum::INHARMONIC) | Audio[0];
 
     auto osc = vega.Sine(0.2, 1.0f);
     auto logic = vega.Logic([](double input) {

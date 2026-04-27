@@ -179,6 +179,8 @@ void compose() {
 }
 ```
 
+> **Note:** The channel syntax changed in 0.3. Prefer `vega.NodeBuffer(...) | Audio[0]` over `vega.NodeBuffer(...)[0] | Audio` — the old form was removed and will not compile against current releases.
+
 The substrate doesn't change. Your access to it deepens.
 
 </div>

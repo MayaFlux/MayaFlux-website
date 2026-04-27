@@ -222,300 +222,231 @@ This is not a faster or more flexible granular engine. It is a different thing e
 A mesh loaded from a file. Waveguide string voices, one per submesh slot. Not mapped. Not synchronised. The same state object is the audio and the geometry simultaneously
 </p>
 
+<br>
+{{< youtube AJvscScCYPk >}}
+<br>
+
 ```cpp
-    auto window = MayaFlux::create_window({ "disintegration", 1920, 1080 });
-
-    constexpr int W = 48;
-    constexpr int H = 48;
-    constexpr int VCOUNT = W * H;
-
-    auto build_verts = []() {
-        std::vector<MeshVertex> v;
-        v.reserve(static_cast<size_t>(VCOUNT));
-        for (int row = 0; row < H; ++row) {
-            for (int col = 0; col < W; ++col) {
-                const float u = static_cast<float>(col) / (W - 1);
-                const float vf = static_cast<float>(row) / (H - 1);
-                const float a = u * glm::two_pi<float>() * 2.3f;
-                const float b = vf * glm::pi<float>() * 1.7f;
-                const float r1 = 0.9f + 0.35f * std::cos(b);
-                const float fold = std::sin(a * 0.5f + b * 1.3f) * 0.4f;
-
-                glm::vec3 pos {
-                    r1 * std::cos(a) + fold * std::sin(b * 2.1f),
-                    std::sin(b) * 0.7f + std::sin(a * 1.4f) * 0.25f,
-                    r1 * std::sin(a) - fold * std::cos(a * 0.8f)
-                };
-
-                const glm::vec3 du {
-                    -r1 * std::sin(a),
-                    std::cos(a * 1.4f) * 0.25f * 1.4f,
-                    r1 * std::cos(a)
-                };
-                const glm::vec3 dv {
-                    -0.35f * std::sin(b) * std::cos(a),
-                    std::cos(b) * 0.7f,
-                    -0.35f * std::sin(b) * std::sin(a)
-                };
-                const glm::vec3 n = glm::normalize(glm::cross(du, dv));
-
-                MeshVertex mv;
-                mv.position = pos;
-                mv.normal = n;
-                mv.tangent = glm::normalize(du);
-                mv.color = glm::mix(
-                    glm::vec3(0.15f, 0.05f, 0.35f),
-                    glm::vec3(0.7f, 0.15f, 0.05f),
-                    u * vf + std::sin(a) * 0.2f + 0.2f);
-                mv.weight = 0.0f;
-                mv.uv = { u, vf };
-                v.push_back(mv);
-            }
-        }
-        return v;
-    };
-
-    // Index rebuild: large contiguous band removal driven by smoothed energy.
-    // Each band spans multiple rows. When energy is high enough, entire bands
-    // are absent from the triangulation - not trimmed at edges but gone.
-    // The surface seals when energy falls back below the band threshold.
-    auto build_indices = [](float e_slow, float e_mid, float e_fast) {
-        std::vector<uint32_t> idx;
-        idx.reserve(static_cast<size_t>((H - 1) * W) * 6);
-
-        for (int row = 0; row < H - 1; ++row) {
-            const float row_t = static_cast<float>(row) / static_cast<float>(H - 1);
-
-            // Three independent band systems, each driven by a different
-            // spectral layer. Thresholds are high - bands must be substantially
-            // energised before they tear. Overlap is possible: a row can be
-            // suppressed by any one of the three systems independently.
-            const float band_slow = std::abs(std::sin(row_t * glm::pi<float>() * 2.1f));
-            const float band_mid = std::abs(std::sin(row_t * glm::pi<float>() * 3.7f + 1.1f));
-            const float band_fast = std::abs(std::sin(row_t * glm::pi<float>() * 5.3f + 2.3f));
-
-            if (e_slow * band_slow > 0.7f)
-                continue;
-            if (e_mid * band_mid > 0.6f)
-                continue;
-            if (e_fast * band_fast > 0.5f)
-                continue;
-
-            for (int col = 0; col < W; ++col) {
-                const int ncol = (col + 1) % W;
-                const uint32_t tl = static_cast<uint32_t>(row * W + col);
-                const uint32_t tr = static_cast<uint32_t>(row * W + ncol);
-                const uint32_t bl = static_cast<uint32_t>((row + 1) * W + col);
-                const uint32_t br = static_cast<uint32_t>((row + 1) * W + ncol);
-                idx.insert(idx.end(), { tl, bl, tr, tr, bl, br });
-            }
-        }
-        return idx;
-    };
-
-    auto mesh = vega.MeshWriterNode(static_cast<size_t>(VCOUNT)) | Graphics;
-    {
-        auto v = build_verts();
-        auto i = build_indices(0.0f, 0.0f, 0.0f);
-        mesh->set_mesh(v, i);
-    }
-
-    // -------------------------------------------------------------------------
-    // Audio: pure harmonic bank, 48 partials at 432Hz.
-    // FM shared state drives both synthesis and geometry field.
-    // AM per partial at phi-ratio incommensurable rates.
-    // Three spectral groups: sub (1-4), mid (5-16), upper (17-48).
-    // All contribute to one tanh-saturated output.
-    // -------------------------------------------------------------------------
-
-    constexpr double k_fund = 432.0;
-    constexpr double k_sr = 48000.0;
-    constexpr double k_two_pi = 2.0 * M_PI;
-    constexpr double k_phi = 1.6180339887498948482;
-    constexpr size_t k_harm = 48;
-    constexpr double k_inc = k_two_pi / k_sr;
-
-    struct Partial {
-        double phase = 0.0;
-        double am_phase = 0.0;
-        double freq;
-        double scale;
-        double fm_scale;
-        double am_inc;
-    };
-
-    auto fm_phase = std::make_shared<double>(0.0);
-    auto fm_inc = std::make_shared<double>(k_inc * 0.041);
-    auto fm_spread = std::make_shared<double>(8.5);
-
-    auto partials = std::make_shared<std::vector<Partial>>();
-    partials->reserve(k_harm);
-    for (size_t n = 1; n <= k_harm; ++n) {
-        Partial p;
-        p.freq = k_fund * static_cast<double>(n);
-        p.scale = 0.8 / static_cast<double>(n);
-        p.fm_scale = static_cast<double>(n) * 2.5 / k_sr;
-        p.am_inc = k_two_pi * (0.003 * static_cast<double>(n) * k_phi) / k_sr;
-        partials->push_back(p);
-    }
-
-    // Smoothed energy per spectral group.
-    // Very slow coefficients - the surface moves on the timescale of the
-    // synthesis evolution, not the audio rate.
-    auto e_sub = std::make_shared<std::atomic<float>>(0.0f);
-    auto e_mid = std::make_shared<std::atomic<float>>(0.0f);
-    auto e_upper = std::make_shared<std::atomic<float>>(0.0f);
-    auto needs_rebuild = std::make_shared<std::atomic<bool>>(false);
-
-    auto harm_poly = vega.Polynomial(
-        [partials, fm_phase, fm_inc, fm_spread,
-            e_sub, e_mid, e_upper, needs_rebuild](std::span<double>) -> double {
-            const double fm_val = std::sin(*fm_phase) * *fm_spread;
-            *fm_phase += *fm_inc;
-            if (*fm_phase > k_two_pi)
-                *fm_phase -= k_two_pi;
-
-            double sum_sub = 0.0, sum_mid = 0.0, sum_upper = 0.0;
-
-            for (size_t n = 0; n < partials->size(); ++n) {
-                auto& p = (*partials)[n];
-                const double freq = p.freq + fm_val * p.fm_scale * k_sr;
-                const double am = 0.5 + 0.5 * std::sin(p.am_phase);
-                p.phase += k_two_pi * freq / k_sr;
-                p.am_phase += p.am_inc;
-                if (p.phase > k_two_pi)
-                    p.phase -= k_two_pi;
-                if (p.am_phase > k_two_pi)
-                    p.am_phase -= k_two_pi;
-                const double s = std::sin(p.phase) * p.scale * am;
-                if (n < 4)
-                    sum_sub += s;
-                else if (n < 16)
-                    sum_mid += s;
-                else
-                    sum_upper += s;
-            }
-
-            const double total = std::tanh((sum_sub + sum_mid + sum_upper) * 0.15) * 0.6;
-
-            // Slow smoothing: geological timescale for sub, nervous for upper.
-            // These are what drive the topology, not the raw audio signal.
-            auto smooth = [](std::atomic<float>& e, double raw, float coeff) {
-                const float v = e.load(std::memory_order_relaxed) * coeff
-                    + static_cast<float>(std::abs(raw)) * (1.0f - coeff);
-                e.store(v, std::memory_order_relaxed);
-                return v;
-            };
-
-            const float sv = smooth(*e_sub, sum_sub, 0.9997f);
-            const float mv = smooth(*e_mid, sum_mid, 0.9991f);
-            const float uv = smooth(*e_upper, sum_upper, 0.9985f);
-
-            // Rebuild only when any layer crosses its structural threshold.
-            // Hysteresis is provided by the slow smoothing itself.
-            static float prev_sv = 0.0f, prev_mv = 0.0f, prev_uv = 0.0f;
-            const bool crossed = (sv > 0.55f) != (prev_sv > 0.55f) || (mv > 0.45f) != (prev_mv > 0.45f) || (uv > 0.35f) != (prev_uv > 0.35f);
-            prev_sv = sv;
-            prev_mv = mv;
-            prev_uv = uv;
-            if (crossed)
-                needs_rebuild->store(true, std::memory_order_relaxed);
-
-            return total;
-        },
-        PolynomialMode::FEEDFORWARD, 1);
-
-    auto harm_proc = std::make_shared<PolynomialProcessor>(
-        std::dynamic_pointer_cast<Nodes::Generator::Polynomial>(harm_poly),
-        PolynomialProcessor::ProcessMode::BATCH);
-    add_processor(harm_proc, Buffers::ProcessingToken::AUDIO_BACKEND, 0);
-    add_processor(harm_proc, Buffers::ProcessingToken::AUDIO_BACKEND, 1);
-
-    // -------------------------------------------------------------------------
-    // Fault directions: fixed at startup, per vertex.
-    // Displacement is lateral shear, not inflation.
-    // -------------------------------------------------------------------------
-
-    const auto base_verts = build_verts();
-    std::vector<glm::vec3> fault_dirs(static_cast<size_t>(VCOUNT));
-    for (int row = 0; row < H; ++row) {
-        for (int col = 0; col < W; ++col) {
-            const size_t i = static_cast<size_t>(row * W + col);
-            const auto& bv = base_verts[i];
-            const glm::vec3 axis = glm::normalize(glm::vec3(
-                std::sin(bv.position.x * 2.3f + bv.position.y),
-                std::cos(bv.position.z * 1.7f - bv.position.x),
-                std::sin(bv.position.y * 3.1f + bv.position.z * 0.9f)));
-            fault_dirs[i] = glm::normalize(glm::cross(bv.normal, axis));
-        }
-    }
-
-    // -------------------------------------------------------------------------
-    // Two independent dirty paths, one rendered output.
-    //
-    // Vertex metro: 60Hz, continuous regardless of topology state.
-    // Index metro: only when a spectral layer crosses a structural threshold.
-    // The GPU sees two separate uploads driven by two separate signals.
-    // -------------------------------------------------------------------------
-
-    MayaFlux::schedule_metro(1.0 / 60.0,
-        [mesh, e_sub, e_mid, e_upper, needs_rebuild,
-            base_verts, fault_dirs, build_indices]() mutable {
-            const float sv = e_sub->load(std::memory_order_relaxed);
-            const float mv = e_mid->load(std::memory_order_relaxed);
-            const float uv = e_upper->load(std::memory_order_relaxed);
-
-            // Index path: structural, discrete, slow.
-            // Large band sections disappear and reseal as energy evolves.
-            if (needs_rebuild->exchange(false, std::memory_order_relaxed)) {
-                auto new_idx = build_indices(sv, mv, uv);
-                if (!new_idx.empty())
-                    mesh->set_mesh_indices(new_idx);
-            }
-
-            // Vertex path: continuous, every frame.
-            // Displacement along fault planes - lateral shear, not inflation.
-            // Sub displaces bottom rows, mid displaces middle, upper displaces top.
-            auto verts = base_verts;
-            for (int row = 0; row < H; ++row) {
-                const float row_t = static_cast<float>(row) / (H - 1);
-                for (int col = 0; col < W; ++col) {
-                    const size_t i = static_cast<size_t>(row * W + col);
-                    auto& v = verts[i];
-                    const glm::vec3& fd = fault_dirs[i];
-
-                    const float sub_w = std::max(0.0f, 1.0f - row_t * 2.5f);
-                    const float mid_w = std::max(0.0f,
-                        1.0f - std::abs(row_t - 0.5f) * 3.5f);
-                    const float upper_w = std::max(0.0f, row_t * 2.5f - 1.5f);
-
-                    // Large displacement scalars: when the sub moves, it moves far.
-                    const float disp = fd.x * (sv * sub_w * 4.5f)
-                        + fd.y * (mv * mid_w * 3.2f)
-                        + fd.z * (uv * upper_w * 2.4f);
-
-                    v.position = base_verts[i].position + fault_dirs[i] * disp;
-                    v.weight = std::clamp(std::abs(disp) * 0.5f, 0.0f, 1.0f);
-                    v.color = glm::mix(
-                        glm::vec3(0.08f, 0.03f, 0.22f),
-                        glm::vec3(0.9f, 0.45f, 0.05f),
-                        v.weight);
-                }
-            }
-            mesh->set_mesh_vertices(verts);
-        });
-
-    auto geo_buf = vega.GeometryBuffer(mesh) | Graphics;
-    geo_buf->setup_rendering({ .target_window = window });
-    geo_buf->get_render_processor()->set_view_transform(
-        Kinesis::look_at_perspective(
-            { 3.5f, 2.0f, 3.5f }, { 0.0f, 0.0f, 0.0f },
-            glm::radians(55.0f), 1920.0f / 1080.0f, 0.01f, 1000.0f));
-
+auto window = MayaFlux::create_window({ "mesh network", 1920, 1080 });
     window->show();
 
-    bind_viewport_preset(window, geo_buf->get_render_processor(),
-        ViewportPresetMode::Fly, {}, "disintegration");
+    auto net = vega.read_mesh_network("res/d/Dragon 2.5_fbx.fbx") | Graphics;
+    if (!net || net->slot_count() == 0) {
+        std::cerr << "Failed to load mesh network\n";
+        return;
+    }
+
+    const size_t N = net->slot_count();
+
+    // -------------------------------------------------------------------------
+    // Shared state: one struct per slot. Audio and geometry are both outputs
+    // of this state. Neither owns it.
+    // -------------------------------------------------------------------------
+
+    struct SlotState {
+        // Audio
+        std::shared_ptr<Nodes::Network::WaveguideNetwork> wg;
+        std::atomic<double> energy { 0.0 };
+        std::atomic<double> fundamental { 0.0 };
+        std::atomic<double> original_fundamental { 0.0 };
+        std::atomic<float> loss { 0.982f };
+        std::atomic<bool> bowing { false };
+
+        // Geometry - written by audio metro, read by transform metro
+        std::atomic<float> rotation_angle { 0.0f };
+        std::atomic<float> scale_mod { 1.0f };
+
+        // Feedback - written by transform metro, read by audio metro
+        std::atomic<float> pickup_pos { 0.3f };
+        std::atomic<float> loss_fb { 0.0f };
+
+        glm::vec3 axis { 0.0f, 1.0f, 0.0f };
+        glm::mat4 base_transform { 1.0f };
+    };
+
+    auto states = make_persistent_shared<std::vector<std::shared_ptr<SlotState>>>();
+    states->reserve(N);
+
+    // -------------------------------------------------------------------------
+    // Golden ratio axis spread: no two slots share an axis.
+    // -------------------------------------------------------------------------
+
+    for (size_t i = 0; i < N; ++i) {
+        auto s = std::make_shared<SlotState>();
+
+        const float phi = glm::golden_ratio<float>() * glm::two_pi<float>() * static_cast<float>(i);
+        const float cos_t = 1.0f - 2.0f * static_cast<float>(i) / static_cast<float>(N);
+        const float sin_t = std::sqrt(std::max(0.0f, 1.0f - cos_t * cos_t));
+        s->axis = glm::normalize(glm::vec3(
+            sin_t * std::cos(phi),
+            cos_t,
+            sin_t * std::sin(phi)));
+
+        // Each voice: slightly detuned fundamental, different pluck position,
+        // different loss - enough character that no two voices decay identically.
+        const double fund = 55.0 * std::pow(2.0, static_cast<double>(i) * 0.75 / static_cast<double>(N) * 4.5);
+        const double pluck = 0.2 + 0.6 * (static_cast<double>(i) / static_cast<double>(N));
+
+        s->fundamental.store(fund);
+        s->original_fundamental.store(fund);
+        s->pickup_pos.store(static_cast<float>(pluck));
+
+        s->wg = vega.WaveguideNetwork(WaveguideNetwork::WaveguideType::STRING, fund) | Audio[0];
+
+        s->wg->set_loss_factor(0.9992 + static_cast<double>(i) * 0.000005);
+        s->wg->set_pickup_position(pluck);
+        s->wg->set_exciter_type(WaveguideNetwork::ExciterType::NOISE_BURST);
+        s->wg->set_exciter_duration(0.02);
+        s->wg->pluck(pluck, 0.9);
+
+        route_network(s->wg, { 0 }, 1.5f);
+        route_network(s->wg, { 1 }, 1.5f);
+
+        states->push_back(s);
+    }
+
+    // -------------------------------------------------------------------------
+    // Audio metro: reads waveguide output, updates energy and fundamental drift,
+    // then reads geometric feedback (pickup_pos, loss_fb) and writes back
+    // into the waveguide. Closed loop.
+    // -------------------------------------------------------------------------
+
+    schedule_metro(1.0 / 60.0, [states]() {
+        for (auto& s : *states) {
+            auto buf = s->wg->get_node_audio_buffer(0);
+            if (!buf || buf->empty()) continue;
+
+            // Energy: RMS of current buffer
+            double rms = 0.0;
+            for (double x : *buf) rms += x * x;
+            rms = std::sqrt(rms / static_cast<double>(buf->size()));
+
+            // Smooth energy
+            const double e_prev = s->energy.load(std::memory_order_relaxed);
+            const double e = e_prev * 0.92 + rms * 0.08;
+            s->energy.store(e, std::memory_order_relaxed);
+
+            // Fundamental drift: energy pulls fundamental upward slowly,
+            // restoring force pulls back toward original. Clamped to one octave
+            // either side to prevent waveguide collapse at high slot indices.
+            const double fund = s->fundamental.load(std::memory_order_relaxed);
+            const double drift = fund + e * 0.05 - (fund - s->original_fundamental.load(std::memory_order_relaxed)) * 0.01;
+            const double orig = s->original_fundamental.load(std::memory_order_relaxed);
+            const double clamped = std::clamp(drift, orig * 0.5, orig * 2.0);
+            s->fundamental.store(clamped, std::memory_order_relaxed);
+            s->wg->set_fundamental(clamped);
+
+            // Re-pluck when energy collapses below threshold. Resets fundamental
+            // and loss to original values so the voice re-enters cleanly.
+            // bowing gate prevents re-triggering until energy recovers above 0.02.
+            if (e < 0.004 && !s->bowing.load(std::memory_order_relaxed)) {
+                s->bowing.store(true, std::memory_order_relaxed);
+                s->fundamental.store(orig, std::memory_order_relaxed);
+                s->wg->set_fundamental(orig);
+                s->wg->set_loss_factor(0.982);
+                s->loss.store(0.982f, std::memory_order_relaxed);
+                s->wg->set_exciter_type(WaveguideNetwork::ExciterType::NOISE_BURST);
+                s->wg->set_exciter_duration(0.004);
+                s->wg->pluck(static_cast<double>(s->pickup_pos.load(std::memory_order_relaxed)), 0.9);
+                auto ch = (int)get_uniform_random(0, 5) % 2; 
+                route_network(s->wg, { static_cast<uint32_t>(ch) }, 1.5f);
+            } else if (e > 0.02) {
+                s->bowing.store(false, std::memory_order_relaxed);
+            }
+
+            // Geometric feedback -> audio:
+            // pickup position read from slot transform state,
+            // loss nudged by loss_fb written by transform metro.
+            const float pp = s->pickup_pos.load(std::memory_order_relaxed);
+            s->wg->set_pickup_position(static_cast<double>(pp));
+
+            const float lfb = s->loss_fb.load(std::memory_order_relaxed);
+            if (s->bowing.load(std::memory_order_relaxed)) {
+                const double l = static_cast<double>(
+                    std::clamp(s->loss.load(std::memory_order_relaxed) + lfb * 0.00001f, 0.995f, 0.99999f));
+                s->wg->set_loss_factor(l);
+                s->loss.store(static_cast<float>(l), std::memory_order_relaxed);
+            }
+
+            // Rotation speed driven by energy - written for transform metro.
+            const float rot = static_cast<float>(e * 6.0);
+            s->rotation_angle.store(
+                s->rotation_angle.load(std::memory_order_relaxed) + rot,
+                std::memory_order_relaxed);
+
+            // Scale modulation: driven by energy level.
+            const float sc = std::clamp(
+                static_cast<float>(0.6 + e * 8.0), 0.6f, 1.4f);
+            s->scale_mod.store(sc, std::memory_order_relaxed);
+    } }, "audio_state");
+
+    // -------------------------------------------------------------------------
+    // Transform metro: reads rotation_angle and scale_mod from state,
+    // writes slot transforms, then reads back slot position to update
+    // pickup_pos and loss_fb. Closed loop from geometry back to audio.
+    // -------------------------------------------------------------------------
+
+    schedule_metro(1.0 / 60.0, [net, states]() {
+    auto& slots = net->slots();
+    for (size_t i = 0; i < slots.size() && i < states->size(); ++i) {
+        auto& s = *(*states)[i];
+
+        const float angle = s.rotation_angle.load(std::memory_order_relaxed);
+        const float sc    = s.scale_mod.load(std::memory_order_relaxed);
+
+        slots[i].local_transform =
+            glm::scale(
+                glm::rotate(s.base_transform, angle, s.axis),
+                glm::vec3(sc));
+        slots[i].dirty = true;
+
+        // Extract position from accumulated transform,
+        // map Y component to pickup position [0.1, 0.9].
+        const glm::vec3 pos = glm::vec3(slots[i].local_transform[3]);
+        const float mapped = std::clamp(
+            (pos.y + 1.5f) / 3.0f, 0.1f, 0.9f);
+        s.pickup_pos.store(mapped, std::memory_order_relaxed);
+
+        // Map scale deviation from 1.0 to loss feedback.
+        // Expanding slot tightens the string. Collapsing loosens it.
+        s.loss_fb.store(sc - 1.0f, std::memory_order_relaxed);
+    } }, "transform_state");
+
+    // -------------------------------------------------------------------------
+    // Staggered re-pluck sequence: voices re-enter at different times,
+    // restarting the pluck->bow lifecycle from the beginning.
+    // -------------------------------------------------------------------------
+
+    schedule_sequence(
+        [&]() {
+            std::vector<std::pair<double, std::function<void()>>> seq;
+            for (size_t i = 0; i < N; ++i) {
+                const double t = static_cast<double>(i) * 3.7;
+                seq.emplace_back(t, [s = (*states)[i]]() {
+                    s->bowing.store(false);
+                    s->loss.store(0.982f);
+                    s->scale_mod.store(1.0f);
+                    s->fundamental.store(s->original_fundamental.load());
+                    s->wg->set_fundamental(s->original_fundamental.load());
+                    s->wg->set_exciter_type(WaveguideNetwork::ExciterType::NOISE_BURST);
+                    s->wg->set_loss_factor(0.982);
+                    s->wg->pluck(static_cast<double>(s->pickup_pos.load()), 0.9);
+                });
+            }
+            return seq;
+        }(),
+        "reenter");
+
+    auto buf = vega.MeshNetworkBuffer(net) | Graphics;
+    buf->setup_rendering({ .target_window = window });
+
+    buf->get_render_processor()->set_view_transform(
+        Kinesis::look_at_perspective(
+            { 0.0f, 100.0f, 300.0f }, { 0.0f, 80.0f, 0.0f },
+            glm::radians(45.0f), 1920.0f / 1080.0f, 1.0f, 100000.0f));
+
+    bind_viewport_preset(window, buf->get_render_processor(),
+        ViewportPresetMode::Fly, {}, "mesh_net");
 ```
 
 <br>
@@ -540,6 +471,10 @@ And when the thing producing them is the same state object that is also producin
 <p>
 A mesh is two spans: vertex bytes and triangle indices, with independent dirty flags. Two different data streams that happen to share a rendered output.
 </p>
+
+<br>
+{{< youtube BhsETQyYRkk >}}
+<br>
 
 ```cpp
     constexpr int W = 48;
