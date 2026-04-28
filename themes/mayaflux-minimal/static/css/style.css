@@ -22,6 +22,8 @@
     --primary: #66b3ff;
     --primary-dark: #3380cc;
 
+    --accent-primary: #66b3ff;
+
     --code-bg: #1a1a1a;
 
     --heading: rgba(160, 200, 170, 0.9);
@@ -128,6 +130,7 @@ ol li::marker {
 
 .nav-links a:hover {
     color: var(--primary);
+    border-bottom: 1px solid var(--primary);
 }
 
 .dropdown {
@@ -141,7 +144,8 @@ ol li::marker {
     min-width: 180px;
 }
 
-.dropdown:hover>.dropdown-menu {
+.dropdown:hover>.dropdown-menu,
+.dropdown:focus-within>.dropdown-menu {
     display: block;
 }
 
@@ -497,6 +501,23 @@ h4 {
     color: #ffddb3;
 }
 
+.tutorial-progress {
+    display: flex;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    margin-bottom: 2rem;
+    opacity: 0.7;
+}
+
+.tutorial-progress .current {
+    color: var(--primary);
+    font-weight: 600;
+}
+
+.tutorial-progress .done {
+    opacity: 0.5;
+}
+
 /* DETAILS TAG STYLING */
 details summary {
     cursor: pointer;
@@ -507,7 +528,7 @@ details summary {
 }
 
 details[open] summary {
-    opacity: 0.4;
+    opacity: 0.9;
     color: var(--primary);
 }
 
@@ -533,7 +554,7 @@ pre code {
 }
 
 .tutorial-card .hint {
-    font-size: 1 rem;
+    font-size: 1rem;
     color: lightblue;
 }
 
@@ -596,6 +617,25 @@ pre code {
 
 .collapsible.open .collapsible-header::after {
     transform: rotate(90deg);
+}
+
+a:focus-visible,
+button:focus-visible,
+summary:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 3px;
+    border-radius: 2px;
+}
+
+.toc {
+    position: sticky;
+    top: 4rem;
+    float: right;
+    width: 200px;
+    font-size: 0.85rem;
+    border-left: 2px solid var(--border);
+    padding-left: 1rem;
+    margin-left: 2rem;
 }
 
 /* =========================================================
