@@ -70,10 +70,23 @@
     <nav class="navbar">
       <div class="container">
         <a href="/" class="logo">MayaFlux</a>
-        <ul class="nav-links">
-          {{ range .Site.Menus.main }}
-          <li><a href="{{ .URL }}">{{ .Name }}</a></li>
-          {{ end }}
+            {{ define "menu-recursive" }}
+            {{ range . }}
+                <li class="{{ if .HasChildren }}dropdown{{ end }}">
+                <a href="{{ .URL }}">{{ .Name }}</a>
+
+                {{ if .HasChildren }}
+                    <ul class="dropdown-menu">
+                    {{ template "menu-recursive" .Children }}
+                    </ul>
+                {{ end }}
+                </li>
+            {{ end }}
+            {{ end }}
+
+            <ul class="nav-links">
+            {{ template "menu-recursive" (where .Site.Menus.main "Parent" "") }}
+            </ul>
         </ul>
       </div>
     </nav>

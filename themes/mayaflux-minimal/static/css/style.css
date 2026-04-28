@@ -130,6 +130,30 @@ ol li::marker {
     color: var(--primary);
 }
 
+.dropdown {
+    position: relative;
+}
+
+.dropdown-menu {
+    display: none;
+    position: absolute;
+    background: #111;
+    min-width: 180px;
+}
+
+.dropdown:hover>.dropdown-menu {
+    display: block;
+}
+
+.dropdown-menu .dropdown {
+    position: relative;
+}
+
+.dropdown-menu .dropdown-menu {
+    top: 0;
+    left: 100%;
+}
+
 /* =========================================================
    5. TYPOGRAPHY SYSTEM
 ========================================================= */
