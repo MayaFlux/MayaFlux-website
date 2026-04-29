@@ -23,6 +23,8 @@ The point is that they share the same substrate.
 
 ## Tutorial: First Bell
 
+{{< youtube co1D_jowt5o >}}
+
 ```cpp
 void compose() { day1_a_first_bell(); }
 ```
@@ -136,6 +138,8 @@ auto bell = vega.ModalNetwork(32, 110.0, ModalNetwork::Spectrum::INHARMONIC);
 
 ## Tutorial: Wandering String
 
+{{< youtube CyMtfdw5_tE >}}
+
 ```cpp
 void compose() { day1_b_wandering_string(); }
 ```
@@ -230,6 +234,8 @@ auto tube = vega.WaveguideNetwork(
 ---
 
 ## Tutorial: Breathing Vowel
+
+{{< youtube e7Ynd7a_C9c >}}
 
 ```cpp
 void compose() { day1_c_breathing_vowel(); }
@@ -346,6 +352,8 @@ breath->set_sequential_function(
 ---
 
 ## Tutorial: Two Bodies
+
+{{< youtube gJysA-cDijc >}}
 
 ```cpp
 void compose() { day1_d_two_bodies(); }
@@ -490,6 +498,8 @@ bell->map_parameter("decay", string, MappingMode::BROADCAST);
 ---
 
 ## Tutorial: Playground
+
+{{< youtube p991oyR_J6s >}}
 
 ```cpp
 void compose() { day1_e_playground(); }

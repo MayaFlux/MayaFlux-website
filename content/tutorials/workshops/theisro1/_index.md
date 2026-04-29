@@ -35,8 +35,9 @@ The CPU generates sound and passes numbers across. The shader decides what they 
 
 <h3>Code</h3>
 
+Click to Download 
 <ul>
-<li><a href="./code/day-1/">Day 1 Code</a></li>
+<li><a href="/day1/day1.zip" download>Day 1 Code</a></li>
 <li><a href="./code/day-2/">Day 2 Code</a></li>
 <li><a href="./code/day-3/">Day 3 Code</a></li>
 </ul>
