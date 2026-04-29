@@ -26,6 +26,10 @@ Vertices are created with placeholder positions. The vertex shader computes actu
 
 ### Tutorial: Static Tint
 
+Original:
+{{< figure src="texture.png" height="320px" width="240px" >}}
+Tinted:
+{{< figure src="tint.png" height="320px" width="240px" >}}
 ```cpp
 void compose() { day3_a_static_tint(); }
 ```
@@ -62,6 +66,8 @@ Push constants are limited to 128 bytes on most hardware (256 on some). They are
 
 ### Tutorial: First Crossing
 
+![Moving Image](slide.gif)
+
 ```cpp
 void compose() { day3_b_first_crossing(); }
 ```
@@ -71,6 +77,9 @@ Run this. The image warps back and forth. A 2 Hz sine oscillator drives `warp_am
 This is the manual approach: you own the metro, you build the struct, you push it. It works, but it scales poorly when you have many parameters.
 
 ### Tutorial: Dual Stream (NodeBindingsProcessor)
+
+{{< youtube jalEVSgc_x0 >}}
+</br>
 
 ```cpp
 void compose() { day3_c_dual_stream(); }
@@ -103,6 +112,9 @@ This replaces the lambda-wrapped Polynomial pattern `vega.Polynomial([](double) 
 
 ### Tutorial: Breathing Geometry
 
+{{< youtube n6Ilj443qVk >}}
+</br>
+
 ```cpp
 void compose() { day3_d_breathing_geometry(); }
 ```
@@ -112,6 +124,9 @@ Run this. The image quad itself deforms. A recursive delay line resonates. Its e
 This is the first example where push constants drive a vertex shader, not a fragment shader. The same `NodeBindingsProcessor` mechanism, different shader stage.
 
 ### Tutorial: Polar Warp (Camera)
+
+{{< youtube IymO0-97-0Q >}}
+</br>
 
 ```cpp
 void compose() { day3_e_polar_warp(); }
@@ -147,6 +162,7 @@ Push constants max out at 128 to 256 bytes. When you need to send hundreds or th
 
 ### Tutorial: History Field (Camera + SSBO)
 
+![Histry Field](history.gif)
 ```cpp
 void compose() { day3_f_history_field(); }
 ```
@@ -215,6 +231,9 @@ All three produce the same result at the GPU level: `buffer HistoryData { float 
 
 ### Tutorial: Network Descriptor (Camera + ResonatorNetwork SSBO)
 
+{{< youtube CZJ37WtT68U >}}
+</br>
+
 ```cpp
 void compose() { day3_h_network_descriptor(); }
 ```
@@ -268,6 +287,9 @@ Everything until now sent data to fragment or vertex shaders that operated on ex
 
 ### Tutorial: Phasor Ring
 
+{{< youtube cDh2KDbyCSk >}}
+</br>
+
 ```cpp
 void compose() { day3_i_phasor_ring(); }
 ```
@@ -294,6 +316,9 @@ This is the pattern for all GPU geometry examples: the CPU declares intent (how 
 
 ### Tutorial: Wave Mesh
 
+{{< youtube bwNbl5DzFGA >}}
+</br>
+
 ```cpp
 void compose() { day3_j_wave_mesh(); }
 ```
@@ -301,6 +326,9 @@ void compose() { day3_j_wave_mesh(); }
 Run this. A 6400-point grid undulates. The vertex shader computes sine wave displacements along both axes. Audio energy from a resonator controls wave amplitude. Slow LFOs drift the wave frequencies. The mesh breathes and ripples without a single CPU position update.
 
 ### Tutorial: Orbit Cloud
+
+{{< youtube JgiGWsAo25A >}}
+</br>
 
 ```cpp
 void compose() { day3_k_orbit_cloud(); }
@@ -332,6 +360,9 @@ This is computed on the CPU (reading mode data from the ModalNetwork) and passed
 </details>
 
 ### Tutorial: IFS Tree
+
+{{< youtube AEmyQfqs9OA >}}
+</br>
 
 ```cpp
 void compose() { day3_l_ifs_tree(); }

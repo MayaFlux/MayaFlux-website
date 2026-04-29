@@ -33,7 +33,7 @@ Click to Download
 <ul>
 <li><a href="/day1/day_1.zip" download>Day 1 Code</a></li>
 <li><a href="/day2/day_2.zip" download>Day 2 Code</a></li>
-<li><a href="./code/day-3/">Day 3 Code</a></li>
+<li><a href="/day3/day_3.zip" download>Day 3 Code</a></li>
 </ul>
 
 </div>
