@@ -1,5 +1,6 @@
 ---
 title: "Starting as a Musician"
+description: "From oscillators and signal flow to data transformation. Ends up with synthesis algorithms, visual control, and no ceiling."
 ---
 
 _[Back to Personas](../)_

@@ -1,5 +1,6 @@
 ---
 title: "From Pure Data to MayaFlux: Unlearning Analog Metaphors"
+description: "Message passing, rates, and event-driven patching —> seen from a substrate that doesn't separate control from signal."
 ---
 
 <div class="card wide">

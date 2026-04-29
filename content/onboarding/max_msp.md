@@ -1,5 +1,6 @@
 ---
 title: "From MaxMSP to MayaFlux: Thinking Past the Patcher"
+description: "Visual patching and gen~: where Max brushes against digital-first thinking, and what changes when the architecture does."
 ---
 
 <div class="card wide">

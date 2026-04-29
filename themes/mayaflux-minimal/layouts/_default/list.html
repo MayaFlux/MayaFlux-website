@@ -1,11 +1,31 @@
 {{ define "main" }}
 <div class="container content">
+  {{ partial "breadcrumb.html" . }}
+  {{ partial "scroll-context.html" . }}
+  {{ partial "toc.html" . }}
+
+  <article>
     <h1>{{ .Title }}</h1>
-    {{ .Content }} {{ range .Pages }}
-    <article class="list-item">
-        <h2><a href="{{ .Permalink }}">{{ .Title }}</a></h2>
-        <p>{{ .Summary }}</p>
-    </article>
+    {{ .Content }}
+
+    {{ if .Pages }}
+    <ul class="section-index">
+      {{ range .Pages }}
+      <li class="section-index-item">
+        <a href="{{ .Permalink }}">{{ .Title }}</a>
+        {{ with .Params.description }}
+          <p>{{ . }}</p>
+        {{ else }}
+          {{ with .Summary }}
+            <p>{{ . | plainify | truncate 160 }}</p>
+          {{ end }}
+        {{ end }}
+      </li>
+      {{ end }}
+    </ul>
     {{ end }}
+  </article>
+
+  {{ partial "prev-next.html" . }}
 </div>
 {{ end }}

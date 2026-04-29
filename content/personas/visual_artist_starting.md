@@ -1,4 +1,7 @@
-# Starting as a Visual Artist
+---
+title: "Starting as a Visual Artist"
+description: "From pixels and frames to graphics and audio on the same substrate. Ends up generating sound from visual algorithms."
+---
 
 _[Back to Personas](../)_
 

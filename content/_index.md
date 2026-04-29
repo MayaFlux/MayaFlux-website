@@ -106,7 +106,7 @@ title: "MayaFlux"
 
             <div class="philosophy-point">
                 <h3>Data is Data</h3>
-                <p>MayaFlux removes disciplinary boundaries—sound, visuals, control signals are all data.</p>
+                <p>MayaFlux removes disciplinary boundaries: sound, visuals, control signals are all data.</p>
             </div>
 
             <hr>
@@ -146,7 +146,7 @@ title: "MayaFlux"
     <div class="collapsible-body">
 
         <p>
-        MayaFlux wasn’t built to improve on existing tools—it was built because they could not support the work already happening.
+        MayaFlux wasn’t built to improve on existing tools, it was built because they could not support the work already happening.
         It is the culmination of years of experience in performance, production, and education.
         <br>
         <br>
@@ -181,7 +181,7 @@ title: "MayaFlux"
 
     <div class="collapsible-body">
 
-        <p><strong>Version 0.2.0 — Alpha. Stable core.</strong></p>
+        <p><strong>Version 0.2.0 : Alpha. Stable core.</strong></p>
         <hr>
         <p><strong>Stable:</strong> Audio processing, lock-free node graphs, coroutine scheduler, channel routing with crossfade transitions.</p>
         <hr>
