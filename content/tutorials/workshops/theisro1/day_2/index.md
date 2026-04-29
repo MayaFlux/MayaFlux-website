@@ -11,6 +11,8 @@ By the end, audio events create, deform, and destroy spatial structures._
 
 ## Tutorial: Rhythm Machine
 
+{{< youtube R8vxa2F46D0 >}}
+
 ```cpp
 void compose() { day2_a_rhythm_machine(); }
 ```
@@ -114,6 +116,8 @@ kick_tone->set_frequency(get_uniform_random(40.0, 80.0));
 
 ## Tutorial: Rhythm Topology
 
+{{< youtube WqK4NtPA-Rc >}}
+
 ```cpp
 void compose() { day2_b_rhythm_topology(); }
 ```
@@ -203,6 +207,8 @@ on_mouse_pressed(window, IO::MouseButtons::Left, [window, kick_phasor, topology]
 
 ## Tutorial: Living Topology
 
+{{< youtube e1IPmAHX0HI >}}
+
 ```cpp
 void compose() { day2_c_living_topology(); }
 ```
@@ -285,6 +291,8 @@ float global_angle = frame_count * 0.001F;
 ---
 
 ## Tutorial: Rhythm Particles
+
+{{< youtube pOVeXs83SVo >}}
 
 ```cpp
 void compose() { day2_d_rhythm_particles(); }
@@ -375,6 +383,8 @@ auto particles = vega.ParticleNetwork(120,
 ---
 
 ## Tutorial: Composite Scene
+
+{{< youtube t3l54LwYKa0 >}}
 
 ```cpp
 void compose() { day2_e_composite_scene(); }

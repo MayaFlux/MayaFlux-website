@@ -15,30 +15,24 @@ from energy meters to physics-driven particle systems where audio events create 
 Day 3 moves computation to the GPU: push constants, storage buffers, camera input, vertex deformation from audio.
 The CPU generates sound and passes numbers across. The shader decides what they look like.
 </p>
-</div>
-
-<hr />
-
-<div class="card">
+<!-- </div> -->
+<!---->
+<!-- <div class="card"> -->
 
 <h3>Workshop Days</h3>
 
 <ul>
-<li><a href="./day_1/">Day 1</a></li>
-<li><a href="./day_2/">Day 2</a></li>
-<li><a href="./day_3/">Day 3</a></li>
+<li><a href="./day_1/">Day 1 Tutorials</a></li>
+<li><a href="./day_2/">Day 2 Tutorials</a></li>
+<li><a href="./day_3/">Day 3 Tutorials</a></li>
 </ul>
-
-</div>
-
-<div class="card">
 
 <h3>Code</h3>
 
 Click to Download 
 <ul>
-<li><a href="/day1/day1.zip" download>Day 1 Code</a></li>
-<li><a href="./code/day-2/">Day 2 Code</a></li>
+<li><a href="/day1/day_1.zip" download>Day 1 Code</a></li>
+<li><a href="/day2/day_2.zip" download>Day 2 Code</a></li>
 <li><a href="./code/day-3/">Day 3 Code</a></li>
 </ul>
 
