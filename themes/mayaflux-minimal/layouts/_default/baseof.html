@@ -228,5 +228,30 @@
     headings.forEach(h => observer.observe(h));
     });
     </script>
+
+    <script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const cards = Array.from(document.querySelectorAll('.tutorial-row > .tutorial-card'));
+    if (cards.length < 2) return;
+
+    const total = cards.length;
+
+    cards.forEach((card, i) => {
+      const pct = Math.round(((i + 1) / total) * 100);
+
+      const dots = cards.map((_, j) => {
+        const dot = document.createElement('span');
+        dot.className = j < i ? 'tp-dot tp-done' : j === i ? 'tp-dot tp-current' : 'tp-dot';
+        return dot.outerHTML;
+      }).join('');
+
+      const bar = document.createElement('div');
+      bar.className = 'tutorial-progress';
+      bar.innerHTML = `<span class="tp-dots">${dots}</span><span class="tp-pct">${pct}%</span>`;
+
+      card.prepend(bar);
+    });
+  });
+    </script>
   </body>
 </html>

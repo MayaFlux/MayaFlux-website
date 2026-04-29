@@ -555,10 +555,43 @@ h4 {
 
 .tutorial-progress {
     display: flex;
-    gap: 0.5rem;
-    font-size: 0.8rem;
-    margin-bottom: 2rem;
-    opacity: 0.7;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 1rem;
+    opacity: 0.6;
+}
+
+.tp-dots {
+    display: flex;
+    gap: 0.3rem;
+    align-items: center;
+}
+
+.tp-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--text-light);
+    opacity: 0.25;
+    display: inline-block;
+}
+
+.tp-dot.tp-done {
+    background: var(--primary);
+    opacity: 0.45;
+}
+
+.tp-dot.tp-current {
+    background: var(--primary);
+    opacity: 1;
+}
+
+.tp-pct {
+    font-size: 0.72rem;
+    font-family: var(--font-mono);
+    color: var(--primary);
+    opacity: 0.8;
+    letter-spacing: 0.02em;
 }
 
 .tutorial-progress .current {
