@@ -1,4 +1,6 @@
-# ISRO Workshop: Day 2
+---
+title: "ISRO Workshop: Day 2"
+---
 
 _Yesterday: resonant bodies, stochastic timing, points as visual output.
 Today: rhythm machines, structural graphics, and three ways to organize geometry on the GPU.

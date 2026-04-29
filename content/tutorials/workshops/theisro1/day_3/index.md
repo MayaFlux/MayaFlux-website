@@ -1,4 +1,6 @@
-# ISRO Workshop: Day 3
+---
+title: "ISRO Workshop: Day 3"
+---
 
 _Day 1: resonant bodies and stochastic timing drove point accumulation.
 Day 2: rhythm machines drove structural graphics through topology, physics, and composite buffers.

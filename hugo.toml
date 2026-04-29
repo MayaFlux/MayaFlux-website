@@ -39,9 +39,16 @@ weight = 3
 
 [[menu.main]]
 name = "Workshops"
+identifier = "workshops"
 parent = "tutorials"
 url = "/tutorials/workshops/"
 weight = 2
+
+[[menu.main]]
+name = "The ISRO Workshop I"
+parent = "workshops"
+url = "/tutorials/workshops/theisro1"
+weight = 1
 
 [[menu.main]]
 name = "Docs"

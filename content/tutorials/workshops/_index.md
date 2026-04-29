@@ -3,9 +3,12 @@ title: "Workshops"
 type: "tutorials"
 layout: "tutorials-list"
 
-build:
-  list: never
-  render: always
+# build:
+#   render: always
+  # list: never
+# cascade:
+#   build:
+#     render: always
 ---
 
 This space contains materials from workshops and live sessions conducted for MayaFlux users and broader artistic communities.

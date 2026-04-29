@@ -1,4 +1,6 @@
-# ISRO Workshop: Day 1
+---
+title: "ISRO Workshop: Day 1"
+---
 
 _Numbers don't know they're audio. Numbers don't know they're pixels.
 A resonant body vibrates. A point appears. The same data made both happen.
