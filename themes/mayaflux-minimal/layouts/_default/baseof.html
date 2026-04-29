@@ -128,29 +128,105 @@
     </script>
 
     <script>
-      // TOC: assign IDs to headings outside .collapsible-body, then build links
-      document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', () => {
         const article = document.querySelector('article');
-        const tocContainer = document.querySelector('.toc details');
-        if (!article || !tocContainer) return;
+        const panel = document.querySelector('.toc-panel');
+        const sidebar = document.getElementById('toc-sidebar');
+        const toggle = document.getElementById('toc-toggle');
+        if (!article || !panel) return;
+
         const headings = Array.from(article.querySelectorAll('h1, h2, h3'))
-          .filter(h => !h.closest('.collapsible-body'));
-        if (!headings.length) return;
+            .filter(h => !h.closest('.collapsible-body'));
+        if (!headings.length) {
+            if (sidebar) sidebar.style.display = 'none';
+            return;
+        }
         const ul = document.createElement('ul');
         headings.forEach(h => {
-          if (!h.id) {
-            h.id = h.textContent.trim().toLowerCase().replace(/[^\w]+/g, '-');
-          }
-          const li = document.createElement('li');
-          li.style.paddingLeft = h.tagName === 'H3' ? '1rem' : h.tagName === 'H2' ? '0.5rem' : '0';
-          const a = document.createElement('a');
-          a.href = '#' + h.id;
-          a.textContent = h.textContent;
-          li.appendChild(a);
-          ul.appendChild(li);
+            if (!h.id) h.id = h.textContent.trim().toLowerCase().replace(/[^\w]+/g, '-');
+            const li = document.createElement('li');
+            li.style.paddingLeft = h.tagName === 'H3' ? '1rem' : h.tagName === 'H2' ? '0.5rem' : '0';
+            const a = document.createElement('a');
+            a.href = '#' + h.id;
+            a.textContent = h.textContent;
+            a.addEventListener('click', () => sidebar.classList.remove('open'));
+            li.appendChild(a);
+            ul.appendChild(li);
         });
-        tocContainer.appendChild(ul);
-      });
+        panel.appendChild(ul);
+
+        toggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isOpen = sidebar.classList.toggle('open');
+            toggle.setAttribute('aria-expanded', isOpen);
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!sidebar.contains(e.target)) sidebar.classList.remove('open');
+        });
+        });
+    </script>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+    const ctx = document.getElementById('scroll-context');
+    const article = document.querySelector('article');
+    if (!ctx || !article) return;
+
+    const navH = document.querySelector('.navbar')?.offsetHeight ?? 90;
+
+    const headings = Array.from(article.querySelectorAll('h1, h2, h3'))
+        .filter(h => !h.closest('.collapsible-body') && h.id);
+    if (!headings.length) return;
+
+    function buildTrail(h) {
+        const idx = headings.indexOf(h);
+        const trail = [h.textContent];
+        let lastLevel = parseInt(h.tagName[1]);
+        for (let i = idx - 1; i >= 0; i--) {
+        const hl = parseInt(headings[i].tagName[1]);
+        if (hl < lastLevel) {
+            trail.unshift(headings[i].textContent);
+            lastLevel = hl;
+            if (hl === 1) break;
+        }
+        }
+        return trail.join('  ›  ');
+    }
+
+    function show(h) {
+        ctx.textContent = buildTrail(h);
+        ctx.classList.add('visible');
+    }
+
+    function hide() {
+        ctx.classList.remove('visible');
+        ctx.textContent = '';
+    }
+
+    let activeHeading = null;
+    for (const h of headings) {
+        if (h.getBoundingClientRect().top < navH) activeHeading = h;
+    }
+    if (activeHeading) show(activeHeading); else hide();
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(e => {
+        if (!e.isIntersecting && e.boundingClientRect.top < navH) {
+            activeHeading = e.target;
+        } else if (e.isIntersecting && e.target === activeHeading) {
+            const idx = headings.indexOf(e.target);
+            activeHeading = idx > 0 ? headings[idx - 1] : null;
+        }
+        });
+        if (activeHeading) show(activeHeading); else hide();
+    }, {
+        rootMargin: `-${navH}px 0px 0px 0px`,
+        threshold: 0
+    });
+
+    headings.forEach(h => observer.observe(h));
+    });
     </script>
   </body>
 </html>

@@ -1,6 +1,7 @@
 {{ define "main" }}
 <div class="container content">
   {{ partial "breadcrumb.html" . }}
+  {{ partial "scroll-context.html" . }}
   {{ partial "toc.html" . }}
   <article>
     <h1>{{ .Title }}</h1>
