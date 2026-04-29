@@ -1,8 +1,11 @@
 {{ define "main" }}
 <div class="container content">
-    <article>
-        <h1>{{ .Title }}</h1>
-        {{ .Content }}
-    </article>
+  {{ partial "breadcrumb.html" . }}
+  {{ partial "toc.html" . }}
+  <article>
+    <h1>{{ .Title }}</h1>
+    {{ .Content }}
+  </article>
+  {{ partial "prev-next.html" . }}
 </div>
 {{ end }}

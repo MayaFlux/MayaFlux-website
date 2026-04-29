@@ -1,0 +1,16 @@
+{{ if or .PrevInSection .NextInSection }}
+<nav class="prev-next" aria-label="Page navigation">
+  {{ with .PrevInSection }}
+    <a class="prev-next__prev" href="{{ .Permalink }}">
+      <span class="prev-next__label">← Previous</span>
+      <span class="prev-next__title">{{ .Title }}</span>
+    </a>
+  {{ end }}
+  {{ with .NextInSection }}
+    <a class="prev-next__next" href="{{ .Permalink }}">
+      <span class="prev-next__label">Next →</span>
+      <span class="prev-next__title">{{ .Title }}</span>
+    </a>
+  {{ end }}
+</nav>
+{{ end }}

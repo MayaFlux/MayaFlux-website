@@ -126,5 +126,31 @@
         });
       });
     </script>
+
+    <script>
+      // TOC: assign IDs to headings outside .collapsible-body, then build links
+      document.addEventListener('DOMContentLoaded', () => {
+        const article = document.querySelector('article');
+        const tocContainer = document.querySelector('.toc details');
+        if (!article || !tocContainer) return;
+        const headings = Array.from(article.querySelectorAll('h1, h2, h3'))
+          .filter(h => !h.closest('.collapsible-body'));
+        if (!headings.length) return;
+        const ul = document.createElement('ul');
+        headings.forEach(h => {
+          if (!h.id) {
+            h.id = h.textContent.trim().toLowerCase().replace(/[^\w]+/g, '-');
+          }
+          const li = document.createElement('li');
+          li.style.paddingLeft = h.tagName === 'H3' ? '1rem' : h.tagName === 'H2' ? '0.5rem' : '0';
+          const a = document.createElement('a');
+          a.href = '#' + h.id;
+          a.textContent = h.textContent;
+          li.appendChild(a);
+          ul.appendChild(li);
+        });
+        tocContainer.appendChild(ul);
+      });
+    </script>
   </body>
 </html>
