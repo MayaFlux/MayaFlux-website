@@ -12,5 +12,6 @@ This space contains materials from workshops and live sessions conducted for May
 
 ## Past Workshops
 
-- [TheIsro 1st Workshop](/content/tutorials/workshops/theisro1): This was the first ever 3 day workshop on MayaFlux, held in February 2026. 
+- [TheIsro 1st Workshop](/tutorials/workshops/theisro1): This was the first ever 3 day workshop on MayaFlux, held in February 2026. 
 Explore the concept details, code and structured tutorials in the link.
+The official invite and details can be found on [TheIsro's website](https://www.theisro.org/workshops/introduction-to-mayaflux).

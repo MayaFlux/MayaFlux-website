@@ -2,17 +2,57 @@
 title: "The ISRO First Workshop"
 ---
 
+<div class="card wide">
+<p>
+Three-day intensive held at ISRO Bengaluru, February 2026.
+Each day builds on the last without repeating it.
+</p>
+<p>
+Day 1 covers three physical modelling synthesis networks and four stochastic timing strategies.
+Visuals read audio state directly: the same buffer, different interpretation.
+Day 2 keeps one drum engine and escalates the visual side through five architectures,
+from energy meters to physics-driven particle systems where audio events create and destroy spatial structure.
+Day 3 moves computation to the GPU: push constants, storage buffers, camera input, vertex deformation from audio.
+The CPU generates sound and passes numbers across. The shader decides what they look like.
+</p>
+</div>
+
+<hr />
+
+<div class="card">
+
+<h3>Workshop Days</h3>
+
+<ul>
+<li><a href="./day_1/">Day 1</a></li>
+<li><a href="./day_2/">Day 2</a></li>
+<li><a href="./day_3/">Day 3</a></li>
+</ul>
+
+</div>
+
+<div class="card">
+
+<h3>Code</h3>
+
+<ul>
+<li><a href="./code/day-1/">Day 1 Code</a></li>
+<li><a href="./code/day-2/">Day 2 Code</a></li>
+<li><a href="./code/day-3/">Day 3 Code</a></li>
+</ul>
+
+</div>
 
 <div class="card wide">
 
 The following is the original workshop poster.
 It is presented here as-is, without modification.
 
-
-<details>
-<summary> TheIsro Workshop Framing </summary>
-
 ## Brief
+
+<!-- ![Intro Image](Workshop.png) -->
+{{< figure src="Workshop.png" width="1000px" >}}
+
 
 Learn computational audio-visual thinking through MayaFlux, a framework where sound and image emerge from the same numerical processes.
 
@@ -74,13 +114,13 @@ We’re teaching a perspective shift. The code is just the medium. If you’re g
 
 ## How the three days unfold
 
-**Day 1 — See it working**
+**Day 1 : See it working**
 You run recursive temporal systems: delay networks that produce sound and visuals from the same process. You change parameters, observe interference, and build intuition through direct manipulation. By the end of the day, “recursive system” is something you’ve experienced, not memorized.
 
-**Day 2 — One process, multiple outputs**
+**Day 2 : One process, multiple outputs**
 The same mathematics drives speakers and screen. This is not visualization of audio. It’s a single process expressed in different forms. You swap chaos for randomness, delays for grains, and watch how changes propagate. The idea that audio and graphics are separate starts to dissolve.
 
-**Day 3 — Make it yours**
+**Day 3 : Make it yours**
 Open exploration. You choose the direction: particles, fractals, resonance, distortion. I’m there to unblock you, not steer you. We end by sharing surprises, not successes.
 
 ---
@@ -96,55 +136,18 @@ Open exploration. You choose the direction: particles, fractals, resonance, dist
 **Note:** Installation help available at workshop. Pre-installing just lets us focus on ideas, not setup.
 
 ### Installation:
-
-- [Macos link](https://github.com/MayaFlux/Weave/releases/download/v0.2.2-dev/Weave-installer-macos.pkg)
-- [Windows link](https://github.com/MayaFlux/Weave/releases/download/v0.2.2-dev/Weave-windows.zip)
-- [Linux link](https://github.com/MayaFlux/Weave/releases/download/v0.2.2-dev/Weave-linux.tar.gz)
-
-**Please choose "development" version, not "stable" during installation. The stable is significantly older and does not
-contain many features developed for the workshop.**
-
-Macos Requirement: version 15.6 or higher. Other requirements mentioned on site (command line tools)
-Windows Requirements: 10/11. Other requirements mentioned on site (Visual studio)
-Linux: ubuntu 25.10 or higher, fedora 43 or higher, ANY arch/gentoo, no other requirements.
-
-More information on [the webispte](https://www.mayaflux.org/download).
+Removed original outdated instructions. 
+Visit [download page](https://www.mayaflux.org/download) for updated instructions .
 
 ### Duration
 
 Understanding through experimentation takes time.
 Compiler errors are part of learning.
-Breaks prevent burnout.Why this takes three days
+Breaks prevent burnout. So this takes three days.
 
 ### Contact
 
 Please reach out to mayafluxcollective@proton.me for ANY questions regarding installation or other related issues.
 
-</details>
 </div>
 
-<hr />
-
-<div class="card">
-
-<h3>Workshop Days</h3>
-
-<ul>
-<li><a href="./day_1/">Day 1</a></li>
-<li><a href="./day_2/">Day 2</a></li>
-<li><a href="./day_3/">Day 3</a></li>
-</ul>
-
-</div>
-
-<div class="card">
-
-<h3>Code</h3>
-
-<ul>
-<li><a href="./code/day-1/">Day 1 Code</a></li>
-<li><a href="./code/day-2/">Day 2 Code</a></li>
-<li><a href="./code/day-3/">Day 3 Code</a></li>
-</ul>
-
-</div>
