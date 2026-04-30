@@ -253,5 +253,11 @@
     });
   });
     </script>
+
+    {{ if eq hugo.Environment "production" }}
+    <script data-goatcounter="https://mayaflux.goatcounter.com/count"
+            async src="//gc.zgo.at/count.js"></script>
+    {{ end }}
+
   </body>
 </html>
