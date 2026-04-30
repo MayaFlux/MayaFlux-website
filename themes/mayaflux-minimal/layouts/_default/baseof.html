@@ -20,42 +20,66 @@
     <link rel="stylesheet" href="/css/style.css" />
   </head>
 
-  <script>
-    function toggleTutorial(card) {
-      const existing = card.querySelector(".tutorial-expanded");
-
-      if (existing) {
-        existing.remove();
-        return;
-      }
-
-      const targetId = card.dataset.target;
-      if (!targetId) return;
-
-      const source = document.getElementById(targetId);
-      if (!source) return;
-
-      const clone = source.cloneNode(true);
-      clone.style.display = "block";
-      clone.removeAttribute("id");
-
-      clone.addEventListener("click", (e) => e.stopPropagation());
-
-      card.appendChild(clone);
-    }
-  </script>
-
-  <script>
-    document.addEventListener("click", (e) => {
-      const card = e.target.closest(".tutorial-card");
-      if (!card) return;
-
-      // ignore clicks inside expanded content
-      if (e.target.closest(".tutorial-expanded")) return;
-
-      toggleTutorial(card);
+<script>
+function addCopyButtons(root) {
+  root.querySelectorAll("pre code").forEach((block) => {
+    if (block.parentElement.querySelector(".copy-btn")) return;
+    const btn = document.createElement("button");
+    btn.textContent = "copy";
+    btn.className = "copy-btn";
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      navigator.clipboard.writeText(block.innerText).then(() => {
+        btn.textContent = "copied";
+        setTimeout(() => btn.textContent = "copy", 1500);
+      });
     });
-  </script>
+    block.parentElement.style.position = "relative";
+    block.parentElement.appendChild(btn);
+  });
+}
+
+document.addEventListener("DOMContentLoaded", () => addCopyButtons(document));
+
+
+  function toggleTutorial(card) {
+    const existing = card.querySelector(".tutorial-expanded");
+    if (existing) { existing.remove(); return; }
+    const targetId = card.dataset.target;
+    if (!targetId) return;
+    const source = document.getElementById(targetId);
+    if (!source) return;
+    const clone = source.cloneNode(true);
+    clone.style.display = "block";
+    clone.removeAttribute("id");
+    card.appendChild(clone);
+    addCopyButtons(clone); 
+  }
+
+  let dragging = false;
+  let mouseDownX = 0;
+  let mouseDownY = 0;
+
+  document.addEventListener("mousedown", (e) => {
+    dragging = false;
+    mouseDownX = e.clientX;
+    mouseDownY = e.clientY;
+  });
+
+  document.addEventListener("mouseup", (e) => {
+    const dx = Math.abs(e.clientX - mouseDownX);
+    const dy = Math.abs(e.clientY - mouseDownY);
+    if (dx > 4 || dy > 4) dragging = true;
+  });
+
+  document.addEventListener("click", (e) => {
+    if (dragging) { dragging = false; return; }
+    const card = e.target.closest(".tutorial-card");
+    if (!card) return;
+    if (e.target.closest(".tutorial-expanded")) return;
+    toggleTutorial(card);
+  });
+</script>
 
   <link
     rel="stylesheet"
