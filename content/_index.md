@@ -18,8 +18,12 @@
         Most creative coding tools simulate analog hardware: virtual knobs, cables, circuit boards.
         This imposes constraints that don't exist in computation.
         </p>
-
-        <p><strong>MayaFlux embraces true digital paradigms.</strong></p>
+        </br>
+        <p><strong>MayaFlux embraces true digital paradigms.</strong> Oscillators, patch cables, and envelope generators are pedagogical crutches borrowed from hardware that never constrained digital computation. MayaFlux embraces recursion, look-ahead processing, arbitrary precision, cross-domain data sharing, and computational patterns that have no analog equivalent.
+        </p>
+        </br>
+        <p>
+    Polynomials sculpt data. Logic gates make creative decisions. Coroutines coordinate time itself.</p>
     </div>
 
 </div>
@@ -39,13 +43,25 @@
         <div class="feature-grid">
             <div class="feature-card">
                 <h3>Unified Data Streams</h3>
-                <p>Audio, visual, and control signals share the same numerical substrate. A node output can route to an RtAudio callback and a Vulkan push constant simultaneously, with no translation layer between them.</p>
+                <p>Audio, visual, and control signals share the same numerical substrate. A node output routes to an RtAudio callback and a Vulkan push constant simultaneously, with no translation layer.</p>
             </div>
 
             <hr>
             <div class="feature-card">
-                <h3>Cross-Modal Node Bindings</h3>
-                <p>Node outputs bind directly to GPU shader parameters. NodeBindingsProcessor writes scalar values to push constants; DescriptorBindingsProcessor handles vectors, matrices, and structured arrays via UBOs and SSBOs. Audio envelopes, spectral data, and control signals reach the GPU through the same node API, with no bridging code.</p>
+                <h3>Nexus: Spatial Entity Lifecycle</h3>
+                <p>Fabric, Wiring, Emitter, Sensor, Agent. A spatial computation layer where entities perceive and influence audio and graphics simultaneously. Not a scene graph. No update loop. No component system.</p>
+            </div>
+
+            <hr>
+            <div class="feature-card">
+                <h3>Granular Synthesis as Data Analysis</h3>
+                <p>Recordings decompose into populations of named, attributed grains. Sort by spectral centroid. Filter by variance. Reorder by any function you can express in code. The composition is an explicit analytical argument about the material, not a phasor and a scatter parameter.</p>
+            </div>
+
+            <hr>
+            <div class="feature-card">
+                <h3>Portal::Text</h3>
+                <p>A glyph is a quad. A quad is four numbers. Four numbers can go anywhere. Text renders as a texture driven by the same node graph as audio and geometry: per-glyph oscillators, physics, GPU bindings.</p>
             </div>
 
             <hr>
@@ -56,14 +72,14 @@
 
             <hr>
             <div class="feature-card">
-                <h3>Live Signal Matrix</h3>
-                <p>IOManager provides a unified interface across the full signal matrix: audio files, video files, live camera devices, and image assets. All sources wire into the same buffer and processor architecture.</p>
+                <h3>Cross-Modal Node Bindings</h3>
+                <p>Node outputs bind directly to GPU shader parameters. Audio envelopes, spectral data, and control signals reach the GPU through the same node API, with no bridging code.</p>
             </div>
 
             <hr>
             <div class="feature-card">
                 <h3>Live Coding with Lila</h3>
-                <p>An embedded Clang interpreter evaluates arbitrary C++20 at runtime via LLVM ORC JIT. Latency is one buffer cycle. Algorithms change without stopping audio or tearing down the graphics context.</p>
+                <p>An embedded Clang interpreter evaluates arbitrary C++23 at runtime via LLVM ORC JIT. Latency is one buffer cycle. Algorithms change without stopping audio or tearing down the graphics context. Used in production during a 20-minute live set on a Steam Deck.</p>
             </div>
 
             <hr>
@@ -76,6 +92,12 @@
             <div class="feature-card">
                 <h3>Lock-Free Architecture</h3>
                 <p>No mutexes in the real-time path. atomic_ref, CAS-based dispatch, and lock-free registration lists coordinate all four execution contexts: RtAudio callbacks, Vulkan render threads, async input backends, and user coroutines.</p>
+            </div>
+
+            <hr>
+            <div class="feature-card">
+                <h3>Live Signal Matrix</h3>
+                <p>IOManager provides a unified interface across the full signal matrix: audio files, video files, live camera devices, and image assets. SamplingPipeline adds polyphonic multi-cursor playback with independent speed and looping per voice.</p>
             </div>
 
             <hr>
@@ -104,26 +126,32 @@
         <div class="philosophy-points">
 
             <div class="philosophy-point">
-                <h3>Data is Data</h3>
-                <p>MayaFlux removes disciplinary boundaries: sound, visuals, control signals are all data.</p>
+                <h3>Domain is decided last</h3>
+                <p>Sound, visuals, control signals are all numbers. A camera is a position and two matrices. A light is a position and a falloff function. A voice is a cursor into a buffer. Domain vocabulary describes what something is <em>used for</em>, not what it <em>is</em> computationally. MayaFlux does not enshrine that vocabulary in its type system.</p>
+            </div>
+
+            <hr>
+            <div class="philosophy-point">
+                <h3>Same structure, different outputs</h3>
+                <p>A gravitational attractor and a reverb send are the same computational structure pointed at different outputs. MayaFlux has no light type, no force type, no camera type. It has positioned entities, functions that fire, and outputs that route to audio, geometry, or GPU descriptors. What the entity <em>is</em> in domain terms is entirely the user's imagination applied to pure math.</p>
+            </div>
+
+            <hr>
+            <div class="philosophy-point">
+                <h3>Don't name what doesn't need a name</h3>
+                <p>Vulkan does not have a camera. It has a push constant slot. If you put a matrix there, the vertex shader reads it. MayaFlux exposes this as-is. Not naming it is not a missing feature. It is a deliberate refusal to add abstraction that adds nothing but the illusion of safety.</p>
             </div>
 
             <hr>
             <div class="philosophy-point">
                 <h3>Code as Creative Material</h3>
-                <p>Data transformation is the creative act; programming is compositional structure.</p>
+                <p>Data transformation is the creative act. Programming is compositional structure, not plumbing. When tools protect you from complexity, they also protect you from possibility.</p>
             </div>
 
             <hr>
             <div class="philosophy-point">
                 <h3>Time as Structure</h3>
-                <p>Temporal relationships are part of artistic expression, not implementation detail.</p>
-            </div>
-
-            <hr>
-            <div class="philosophy-point">
-                <h3>Hooks Everywhere</h3>
-                <p>No protective abstractions; full access to computational machinery when you need it.</p>
+                <p>Temporal relationships are part of artistic expression, not implementation detail. Coroutines are the scheduling primitive. Time is material.</p>
             </div>
 
         </div>
@@ -145,24 +173,14 @@
     <div class="collapsible-body">
 
         <p>
-        MayaFlux wasn’t built to improve on existing tools, it was built because they could not support the work already happening.
-        It is the culmination of years of experience in performance, production, and education.
-        <br>
-        <br>
-        Built by the author with:
+        MayaFlux wasn't built to improve on existing tools. It was built because they could not support the work already happening.
         </p>
         <ul>
             <li><strong>15+ years of interdisciplinary performance</strong> across Chennai, Delhi, and the Netherlands</li>
             <li><strong>Production audio engineering</strong> for Unreal Engine 5 and Metro: Awakening VR</li>
             <li><strong>Experimental creative computing education</strong></li>
-            <li>Experience pushing the limits of instruments, Eurorack, and DSP systems</li>
+            <li><strong>Live performance under pressure:</strong> 0.3 was developed in parallel with a 20-minute live coding set on a Steam Deck at TOPLAP Bengaluru. Four pieces. The framework and the performance were simultaneous.</li>
         </ul>
-
-        <br>
-        <br>
-        <p>
-        When tools protect you from complexity, they also protect you from possibility.
-        </p>
 
     </div>
 
@@ -180,24 +198,25 @@
 
     <div class="collapsible-body">
 
-        <p><strong>Version 0.2.0 : Alpha. Stable core.</strong></p>
+        <p><strong>Version 0.3.0, April 2026. Alpha. Stable core.</strong></p>
         <hr>
         <p><strong>Stable:</strong> Audio processing, lock-free node graphs, coroutine scheduler, channel routing with crossfade transitions.</p>
         <hr>
-        <p><strong>Stable:</strong> Vulkan 1.3 dynamic rendering, multi-window, geometry nodes, texture pipeline, compute shaders.</p>
+        <p><strong>Stable:</strong> Vulkan 1.3 dynamic rendering, multi-window, geometry nodes, texture pipeline, compute shaders, GPU readback.</p>
+        <hr>
+        <p><strong>Stable:</strong> Nexus spatial entity layer: Fabric, Wiring, Emitter, Sensor, Agent, SpatialIndex3D with lock-free snapshot publication.</p>
+        <hr>
+        <p><strong>Stable:</strong> Granular synthesis with offline grain attribution, SamplingPipeline for polyphonic multi-cursor playback.</p>
+        <hr>
+        <p><strong>Stable:</strong> Portal::Text: FreeType glyph rendering as GPU texture, driven by the same node graph as audio and geometry.</p>
         <hr>
         <p><strong>Stable:</strong> Live camera input (Linux, macOS, Windows), video file playback, image loading via IOManager.</p>
         <hr>
         <p><strong>Stable:</strong> MIDI and HID input backends, async dispatch, InputNode infrastructure.</p>
-
         <hr>
-        <p><strong>Stable:</strong> Lila, LLVM ORC JIT for live C++20 evaluation at sub-buffer latency.</p>
+        <p><strong>Stable:</strong> Lila, LLVM ORC JIT for live C++23 evaluation at sub-buffer latency.</p>
         <hr>
-        <p><strong>In progress:</strong> Kinesis mathematical substrate: spectral analysis, geometric computation, statistical operations.</p>
-        <hr>
-        <p><strong>Next (0.3):</strong> 3D expansion. The mathematical substrate and ViewTransform infrastructure are in place; 0.3 adds dedicated tooling, examples, and the surface area that makes 3D a first-class workflow rather than hooks only.</p>
-        <hr>
-        <p><strong>Planned (0.4):</strong> Kinesis as first-class analysis namespace: Eigen-level linear algebra, FluCoMa-level audio analysis primitives.</p>
+        <p><strong>Next (0.4):</strong> Nexus and agent build-out. Kinesis as first-class analysis namespace: Eigen-level linear algebra, FluCoMa-level audio analysis primitives.</p>
         <hr>
         <p><strong>Planned (0.5):</strong> Native UI framework, building on existing Region and WindowContainer infrastructure.</p>
 
@@ -225,123 +244,9 @@
         <li><a href="/download/">Download Weave</a></li>
         <li><a href="https://mayaflux.github.io/MayaFlux/">Documentation</a></li>
         <li><a href="https://github.com/MayaFlux/MayaFlux">Source Code</a></li>
-        <li><a href="/releases/"> Release Notes</a></li>
-        <li><a href="/posters/cpponline-2026/"> C++ Online conference poster</a></li>
+        <li><a href="/releases/">Release Notes</a></li>
+        <li><a href="/posters/cpponline-2026/">C++ Online conference poster</a></li>
         </ul>
-
-    </div>
-
-</div>
-
-<!-- ====================================== -->
-<!--  CARD 7 — Quick teaser                 -->
-<!-- ====================================== -->
-
-<div class="card collapsible wide">
-    <div class="collapsible-header">
-        <h2>Quick teaser</h2>
-        <p class="hint">Click to expand</p>
-    </div>
-
-    <div class="collapsible-body">
-
-    <!-- Video will replace this code block when ready -->
-
-<pre><code class="cpp">
-void camera_warp()
-{
-    auto window = create_window({ .title = "Camera Warp", .width = 1920, .height = 1080 });
-
-    // Open camera device — platform string: /dev/video0, "0", or "video=Integrated Camera"
-    auto manager = get_io_manager();
-    auto camera = manager->open_camera({ .device_name = "/dev/video0",
-        .target_width = 1920,
-        .target_height = 1080,
-        .target_fps = 30.0 });
-
-    // Wire camera into graphics buffer system
-    auto tex = manager->hook_camera_to_buffer(camera);
-    tex->setup_rendering({
-        .target_window = window,
-        .fragment_shader = "polar_warp.frag",
-    });
-    tex->get_render_processor()->enable_alpha_blending();
-    window->show();
-
-    // Three audio nodes — each drives one shader parameter
-    auto osc = vega.Sine(5.F, 1.0);
-
-    auto radial_node = vega.Polynomial([](double x) {
-        return std::abs(x) * 0.5;
-    }) | Graphics;
-    radial_node->set_input_node(osc);
-
-    auto angular_node = vega.Polynomial([](double x) {
-        return std::abs(x) * 2.5;
-    }) | Graphics;
-    angular_node->set_input_node(osc);
-
-    auto chroma_node = vega.Polynomial([](double x) {
-        return std::abs(x) * 0.15;
-    }) | Graphics;
-    chroma_node->set_input_node(osc);
-
-    // Bind node outputs directly to shader push constants — no bridging code
-    struct Params {
-        float radial_scale;
-        float angular_velocity;
-        float chroma_split;
-    };
-
-    auto bindings = create_processor<Buffers::NodeBindingsProcessor>(tex,
-        Buffers::ShaderConfig { "polar_warp.frag" });
-
-    bindings->set_push_constant_size<Params>();
-    bindings->bind_node("radial", radial_node, offsetof(Params, radial_scale), sizeof(float));
-    bindings->bind_node("angular", angular_node, offsetof(Params, angular_velocity), sizeof(float));
-    bindings->bind_node("chroma", chroma_node, offsetof(Params, chroma_split), sizeof(float));
-}
-</code></pre>
-
-</br>
-polar_warp.frag:
-
-<pre><code class="cpp">
-#version 450
-
-layout(location = 0) in vec2 fragTexCoord;
-layout(location = 0) out vec4 outColor;
-
-layout(binding = 0) uniform sampler2D texSampler;
-
-layout(push_constant) uniform Params {
-    float radial_scale;
-    float angular_velocity;
-    float chroma_split;
-};
-
-void main() {
-vec2 center = fragTexCoord - 0.5;
-
-    float dist = length(center);
-    float angle = atan(center.y, center.x);
-
-    float r = dist + radial_scale * 0.1 * sin(dist * 20.0 + angular_velocity);
-    float theta = angle + angular_velocity * 0.3 + sin(dist * 8.0) * radial_scale * 0.5;
-
-    vec2 uv_r = vec2(0.5 + r * cos(theta - chroma_split), 0.5 + r * sin(theta - chroma_split));
-    vec2 uv_g = vec2(0.5 + r * cos(theta), 0.5 + r * sin(theta));
-    vec2 uv_b = vec2(0.5 + r * cos(theta + chroma_split), 0.5 + r * sin(theta + chroma_split));
-
-    float red = texture(texSampler, uv_r).r;
-    float green = texture(texSampler, uv_g).g;
-    float blue = texture(texSampler, uv_b).b;
-
-    outColor = vec4(red, green, blue, 1.0);
-
-}
-
-</code></pre>
 
     </div>
 
