@@ -219,6 +219,47 @@ h4 {
     opacity: 0.95;
 }
 
+.see-it-live {
+    text-align: center;
+    padding: 3rem 2rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 3rem;
+}
+
+.see-it-live__label {
+    font-family: var(--font-mono);
+    font-size: 2rem;
+    font-weight: bold;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-light);
+    opacity: 0.45;
+    margin-bottom: 1.5rem;
+    font-weight: 400;
+}
+
+.see-it-live__links {
+    display: flex;
+    gap: 2.5rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.see-it-live__links a {
+    color: var(--heading);
+    text-decoration: none;
+    font-size: 1.25rem;
+    font-weight: 600;
+    border-bottom: 1px solid rgba(160, 200, 170, 0.25);
+    padding-bottom: 3px;
+    transition: border-color 0.2s, color 0.2s;
+}
+
+.see-it-live__links a:hover {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+}
+
 /* =========================================================
    7. BUTTONS & CTAS
 ========================================================= */
