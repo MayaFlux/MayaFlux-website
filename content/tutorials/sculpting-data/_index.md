@@ -29,7 +29,7 @@ It is recommended to read the cards below before starting the tutorials, as it e
 
 #### Quick link to Part I
 
-👉 <strong><a href="/tutorials/sculpting-data/foundations/">Part I — Foundations of Form</a></strong></p>
+👉 <strong><a href="/tutorials/sculpting-data/foundations/">Part I : Foundations of Form</a></strong></p>
 
 </div>
 
