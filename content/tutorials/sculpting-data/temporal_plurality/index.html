@@ -1,0 +1,655 @@
+---
+title: "Temporal Plurality"
+layout: "tutorial"
+---
+
+<h2>Time as Material</h2>
+<p>
+The first three tutorials in this series taught you what data is, how it transforms, and how it becomes geometry. Every example ran continuously: nodes processed samples, buffers cycled, the engine drove everything at its own rate. You declared structure and the system ran it.
+
+<br>
+<br>
+This tutorial takes that question back. Not by overriding the engine, but by choosing precisely when your code runs, for how long, under what conditions, and in response to what. The mechanisms range from a single callback attached to a node that was already computing, to a coroutine you write from scratch that suspends and resumes at sample-accurate positions in time. Between those two ends is everything you need to make computation temporal rather than just continuous.
+
+<br>
+<br>
+The eight cards that follow move from the simplest attachment (a callback on an existing node's tick) through increasingly direct control, ending at the raw coroutine infrastructure that everything else is built from. By the end, none of the earlier cards will be opaque: you will know what runs underneath `schedule_metro`, `EventChain`, `line`, `Trigger`, and `Fabric`, because you will have written equivalents yourself.
+</p>
+
+<hr>
+
+<img src="/t4_c1.gif" alt="Timed Points" width="960">
+
+<section class="tutorial-section">
+  <div class="tutorial-row">
+    <div class="tutorial-card" data-target="difference-detail">
+      <h3>Card 1: Declare Once vs. Control</h3>
+      <p class="hint">Click this card to reveal full explanation</p>
+
+      <h4 class="tutorial-title">Tutorial: Metro</h4>
+      <pre><code class="language-cpp">void compose() {
+    auto window = MayaFlux::create_window({ "Time", 1200, 800 });
+    auto points = vega.PointCollectionNode() | Graphics;
+    auto buffer = vega.GeometryBuffer(points) | Graphics;
+    buffer->setup_rendering({ .target_window = window });
+    window->show();
+
+    auto&amp; angle       = make_persistent(0.0f);
+    auto&amp; point_count = make_persistent(0U);
+
+    MayaFlux::schedule_metro(0.016, [points, &amp;angle, &amp;point_count]() {
+        float spiral_offset = 0.25f * point_count;
+        float r = 0.6f + 0.3f * std::sin((angle + spiral_offset) * 0.4f);
+        float x = r * std::cos(angle + spiral_offset);
+        float y = r * std::sin(angle + spiral_offset);
+        float hue = (angle + spiral_offset) / (2.0f * M_PI);
+        glm::vec3 color(
+            std::abs(std::sin(hue * 3.14f)),
+            std::abs(std::sin(hue * 3.14f + 2.09f)),
+            std::abs(std::sin(hue * 3.14f + 4.19f)));
+        points->add_point({ glm::vec3(x, y, 0.0f), color, 6.0f });
+        angle += 0.18f;
+        ++point_count;
+    });
+}</code></pre>
+      <p>
+        Run this. A spiral of colored points grows across the window at a fixed pace. One point every 16ms,
+        regardless of anything else in the system. The rate is a wall-time promise measured in samples internally,
+        but from the outside it behaves like a fixed interval.
+      </p>
+
+      <h4 class="tutorial-title">Tutorial: Impulse node with <code>on_impulse</code></h4>
+      <pre><code class="language-cpp">void compose() {
+    auto window = MayaFlux::create_window({ "Time", 1200, 800 });
+    auto points = vega.PointCollectionNode() | Graphics;
+    auto buffer = vega.GeometryBuffer(points) | Graphics;
+    buffer->setup_rendering({ .target_window = window });
+    window->show();
+
+    auto clock    = vega.Impulse(2.0f) | Graphics;
+    auto rate_mod = vega.Sine(0.1f) | Graphics;
+    clock->set_frequency_modulator(rate_mod);
+
+    auto&amp; angle = make_persistent(0.0f);
+    auto&amp; count = make_persistent(0U);
+
+    clock->on_impulse([points, clock, &amp;angle, &amp;count](const Nodes::NodeContext&amp; ctx) {
+        float r = 0.6f + 0.3f * std::sin(angle * 0.4f);
+        float x = r * std::cos(angle);
+        float y = r * std::sin(angle);
+        float hue = angle / (2.0f * M_PI);
+        glm::vec3 color(
+            std::abs(std::sin(hue * 3.14f)),
+            std::abs(std::sin(hue * 3.14f + 2.09f)),
+            std::abs(std::sin(hue * 3.14f + 4.19f)));
+        points->add_point({ glm::vec3(x, y, 0.0f), color, 6.0f });
+        angle += 0.18f;
+
+        ++count;
+        if (count == 200) {
+            clock->set_frequency(6.0f);
+        }
+    });
+}</code></pre>
+      <p>
+        Run this. The same spiral grows, but the pace breathes. It slows down, speeds up, slows again.
+        After 200 points the frequency jumps from 2 Hz to 6 Hz and stays there, triple the original rate,
+        with no teardown and no new callback. The <code>clock</code> capture lets the callback reach back
+        into the node that fired it and change its own future rate on the fly.
+      </p>
+      <p>
+        Change <code>0.1f</code> to <code>0.5f</code> on the Sine. The breathing is faster and more dramatic.
+        Change the Impulse base frequency from <code>2.0f</code> to <code>6.0f</code>. More points, still
+        breathing. The modulator and the base rate are independent parameters, both live, both modifiable
+        without touching the callback.
+      </p>
+    </div>
+
+    <section id="difference-detail" class="tutorial-expanded">
+
+      <p>
+        Metro does not know about frequency. It knows about seconds. You give it <code>0.016</code> and it
+        fires every 0.016 seconds, period. It has no concept of modulation. To change its rate you would have
+        to cancel and reschedule it, or manage the timing yourself inside the callback.
+      </p>
+      <p>
+        <code>on_impulse</code> fires when the Impulse node fires. The Impulse node is a signal. Its frequency
+        is a parameter that can be modulated by any other node, changed at any time with
+        <code>set_frequency()</code>, or driven by an external input. The callback rate is a consequence of
+        that signal, not a separately managed thing.
+      </p>
+      <p>
+        Metro is a scheduled timer. <code>on_impulse</code> is a side effect of computation that was already
+        happening. The Impulse node processes samples regardless of whether anything is listening.
+        <code>on_impulse</code> attaches to it.
+      </p>
+
+      <details>
+        <summary>Expansion 1: What metro actually is</summary>
+        <p>
+          Metro is a coroutine. When you call <code>schedule_metro(0.016, callback)</code>, MayaFlux creates
+          a <code>Vruta::SoundRoutine</code> that runs on the <code>TaskScheduler</code>:
+        </p>
+        <pre><code class="language-cpp">Vruta::SoundRoutine metro_body(Vruta::TaskScheduler&amp; scheduler,
+                               double interval_seconds,
+                               std::function&lt;void()&gt; callback) {
+    uint64_t interval_samples = scheduler.seconds_to_samples(interval_seconds);
+    auto&amp; promise = co_await Kriya::GetAudioPromise{};
+
+    while (true) {
+        if (promise.should_terminate) break;
+        callback();
+        co_await Kriya::SampleDelay{ interval_samples };
+    }
+}</code></pre>
+        <p>
+          <code>seconds_to_samples(0.016)</code> at 48000 Hz gives 768 samples. The coroutine fires,
+          suspends for exactly 768 samples, fires again. Time is counted in samples because the audio engine
+          is the timing substrate. The scheduler advances a <code>SampleClock</code> every buffer cycle,
+          and the coroutine resumes when the clock passes its target.
+        </p>
+        <p>
+          This is why metro is sample-accurate but not frequency-aware. It sleeps for N samples. That N does
+          not change unless you cancel and reschedule.
+        </p>
+        <p>
+          <code>angle</code> and <code>point_count</code> are declared with <code>make_persistent</code>
+          rather than as plain locals. The metro callback outlives <code>compose()</code> - the function
+          returns immediately after scheduling the coroutine, destroying all stack variables.
+          <code>make_persistent</code> allocates the value in a store with process lifetime and returns a
+          reference the callback can safely hold across that boundary.
+        </p>
+      </details>
+
+      <details>
+        <summary>Expansion 2: What <code>on_impulse</code> actually is</summary>
+        <p>
+          <code>Impulse::on_impulse</code> registers a callback that fires inside <code>notify_tick</code>
+          only when <code>m_impulse_occurred</code> is true. That flag is set in <code>process_sample</code>
+          when <code>m_phase &lt; m_phase_inc</code>, which is the sample where the phase accumulator
+          crosses the cycle boundary.
+        </p>
+        <p>
+          The node is processed every sample at audio rate by the buffer and scheduler infrastructure. Your
+          callback fires on the precise sample where the impulse occurs. That sample is determined by
+          <code>m_phase_inc = frequency / sample_rate</code>. When frequency is modulated,
+          <code>m_phase_inc</code> changes on each sample, so the interval between impulses changes
+          continuously.
+        </p>
+        <p>
+          <code>set_frequency()</code> writes directly to <code>m_frequency</code> and recomputes
+          <code>m_phase_inc</code> in the same call. This takes effect on the next call to
+          <code>process_sample</code>. No coroutine is involved. No teardown. The node's next cycle
+          boundary simply arrives sooner or later depending on the new <code>m_phase_inc</code>.
+        </p>
+        <p>
+          Metro lives in scheduler time. <code>on_impulse</code> lives in signal time. Signal time can be
+          warped by any node, modulated by any source, driven by external input, or driven from inside the
+          callback itself. Scheduler time cannot.
+        </p>
+      </details>
+
+      <details>
+        <summary>Expansion 3: Reading the context</summary>
+        <p>
+          The <code>NodeHook</code> type is declared against the base <code>NodeContext</code>, so the
+          callback signature is:
+        </p>
+        <pre><code class="language-cpp">clock->on_impulse([](const Nodes::NodeContext&amp; ctx) {
+    // ctx is available here
+});</code></pre>
+        <p>
+          The actual object passed is always a <code>GeneratorContext</code> for any node that derives from
+          <code>Generator</code>, including <code>Impulse</code>. <code>GeneratorContext</code> extends
+          <code>NodeContext</code> with three additional fields: <code>frequency</code>,
+          <code>amplitude</code>, and <code>phase</code>. These reflect the node's state at the exact sample
+          the impulse fired, after any modulation has been applied for that sample.
+        </p>
+        <p>
+          <code>ctx.value</code> is the output at impulse time - for <code>Impulse</code> this is the
+          amplitude, typically <code>1.0</code>. This is enough for most callbacks.
+        </p>
+        <p>When you need the generator fields, use <code>as&lt;GeneratorContext&gt;()</code>:</p>
+        <pre><code class="language-cpp">clock->on_impulse([](const Nodes::NodeContext&amp; ctx) {
+    if (auto* gen = ctx.as&lt;Nodes::Generator::GeneratorContext&gt;()) {
+        float current_freq  = gen->frequency;
+        double current_phase = gen->phase;
+    }
+});</code></pre>
+        <p>
+          <code>phase</code> at an impulse is always near zero - the accumulator has just crossed the cycle
+          boundary and been reset. <code>frequency</code> is the effective frequency after modulation, not
+          the base parameter. If a Sine modulator is pushing the frequency around,
+          <code>gen->frequency</code> gives you the actual Hz value at the moment that impulse fired, not
+          what you passed to the constructor.
+        </p>
+        <p>
+          <code>as&lt;T&gt;()</code> returns <code>nullptr</code> if the type does not match. For
+          <code>Impulse</code>, the concrete type is always <code>GeneratorContext</code>, so the null check
+          is a safety idiom rather than a branch you expect to take.
+        </p>
+      </details>
+
+      <details>
+        <summary>Expansion 4: When to use which</summary>
+        <p>
+          Metro is appropriate when the interval is a fixed design decision: "update this visualization every
+          16ms," "poll this resource every second." The interval is a system parameter, not a signal.
+        </p>
+        <p>
+          <code>on_impulse</code> is appropriate when the rate should be a function of other computation:
+          rhythms derived from data, tempos that drift, event densities that respond to material. It is also
+          appropriate when you want a single node to serve as a clock for multiple listeners, each attached
+          independently without coordination overhead.
+        </p>
+        <p>
+          The two mechanisms are not mutually exclusive. Metro and <code>on_impulse</code> can run
+          simultaneously in the same compose, writing into the same geometry, at their own independent rates.
+        </p>
+        <p>
+          A useful heuristic: if you find yourself computing a new interval inside a metro callback and
+          wishing you could just pass a node, switch to <code>on_impulse</code> with a modulator.
+        </p>
+      </details>
+
+      <h2>Try It: Both at once</h2>
+      <pre><code class="language-cpp">void compose() {
+    auto window = MayaFlux::create_window({ "Time", 1200, 800 });
+    auto points = vega.PointCollectionNode() | Graphics;
+    auto buffer = vega.GeometryBuffer(points) | Graphics;
+    buffer->setup_rendering({ .target_window = window });
+    window->show();
+
+    auto&amp; angle       = make_persistent(0.0f);
+    auto&amp; imp_count   = make_persistent(0U);
+    auto&amp; point_count = make_persistent(0U);
+
+    MayaFlux::schedule_metro(0.016, [points, &amp;angle, &amp;point_count]() {
+        float spiral_offset = 0.25f * point_count;
+        float r = 0.6f + 0.3f * std::sin((angle + spiral_offset) * 0.4f);
+        float x = r * std::cos(angle + spiral_offset);
+        float y = r * std::sin(angle + spiral_offset);
+        float hue = (angle + spiral_offset) / (2.0f * M_PI);
+        glm::vec3 color(
+            std::abs(std::sin(hue * 3.14f)),
+            std::abs(std::sin(hue * 3.14f + 2.09f)),
+            std::abs(std::sin(hue * 3.14f + 4.19f)));
+        points->add_point({ glm::vec3(x, y, 0.0f), color, 6.0f });
+        angle += 0.18f;
+        ++point_count;
+    });
+
+    auto clock    = vega.Impulse(20.0f) | Audio[0];
+    auto rate_mod = vega.Sine(0.01f, 80) | Graphics;
+    clock->set_frequency_modulator(rate_mod);
+
+    clock->on_impulse([points, clock, &amp;angle, &amp;imp_count](const Nodes::NodeContext&amp; ctx) {
+        float r = 0.6f + 0.3f * std::sin(angle * 0.4f);
+        float x = r * std::cos(angle);
+        float y = r * std::sin(angle);
+        float hue = angle / (2.0f * M_PI);
+        glm::vec3 color(
+            std::abs(std::sin(hue * 3.14f)),
+            std::abs(std::sin(hue * 3.14f + 2.09f)),
+            std::abs(std::sin(hue * 3.14f + 4.19f)));
+        points->add_point({ glm::vec3(x, y, 0.0f), color, 12.0f });
+        angle += 0.78f;
+        ++imp_count;
+        if (imp_count == 200) {
+            clock->set_frequency(6.0f);
+        }
+    });
+}</code></pre>
+      <p>
+        Metro lays down small points at a fixed 16ms grid. The Impulse fires at 20 Hz, modulated by a slow
+        Sine, writing larger points at a different angular step. Both share <code>angle</code> and
+        <code>points</code> - the spiral they build is the product of two clocks running at different rates
+        into the same collection. At 200 impulses the Impulse rate drops to 6 Hz; the metro does not notice
+        and does not change.
+      </p>
+
+    </section>
+  </div>
+</section>
+
+<hr>
+
+<img src="/t4_c2.gif" alt="Timed Points" width="960">
+<section class="tutorial-section">
+  <div class="tutorial-row">
+    <div class="tutorial-card" data-target="side-effect-detail">
+      <h3>Card 2: Control as Side Effect</h3>
+      <p class="hint">Click this card to reveal full explanation</p>
+
+
+      <details>
+        <summary><strong>Important:</strong> Quick explaination of timing models</summary>
+
+      <!-- <h4 class="tutorial-title">Tutorial: <code>on_tick</code> at Audio vs Graphics rate</h4> -->
+      <pre><code class="language-cpp">void compose() {
+    auto sine = vega.Sine(2.0f) | Audio[0];
+
+    sine->on_tick([](auto&amp; ctx) {
+        // fires 48000 times per second
+        // (void)ctx;
+        std::cout << ctx.value << " at audio rate\n";
+    });
+
+    auto point_node = vega.PointNode() | Graphics;
+
+    point_node->on_tick([](auto&amp; ctx) {
+        // fires 60 times per second
+        // (void)ctx;
+        std::cout << ctx.value << " at graphics rate\n";
+    });
+}</code></pre>
+      <p>
+        The Audio node ticks at sample rate. The Graphics node ticks at frame rate. Same method, two orders
+        of magnitude apart in frequency. <code>| Audio[0]</code> and <code>| Graphics</code> do not just
+        register the node with different subsystems; they determine the entire temporal contract of every
+        hook attached to that node. <code>on_tick</code> on a Graphics node is frame-rate code.
+        <code>on_tick</code> on an Audio node is DSP-rate code. Putting expensive work into an audio-rate
+        <code>on_tick</code> stalls the audio thread. This is why <code>on_impulse</code>,
+        <code>on_count</code>, and <code>on_increment</code> exist: they give you audio-rate precision
+        with call frequency you can reason about.
+      </p>
+      <p>
+        The previous example with the metro and <code>on_impulse</code> did not explore the side effects of time.
+        For metro, there is none as time is fixed. But for nodes, while <code>on_tick</code> itself does not not, beyond
+        rate of the backend/subsystem responsible for ticking, <code>on_impulse</code> and similar hooks are dependent on the logic of the signal.
+        
+        For instance, the impulse rate is not constant if it were frequency modulated. Or if the node in question were inherently dependent on other signals,
+        input sources, non deterministic logic, or any other factor that could affect the timing of the used hook callback.
+      </p>
+    </details>
+
+      <h4 class="tutorial-title">Tutorial: Counter driving a path</h4>
+      <pre><code class="language-cpp">void compose() {
+    auto window = MayaFlux::create_window({ "Time", 1200, 800 });
+    window->show();
+
+    auto path = vega.PathGeneratorNode(
+        Kinesis::InterpolationMode::CATMULL_ROM, 32, 128
+    ) | Graphics;
+    path->set_path_color(glm::vec3(0.4f, 0.8f, 1.0f));
+    path->set_path_thickness(2.0f);
+
+    auto buffer = vega.GeometryBuffer(path) | Graphics;
+    buffer->setup_rendering({ .target_window = window });
+
+    auto clock = vega.Impulse(0.5f);
+    clock->set_frequency_modulator(vega.Sine(0.08f));
+
+    auto counter = vega.Counter(64) | Audio[0];
+    counter->set_reset_trigger(clock);
+
+    counter->on_increment([path](auto&amp; ctx) {
+        float t     = static_cast&lt;float&gt;(ctx.phase);
+        float angle = t * 2.0f * M_PI / 64.0f;
+        float r     = 0.3f + 0.5f * std::sin(t * 0.4f);
+        glm::vec3 pos(r * std::cos(angle), r * std::sin(angle), 0.0f);
+        path->add_control_point({ pos, glm::vec3(1.0f - t / 64.0f, t / 64.0f, 0.6f), 2.0f });
+    });
+
+    counter->on_wrap([path](auto&amp;) {
+        path->set_path_color(glm::vec3(
+            get_uniform_random(0.3f, 1.0f),
+            get_uniform_random(0.3f, 1.0f),
+            get_uniform_random(0.3f, 1.0f)
+        ));
+    });
+}</code></pre>
+      <p>
+        Run this. A curved path grows across the window, tracing a slowly shifting orbit. The
+        <code>PathGeneratorNode</code> ring holds 128 points; old ones age out as new ones arrive.
+        On each wrap the color randomizes - a structural moment with no geometry destroyed.
+      </p>
+      <p>
+        The Impulse and its Sine modulator need no domain registration - they are processed because
+        the Counter registers the Impulse as its reset trigger, and the Impulse registers the Sine
+        as its frequency modulator. Only the Counter needs <code>| Audio[0]</code>.
+      </p>
+      <p>
+        <code>on_increment</code> fires once per counter tick. <code>on_wrap</code> fires exactly once
+        at the modulo boundary. Neither is audio-rate in practice: the Impulse fires at 0.5Hz modulated,
+        so <code>on_increment</code> fires at that rate regardless of the 48000Hz substrate underneath.
+      </p>
+
+      <details>
+        <summary>Example: Counter with <code>on_count</code> for structural moments</summary>
+        <pre><code class="language-cpp">void compose() {
+    auto window = MayaFlux::create_window({ "Time", 1200, 800 });
+    window->show();
+
+    auto path = vega.PathGeneratorNode(
+        Kinesis::InterpolationMode::CATMULL_ROM, 32, 128
+    ) | Graphics;
+    path->set_path_color(glm::vec3(1.0f, 0.5f, 0.2f));
+    path->set_path_thickness(2.5f);
+
+    auto buffer = vega.GeometryBuffer(path) | Graphics;
+    buffer->setup_rendering({ .target_window = window });
+
+    auto clock   = vega.Impulse(0.5f);
+    auto counter = vega.Counter(32) | Audio[0];
+    counter->set_reset_trigger(clock);
+
+    counter->on_increment([path](auto&amp; ctx) {
+        float t     = static_cast&lt;float&gt;(ctx.phase);
+        float angle = t * 2.0f * M_PI / 32.0f;
+        float r     = 0.5f + 0.2f * std::cos(t * 1.3f);
+        path->add_control_point({
+            glm::vec3(r * std::cos(angle), r * std::sin(angle), 0.0f),
+            glm::vec3(0.9f, 0.5f, 0.2f),
+            2.0f
+        });
+    });
+
+    counter->on_count(8,  [path](auto&amp;) { path->set_path_color(glm::vec3(0.2f, 0.9f, 0.5f)); });
+    counter->on_count(16, [path](auto&amp;) { path->set_path_color(glm::vec3(0.5f, 0.2f, 0.9f)); });
+    counter->on_count(24, [path](auto&amp;) { path->set_path_color(glm::vec3(0.9f, 0.2f, 0.2f)); });
+
+    counter->on_wrap([path](auto&amp;) {
+        path->set_path_color(glm::vec3(1.0f, 0.5f, 0.2f));
+    });
+}</code></pre>
+        <p>
+          The path grows in four color phases: orange through 8 steps, then green, then purple, then
+          red, then wraps and resets the color. Change the Impulse frequency and the phase structure
+          stays identical - only the wall-time duration of each phase changes. Sequence structure is
+          decoupled from speed.
+        </p>
+      </details>
+
+      <details>
+        <summary>Example: Temporal Logic as a gate</summary>
+        <pre><code class="language-cpp">void compose() {
+    auto window = MayaFlux::create_window({ "Time", 1200, 800 });
+    window->show();
+
+    auto path = vega.PathGeneratorNode(
+        Kinesis::InterpolationMode::CATMULL_ROM, 20, 256
+    ) | Graphics;
+    auto gbuf = vega.GeometryBuffer(path) | Graphics;
+    gbuf->setup_rendering({ .target_window = window });
+
+    auto lfo = vega.Sine(0.3f) | Audio[0];
+
+    auto gate = vega.Logic(
+        [](double input, double elapsed) -> bool {
+            double wn = std::fmod(elapsed, 6.0);
+            return wn > 1.0 &amp;&amp; wn &lt; 4.0;
+        }
+    ) | Audio[1];
+    gate->set_input_node(lfo);
+
+    auto&amp; n     = make_persistent(0U);
+    auto&amp; x_pos = make_persistent(-0.8f);
+
+    gate->while_true([&amp;n, path, lfo, &amp;x_pos](auto&amp;) {
+        if (++n % 800 != 0) return;
+        float v = static_cast&lt;float&gt;(lfo->get_last_output());
+        float x = std::fmod(static_cast&lt;float&gt;(n) / 800.0f, 533.0f) / 533.0f * 1.6f - 0.8f;
+        path->add_control_point({
+            .position  = glm::vec3((x * x_pos) + get_uniform_random(-0.05f, 0.5f),
+                                    v * 0.6f + get_uniform_random(-0.05f, 0.05f), 0.0f),
+            .color     = glm::vec3(0.9f, get_exponential_random(), 0.5f + 0.4f * std::abs(v)),
+            .thickness = (float)get_uniform_random(0.02f, 1.6f)
+        });
+        x_pos += 0.006f;
+    });
+
+    gate->on_change_to(false, [path, &amp;n, &amp;x_pos](auto&amp;) {
+        auto pts = path->get_control_points();
+        for (auto&amp; pt : pts) {
+            pt.color = glm::vec3(
+                get_uniform_random(0.3f, 1.0f),
+                get_uniform_random(0.3f, 1.0f),
+                get_uniform_random(0.3f, 1.0f));
+        }
+        path->set_control_points(pts);
+        n     = 0;
+        x_pos = -0.8f;
+    });
+}</code></pre>
+        <p>
+          For the first second of every six nothing draws. From second 1 to 4 the gate opens and the
+          path accumulates. At second 4 the gate closes: existing points are recolored in place and
+          cursors reset. The LFO is not the criterion - elapsed time is. The signal is only the
+          material being drawn.
+        </p>
+        <p>
+          <code>gate</code> needs <code>| Audio[1]</code> because Logic is a Generator the scheduler
+          owns independently. It pulls its source via <code>set_input_node</code>.
+          The <code>elapsed</code> parameter is <code>m_temporal_time</code>, which increments by
+          <code>1.0 / sample_rate</code> on every sample - sample-counted elapsed time, not wall-clock.
+        </p>
+      </details>
+
+    <hr>
+    </div>
+
+    <section id="side-effect-detail" class="tutorial-expanded">
+
+      <p>
+        Metro is a timer. <code>on_impulse</code> is a side effect of a signal.
+        <code>on_increment</code> fires at sequence positions. <code>while_true</code> fires for as
+        long as a condition holds. <code>on_change_to</code> fires exactly once at the transition.
+        These are not variations on a theme - they are different shapes of time: periodic, positional,
+        conditional, durational.
+      </p>
+      <p>
+        The Logic node makes the condition explicit and composable. The criterion can be a threshold,
+        a pattern across a history window, a conjunctive test across multiple signals, or purely
+        temporal. The signal fed into the Logic node is the material; the lambda is the gate.
+      </p>
+
+      <details>
+        <summary>Expansion 1: What <code>ctx.phase</code> and <code>ctx.value</code> carry in Counter</summary>
+        <p>
+          For Counter, <code>ctx.phase</code> carries the raw integer count cast to <code>double</code>:
+          0 at the first increment, 1 at the second, up to <code>modulo - 1</code> before the wrap.
+          Use it for positional logic inside <code>on_increment</code> - angle calculations, array
+          indexing, color interpolation keyed to position.
+        </p>
+        <p>
+          <code>ctx.value</code> carries the normalized output: <code>count / modulo</code> when modulo
+          is nonzero, raw count as double when modulo is zero. This is what the Counter outputs as a
+          signal to downstream nodes. The two fields serve different consumers: <code>ctx.phase</code>
+          for callback positional logic, <code>ctx.value</code> for signal routing downstream.
+        </p>
+      </details>
+
+      <details>
+        <summary>Expansion 2: Reset trigger edge detection</summary>
+        <p>
+          The reset trigger is edge-sensitive: Counter watches for a rising edge on the trigger node's
+          output, not a sustained nonzero value. An Impulse node produces exactly one nonzero sample
+          per cycle, so it is a natural trigger source.
+        </p>
+        <p>
+          A Logic node with sustained <code>while_true</code> output would re-trigger every sample it
+          is high, effectively freezing the counter at zero. If you want a reset tied to a Logic
+          condition, use <code>on_change_to(true, ...)</code> to fire a one-shot event rather than
+          connecting sustained output directly as a trigger.
+        </p>
+        <p>
+          Any node whose output crosses zero on the event you care about serves as a valid trigger:
+          a threshold-crossing on an envelope, a Logic node detecting a specific condition, an
+          InputNode receiving a MIDI note.
+        </p>
+      </details>
+
+      <details>
+        <summary>Expansion 3: <code>on_change_to</code> vs <code>while_true</code> vs <code>on_tick</code></summary>
+        <p>
+          <code>on_tick</code> fires on every sample the node processes. For a Logic node at Audio
+          rate that is 48000 times per second. Use it when you need the raw boolean stream as data.
+        </p>
+        <p>
+          <code>on_change_to(true, ...)</code> fires exactly once at the sample where the output
+          transitions from false to true. It is edge-sensitive: sustained true output does not
+          re-fire it. Use it for "begin a new thing": start a new path, change a color, record a
+          timestamp.
+        </p>
+        <p>
+          <code>while_true(...)</code> fires on every sample where the output is currently true.
+          It is level-sensitive: it fires continuously for as long as the condition holds. Use it
+          for "continue doing a thing while the condition holds": accumulating geometry, writing to
+          a buffer, advancing a cursor.
+        </p>
+        <p>
+          The temporal Logic tutorial uses both: <code>on_change_to(false, ...)</code> recolors
+          at the moment the gate closes, <code>while_true</code> accumulates during the open window.
+          One fires once at the edge, the other fires continuously until the edge closes.
+        </p>
+      </details>
+
+      <details>
+        <summary>Expansion 4: Why not <code>on_tick</code> for path control?</summary>
+        <p>
+          <code>on_tick</code> on an Audio node fires 48000 times per second.
+          <code>add_control_point</code> on a <code>PathGeneratorNode</code> pushes to a ring buffer
+          and sets dirty flags. Calling it 48000 times per second to build a path that renders at
+          60Hz produces 800 control points per frame, almost all redundant. The path geometry
+          regenerates from those control points each frame; excess control points increase CPU work
+          for no visual benefit.
+        </p>
+        <p>
+          <code>on_increment</code> driven by a 0.5Hz Impulse or <code>while_true</code> decimated
+          by a sample counter produces only the points that are visually meaningful.
+          <code>on_tick</code> is appropriate when the node's per-sample value is itself the
+          material: waveshaping, sample-by-sample analysis, building a data array for FFT input.
+          For anything that interacts with visual geometry, a coarser hook is almost always correct.
+        </p>
+      </details>
+
+      <details>
+        <summary>Expansion 5: The four Logic modes</summary>
+        <p>
+          <code>DIRECT</code> mode evaluates each sample independently. No memory. Use it when the
+          criterion is purely about the current value: amplitude gates, polarity checks, range
+          membership.
+        </p>
+        <p>
+          <code>SEQUENTIAL</code> mode receives a sliding window of past boolean states derived by
+          thresholding the input against <code>m_threshold</code>. The lambda receives a
+          <code>std::span&lt;bool&gt;</code> of already-binarized values - it pattern-matches on
+          those, it does not control what enters the history. Use it for run detection, alternation
+          patterns, specific boolean sequences.
+        </p>
+        <p>
+          <code>TEMPORAL</code> mode receives both the current input and elapsed time in seconds.
+          Use it when the criterion involves duration or periodic scheduling: "only during the second
+          half of each N-second period," "true if enough time has elapsed."
+        </p>
+        <p>
+          <code>MULTI_INPUT</code> mode receives a vector of simultaneous inputs from multiple
+          sources. Use it when the condition requires agreement across signals: two signals both
+          above threshold, majority voting, cross-signal correlation.
+        </p>
+      </details>
+
+    </section>
+  </div>
+</section>

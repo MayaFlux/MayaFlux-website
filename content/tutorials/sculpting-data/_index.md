@@ -136,7 +136,7 @@ or spend days exploring optional subsections.</p>
 </div>
 
 <div class="card wide">
-<h3>Part IV — Contextual Intelligence <em>(planned)</em></h3>
+<h3><a href="/tutorials/sculpting-data/temporal_plurality/">Part IV — Temporal Plurality </a></h3>
 <p>Conditional adaptation and dynamic pipelines.</p>
 </div>
 

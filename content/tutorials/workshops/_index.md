@@ -13,6 +13,9 @@ layout: "tutorials-list"
 
 This space contains materials from workshops and live sessions conducted for MayaFlux users and broader artistic communities.
 
+## Upcoming Workshops
+- [MayaFlux ISRO Online Workshop](/tutorials/workshops/theisro2): This is the second workshop in the series, scheduled to start on 8th May 2026. 
+
 ## Past Workshops
 
 - [TheIsro 1st Workshop](/tutorials/workshops/theisro1): This was the first ever 3 day workshop on MayaFlux, held in February 2026. 
