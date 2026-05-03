@@ -5,7 +5,7 @@ title: "Workshop 2 - Computational Audio-Visual Thinking"
 **Online**
 **Organized with the Indian Sonic Research Organization**
 **May 8-10 2026 - Duration per day TBD**
-**Sign up on the discord server to reserve your spot and get updates: [Discord] (https://discord.gg/GrKtdHB68)**
+**Sign up on the discord server to reserve your spot and get updates: [Discord](https://discord.gg/GrKtdHB68)**
 
 ---
 
@@ -93,3 +93,13 @@ More at mayaflux.org
 
 [Discord] (https://discord.gg/GrKtdHB68)
 The meeting room will be announced in the server channel calendar on the day of the event.
+
+## In the meantime:
+
+Please feel free to explore the various documentation on this website
+- [0.3 Release showcase](/releases/news/the_shape_of_material/)
+- [Getting started as a musician (basic)](/personas/musician_starting)
+- [Getting started as a visual artist (basic)](/personas/visual_artist_starting)
+- [Conceptual crossover from PureData](/onboarding/pure_data)
+- [Conceptual crossover from Max](/onboarding/max_msp)
+- [Full scope tutorials (Three complete, 4th in progress)](/tutorials/sculpting-data/)

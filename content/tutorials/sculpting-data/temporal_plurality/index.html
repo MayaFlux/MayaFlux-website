@@ -314,7 +314,7 @@ The eight cards that follow move from the simplest attachment (a callback on an 
 
 <hr>
 
-<img src="/t4_c2.gif" alt="Timed Points" width="960">
+<img src="/t4_c2.gif" alt="Timed Lines" width="960">
 <section class="tutorial-section">
   <div class="tutorial-row">
     <div class="tutorial-card" data-target="side-effect-detail">
@@ -355,7 +355,7 @@ The eight cards that follow move from the simplest attachment (a callback on an 
       </p>
       <p>
         The previous example with the metro and <code>on_impulse</code> did not explore the side effects of time.
-        For metro, there is none as time is fixed. But for nodes, while <code>on_tick</code> itself does not not, beyond
+        For metro, there is none as time is fixed. But for nodes, while <code>on_tick</code> itself does not beyond
         rate of the backend/subsystem responsible for ticking, <code>on_impulse</code> and similar hooks are dependent on the logic of the signal.
         
         For instance, the impulse rate is not constant if it were frequency modulated. Or if the node in question were inherently dependent on other signals,
@@ -647,6 +647,310 @@ The eight cards that follow move from the simplest attachment (a callback on an 
           <code>MULTI_INPUT</code> mode receives a vector of simultaneous inputs from multiple
           sources. Use it when the condition requires agreement across signals: two signals both
           above threshold, majority voting, cross-signal correlation.
+        </p>
+      </details>
+
+    </section>
+  </div>
+</section>
+
+
+<hr>
+
+<img src="/t4_c3.gif" alt="Timed Particles" width="960">
+
+<section class="tutorial-section">
+  <div class="tutorial-row">
+    <div class="tutorial-card" data-target="tiered-control-detail">
+      <h3>Card 3: Tiered Control</h3>
+      <p class="hint">Click this card to reveal full explanation</p>
+
+      <h4 class="tutorial-title">Tutorial: Sequence</h4>
+      <pre><code class="language-cpp">void compose() {
+    auto window = MayaFlux::create_window({ "Time", 1200, 800 });
+
+    auto particles = vega.ParticleNetwork(
+        300,
+        glm::vec3(-1.5f, -1.5f, -0.5f),
+        glm::vec3(1.5f, 1.5f, 0.5f),
+        Kinesis::SpatialDistribution::RANDOM_VOLUME
+    ) | Graphics;
+
+    auto* physics = particles->create_operator&lt;PhysicsOperator&gt;();
+    physics->set_drag(0.01f);
+    physics->set_bounds_mode(PhysicsOperator::BoundsMode::BOUNCE);
+
+    auto buffer = vega.NetworkGeometryBuffer(particles) | Graphics;
+    buffer->setup_rendering({ .target_window = window });
+    window->show();
+
+    MayaFlux::schedule_sequence({
+        { 0.0, [physics]() {
+            physics->set_turbulence_strength(0.8f);
+        }},
+        { 2.0, [physics]() {
+            physics->set_turbulence_strength(0.0f);
+            physics->enable_spatial_interactions(true);
+            physics->set_interaction_radius(0.4f);
+            physics->set_spring_stiffness(0.6f);
+        }},
+        { 2.5, [physics]() {
+            physics->set_repulsion_strength(2.0f);
+            physics->set_interaction_radius(0.2f);
+        }},
+        { 2.0, [physics]() {
+            physics->enable_spatial_interactions(false);
+            physics->set_drag(0.08f);
+        }},
+        { 2.0, [physics]() {
+            physics->set_drag(0.01f);
+            physics->set_turbulence_strength(0.4f);
+        }},
+    });
+}</code></pre>
+      <p>
+        Run this. Particles start in chaotic turbulence, then settle as spatial interactions switch on
+        and spring forces pull them into loose clusters. Repulsion tightens, clusters compress.
+        Interactions cut and drag bleeds off momentum. Then turbulence returns at half strength and
+        the arc ends.
+      </p>
+      <p>
+        The sequence is a vector of <code>(delay, callback)</code> pairs. Each delay is the interval
+        after the previous event. Cumulative time: 0 + 2.0 + 2.5 + 2.0 + 2.0 = 8.5 seconds total.
+      </p>
+
+      <h4 class="tutorial-title">Tutorial: EventChain</h4>
+      <pre><code class="language-cpp">void compose() {
+    auto window = MayaFlux::create_window({ "Time", 1200, 800 });
+
+    auto particles = vega.ParticleNetwork(
+        300,
+        glm::vec3(-1.5f, -1.5f, -0.5f),
+        glm::vec3(1.5f, 1.5f, 0.5f),
+        Kinesis::SpatialDistribution::RANDOM_VOLUME
+    ) | Graphics;
+
+    auto* physics = particles->create_operator&lt;PhysicsOperator&gt;();
+    physics->set_drag(0.01f);
+    physics->set_bounds_mode(PhysicsOperator::BoundsMode::BOUNCE);
+
+    auto buffer = vega.NetworkGeometryBuffer(particles) | Graphics;
+    buffer->setup_rendering({ .target_window = window });
+    window->show();
+
+    Kriya::EventChain chain(*MayaFlux::get_scheduler());
+
+    chain.then([physics]() {
+             physics->set_turbulence_strength(0.8f);
+         })
+         .then([physics]() {
+             physics->set_turbulence_strength(0.0f);
+             physics->enable_spatial_interactions(true);
+             physics->set_interaction_radius(0.4f);
+             physics->set_spring_stiffness(0.6f);
+         }, 2.0)
+         .then([physics]() {
+             physics->set_repulsion_strength(2.0f);
+             physics->set_interaction_radius(0.2f);
+         }, 2.5)
+         .then([physics]() {
+             physics->enable_spatial_interactions(false);
+             physics->set_drag(0.08f);
+         }, 2.0)
+         .then([physics]() {
+             physics->set_drag(0.01f);
+             physics->set_turbulence_strength(0.4f);
+         }, 2.0)
+         .start();
+}</code></pre>
+      <p>
+        Run this. The same arc as the sequence above, same timing, same result.
+      </p>
+      <p>
+        The structural difference is readability and composability. <code>EventChain</code> is a
+        builder: each <code>.then()</code> returns the same chain, so you can read the choreography
+        top to bottom. For short sequences the difference is minor; for longer choreographies with
+        repetition or a completion callback, the chain's additional methods become significant.
+      </p>
+
+      <details>
+        <summary>Example: EventChain with repetition and completion</summary>
+        <pre><code class="language-cpp">void compose() {
+    auto window = MayaFlux::create_window({ "Time", 1200, 800 });
+
+    auto particles = vega.ParticleNetwork(
+        300,
+        glm::vec3(-1.5f, -1.5f, -0.5f),
+        glm::vec3(1.5f, 1.5f, 0.5f),
+        Kinesis::SpatialDistribution::RANDOM_VOLUME
+    ) | Graphics;
+
+    auto* physics = particles->create_operator&lt;PhysicsOperator&gt;();
+    physics->set_drag(0.02f);
+    physics->set_bounds_mode(PhysicsOperator::BoundsMode::WRAP);
+
+    auto buffer = vega.NetworkGeometryBuffer(particles) | Graphics;
+    buffer->setup_rendering({ .target_window = window });
+    window->show();
+
+    Kriya::EventChain chain(*MayaFlux::get_scheduler());
+
+    chain.then([physics]() {
+             physics->set_attraction_point(glm::vec3(
+                 get_uniform_random(-0.8f, 0.8f),
+                 get_uniform_random(-0.8f, 0.8f),
+                 0.0f
+             ));
+         }, 1.2)
+         .repeat(3)
+         .then([physics]() {
+             physics->clear_attraction_point();
+             physics->set_turbulence_strength(0.6f);
+         }, 1.5)
+         .on_complete([physics]() {
+             physics->set_turbulence_strength(0.0f);
+             physics->set_drag(0.02f);
+         })
+         .times(3)
+         .start();
+}</code></pre>
+        <p>
+          The attraction point jumps to four random positions 1.2 seconds apart, pulling the cloud
+          toward each in sequence. Then attraction clears and turbulence scatters everything. That
+          full arc runs 3 times. After the third pass <code>on_complete</code> cuts the turbulence
+          and resets drag.
+        </p>
+        <p>
+          <code>.repeat(3)</code> appends 3 more copies of the first event: 1 + 3 = 4 attraction
+          moves total. <code>.times(3)</code> runs the whole list 3 times from the start.
+        </p>
+      </details>
+    <hr>
+
+    </div>
+
+    <section id="tiered-control-detail" class="tutorial-expanded">
+
+      <p>
+        Metro and node hooks repeat indefinitely - they have no concept of a beginning or an end.
+        Sequence and <code>EventChain</code> are for computation with a defined shape over time: a
+        finite set of moments, each happening once, in order. The difference between them is
+        lifecycle management, not timing precision.
+      </p>
+
+      <details>
+        <summary>Expansion 1: Delays are relative, not absolute</summary>
+        <p>
+          Both <code>schedule_sequence</code> and <code>EventChain</code> use relative delays: each
+          delay is the interval after the previous event, not a position on a global timeline. The
+          first event's delay is measured from <code>start()</code> or from when the sequence is
+          scheduled.
+        </p>
+        <p>
+          This has a practical consequence when inserting events mid-sequence. Adding a new event
+          between two existing ones only requires specifying its delay from the preceding event - no
+          other delay values need updating. If you need absolute timing, convert manually: t=0,
+          t=2.5, t=4.0 becomes delays 0, 2.5, 1.5.
+        </p>
+      </details>
+
+      <details>
+        <summary>Expansion 2: <code>on_complete</code> fires on cancel too</summary>
+        <p>
+          <code>on_complete</code> fires regardless of how the chain stops - after the final event
+          completes normally, and also when <code>cancel()</code> is called. An internal flag
+          prevents it firing twice. This means <code>on_complete</code> is suitable for cleanup that
+          must happen whether the chain runs to conclusion or is interrupted: restoring physics
+          state, releasing a resource, enabling a UI element.
+        </p>
+        <p>
+          If you only want a callback on normal completion, put it as the final
+          <code>.then()</code> with zero delay instead.
+        </p>
+      </details>
+
+      <details>
+        <summary>Expansion 3: <code>wait()</code> and <code>every()</code></summary>
+        <p>
+          <code>.wait(seconds)</code> inserts a pause with no action - equivalent to
+          <code>.then([](){}, seconds)</code> but expresses intent clearly:
+        </p>
+        <pre><code class="language-cpp">chain.then([physics]() { physics->set_turbulence_strength(1.2f); })
+     .wait(3.0)
+     .then([physics]() { physics->set_turbulence_strength(0.0f); })
+     .start();</code></pre>
+        <p>
+          <code>.every(interval, action)</code> is syntactic sugar for
+          <code>.then(action, interval)</code> - clearer when describing a repeated periodic action
+          rather than a one-time transition.
+        </p>
+      </details>
+
+      <details>
+        <summary>Expansion 4: When to use which</summary>
+        <p>
+          Metro has no end. Use it when the work is ongoing and structurally uniform - polling,
+          continuous accumulation, periodic display updates. It knows nothing about what came
+          before or after.
+        </p>
+        <p>
+          <code>schedule_sequence</code> has an end but no handle. Use it when you have a fixed
+          choreography that will not need to be cancelled, repeated, or observed from outside.
+          Declare it, fire it, forget it.
+        </p>
+        <p>
+          <code>EventChain</code> has an end and a handle. Use it when the sequence is part of a
+          larger system: you need to know when it finishes, restart it from a key event, cancel it
+          in response to something else, or compose it with another chain via
+          <code>on_complete</code>. The fluent API is a secondary benefit; the lifecycle management
+          is the reason to reach for it.
+        </p>
+        <p>
+          Node hooks (<code>on_impulse</code>, <code>on_increment</code>, <code>while_true</code>)
+          have no inherent temporal shape. They fire as a consequence of computation that is already
+          happening. Use them when the rate or condition is itself a signal, not a design decision
+          made at construction time.
+        </p>
+      </details>
+
+      <details>
+        <summary>Expansion 5: <code>schedule_sequence</code> vs <code>EventChain</code> at a glance</summary>
+        <p>
+          Both are built on the same coroutine: one <code>SoundRoutine</code> that iterates its
+          event list and <code>co_await SampleDelay{N}</code> between entries. The abstraction
+          difference is entirely in the API surface, not in timing precision or scheduling behavior.
+        </p>
+        <p>
+          <code>schedule_sequence</code> is the minimal form: flat vector, fire-and-forget, no
+          handle returned, runs once. <code>EventChain</code> gives you <code>.cancel()</code>,
+          <code>.is_active()</code>, <code>.times()</code>, <code>.repeat()</code>,
+          <code>.on_complete()</code>, <code>.wait()</code>, <code>.every()</code>.
+        </p>
+      </details>
+
+      <details>
+        <summary>Expansion 6: Audio-reactive particles via <code>map_parameter</code></summary>
+        <p>
+          <code>ParticleNetwork</code> exposes named parameters driveable by any node output via
+          <code>map_parameter</code>. The physics are not limited to what you set at construction:
+        </p>
+        <pre><code class="language-cpp">auto lfo = vega.Sine(0.15f) | Audio[0];
+auto chaos = vega.Random();
+lfo->set_frequency_modulator(chaos);
+particles->map_parameter("turbulence", lfo, MappingMode::BROADCAST);
+
+auto env = vega.Sine(0.05f);
+particles->map_parameter("interaction_radius", env, MappingMode::BROADCAST);</code></pre>
+        <p>
+          Available broadcast parameters: <code>gravity_x</code>, <code>gravity_y</code>,
+          <code>gravity_z</code>, <code>drag</code>, <code>turbulence</code>,
+          <code>interaction_radius</code>, <code>spring_stiffness</code>. <code>BROADCAST</code>
+          applies the same value to all particles. <code>ONE_TO_ONE</code> maps per-particle outputs
+          from another network directly to per-particle parameters.
+        </p>
+        <p>
+          This composes with <code>EventChain</code>: the chain handles large structural transitions
+          while mapped nodes handle continuous variation between those transitions.
         </p>
       </details>
 
