@@ -2,10 +2,12 @@
 title: "Workshop 2 - Computational Audio-Visual Thinking"
 ---
 
-**Online**
-**Organized with the Indian Sonic Research Organization**
-**May 8-10 2026 - Duration per day TBD**
-**Sign up on the discord server to reserve your spot and get updates: [Discord](https://discord.gg/GrKtdHB68)**
+## Quick info
+- **Online**
+- **Organized with the Indian Sonic Research Organization**
+- **May 8-10 2026 - Duration per day TBD**
+- **Sign up on the discord server to reserve your spot and get updates: [Discord](https://discord.gg/GrKtdHB68)**
+- [download](/download):
 
 ---
 
@@ -71,6 +73,8 @@ No guided content. You choose what to work on. A few prepared starting points ar
 
 ## Practical
 
+Please [downlood](/download) Weave for your OS. It is the central installer, dependency manager, and project creator for MayaFlux.
+
 Hardware is not an issue. MayaFlux ran inside a container on an immutable Steam Deck at the performance you saw. If that worked, your machine works.
 
 OS is a different matter. Supported:
@@ -91,7 +95,7 @@ More at mayaflux.org
 
 ## Location:
 
-[Discord] (https://discord.gg/GrKtdHB68)
+[Discord](https://discord.gg/GrKtdHB68)
 The meeting room will be announced in the server channel calendar on the day of the event.
 
 ## In the meantime:
