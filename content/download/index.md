@@ -152,7 +152,7 @@ Weave downloads the framework, installs dependencies, and sets up your first pro
 <div class="collapsible-header">
 <h2>macOS</h2>
 <p>
-<a href="https://github.com/MayaFlux/Weave/releases/download/v0.3.1/Weave-macos.dmg"><strong>Download for macOS</strong></a>
+<a href="https://github.com/MayaFlux/Weave/releases/download/v0.3.2/Weave-macos.dmg"><strong>Download for macOS</strong></a>
 </p>
 <p class="hint">Click to expand</p>
 </div>
@@ -209,7 +209,7 @@ cmake --build . --parallel
 <div class="collapsible-header">
 <h2>Linux</h2>
 <p>
-<a href="https://github.com/MayaFlux/Weave/releases/download/v0.3.1/Weave-linux.tar.gz"><strong>Download for Linux</strong></a>
+<a href="https://github.com/MayaFlux/Weave/releases/download/v0.3.2/Weave-linux.tar.gz"><strong>Download for Linux</strong></a>
 </p>
 <p class="hint">Click to expand</p>
 </div>
@@ -283,7 +283,7 @@ cmake --build . --parallel
 <div class="collapsible-header">
 <h2>Windows</h2>
 <p>
-<a href="https://github.com/MayaFlux/Weave/releases/download/v0.3.1/Weave-windows.zip"><strong>Download for Windows</strong></a>
+<a href="https://github.com/MayaFlux/Weave/releases/download/v0.3.2/Weave-windows.zip"><strong>Download for Windows</strong></a>
 </p>
 <p class="hint">Click to expand</p>
 </div>

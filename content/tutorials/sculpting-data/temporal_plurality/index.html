@@ -1,10 +1,12 @@
 ---
-title: "Temporal Plurality"
+title: "Temporal Plurality (WIP)"
 layout: "tutorial"
 ---
 
 <h2>Time as Material</h2>
 <p>
+Note: This tutorial is a work in progress. More cards, examples and demos will be updated soon.
+
 The first three tutorials in this series taught you what data is, how it transforms, and how it becomes geometry. Every example ran continuously: nodes processed samples, buffers cycled, the engine drove everything at its own rate. You declared structure and the system ran it.
 
 <br>
@@ -953,6 +955,290 @@ particles->map_parameter("interaction_radius", env, MappingMode::BROADCAST);</co
           while mapped nodes handle continuous variation between those transitions.
         </p>
       </details>
+
+    </section>
+  </div>
+</section>
+
+<hr>
+
+<div id="audio-interface">
+    <h2>Direct PipeWire Stream</h2>
+    <audio id="player" controls src="/t4_c4.wav" loop></audio>
+    <script>
+        const player = document.getElementById('player');
+        player.volume = 0.2;
+        console.log("Audio interface loaded");
+    </script>
+</div>
+
+<section class="tutorial-section">
+  <div class="tutorial-row">
+    <div class="tutorial-card" data-target="onlywhen-detail">
+      <h3>Card 4: ONLYWHENs</h3>
+      <p class="hint">Click this card to reveal full explanation</p>
+
+      <h4 class="tutorial-title">Tutorial: TimedAction : bracketed state</h4>
+      <pre><code class="language-cpp">void compose() {
+    const std::vector&lt;float&gt; freqs = { 220.0f, 277.0f, 330.0f, 370.0f, 440.0f, 554.0f, 660.0f };
+
+    std::vector&lt;std::shared_ptr&lt;Sine&gt;&gt; sines;
+    for (auto f : freqs) {
+        auto s = vega.Sine(f) | Audio[0];
+        s-&gt;set_amplitude(0.08);
+        sines.push_back(s);
+    }
+
+    auto action = std::make_shared&lt;Kriya::TimedAction&gt;(*get_scheduler());
+    store(action);
+
+    auto clock = vega.Impulse(0.15f) | Audio[0];
+    clock-&gt;on_impulse([sines, freqs, action](const Nodes::NodeContext&amp;) {
+        action-&gt;execute(
+            [sines]() {
+                for (auto&amp; s : sines)
+                    s-&gt;set_frequency(220.0f);
+            },
+            [sines, freqs]() {
+                for (int i = 0; i &lt; (int)sines.size(); ++i)
+                    sines[i]-&gt;set_frequency(freqs[i]);
+            },
+            get_uniform_random(0.5, 2.0)
+        );
+    });
+}</code></pre>
+      <p>
+        Seven sines tuned to a major seventh chord run continuously. Every ~6.5 seconds the Impulse
+        fires and the chord collapses: all voices snap to 220Hz. After a random 0.5 to 2 second
+        window they restore to their original frequencies. The collapse and restore are
+        sample-accurate. Rapid impulses do not stack brackets; a new <code>execute</code> call
+        cancels the pending restore and restarts the duration from the new trigger point.
+      </p>
+      <p>
+        Try: change the Impulse to <code>0.08f</code> and the duration to
+        <code>get_uniform_random(4.0, 8.0)</code>. The bracket now outlasts the impulse period.
+        The next impulse fires while still collapsed, restarting from unison again. The chord
+        barely has time to breathe before the next collapse.
+      </p>
+
+      <h4 class="tutorial-title">Tutorial: <code>&gt;&gt; Time(N)</code> — rotating partials</h4>
+      <pre><code class="language-cpp">void compose() {
+    auto base = vega.Sine(110.0f) | Audio[0];
+    base-&gt;set_amplitude(0.3);
+
+    const std::vector&lt;float&gt; partials = { 330.0f, 550.0f, 770.0f, 990.0f, 1320.0f, 1650.0f, 2200.0f };
+
+    auto clock = vega.Impulse(1.2f) | Audio[0];
+    clock-&gt;set_frequency_modulator(vega.Sine(0.05f));
+
+    clock-&gt;on_impulse([partials](auto&amp;) {
+        float dur = get_uniform_random(0.3, 1.5);
+        auto idx = (int)get_uniform_random(0, 6);
+
+        auto s0 = vega.Sine(partials[idx]);
+        auto s1 = vega.Sine(partials[(idx + 2) % 7]);
+        auto s2 = vega.Sine(partials[(idx + 4) % 7]);
+
+        s0-&gt;set_amplitude(0.10);
+        s1-&gt;set_amplitude(0.07);
+        s2-&gt;set_amplitude(0.05);
+
+        s0 &gt;&gt; Time(dur)         | Audio[0];
+        s1 &gt;&gt; Time(dur * 0.6f)  | Audio[1];
+        s2 &gt;&gt; Time(dur * 0.35f) | Audio[0];
+    });
+}</code></pre>
+      <p>
+        A 110Hz base sustains permanently. Each impulse fires three partials from the array,
+        selected by stepping two positions apart so they always form a consistent intervallic
+        relationship. Each partial has its own duration: the longest on channel 0, a mid-length
+        on channel 1, the shortest back on channel 0. They enter together and leave at different
+        times, so the gesture decays in layers rather than cutting simultaneously.
+      </p>
+      <p>
+        The slow Sine modulating the clock breathes the impulse density over roughly 20 second
+        cycles. At peak density, partial clusters overlap: several are still alive when the next
+        impulse fires its own set. Change <code>(idx + 2) % 7</code> and
+        <code>(idx + 4) % 7</code> to <code>(idx + 1) % 7</code> and <code>(idx + 6) % 7</code>
+        for a tighter cluster plus a distant partial instead of even thirds.
+      </p>
+    </div>
+
+    <section id="onlywhen-detail" class="tutorial-expanded">
+
+      <p>
+        Everything in the previous cards repeats or runs indefinitely. Metro fires until cancelled.
+        <code>on_impulse</code> fires as long as the node processes. EventChain has a fixed arc
+        but no handle on individual moments within it. None of them express "do this, then undo it,
+        after exactly N seconds" or "this node exists in the graph for this duration and no longer."
+      </p>
+      <p>
+        <code>TimedAction</code> is a start/end pair with a sample-accurate duration between them.
+        <code>&gt;&gt; Time(N)</code> is graph membership for a bounded duration. Both are about
+        computation that is conditionally present in time, not continuously running.
+      </p>
+
+      <details>
+        <summary>Expansion 1: What <code>TimedAction::execute</code> actually does</summary>
+        <p>
+          <code>execute(start, end, duration)</code> calls <code>start</code> immediately, then
+          schedules a <code>Timer</code> to call <code>end</code> after <code>duration</code>
+          seconds. The timer is a coroutine that suspends for exactly that many samples, so the
+          end fires at a sample-accurate position regardless of buffer size or scheduling jitter.
+        </p>
+        <p>
+          One <code>TimedAction</code> holds one bracket at a time. Calling <code>execute</code>
+          while a bracket is active cancels the pending end and starts a new one immediately;
+          the previous end function never fires. Rapid re-triggers therefore reset the duration
+          from the new trigger point rather than queuing multiple restores. To get stacked
+          brackets that each fire their own end independently, use separate
+          <code>TimedAction</code> instances.
+        </p>
+      </details>
+
+      <details>
+        <summary>Expansion 2: Why not EventChain for this</summary>
+        <p>
+          EventChain is declared once with a fixed shape and runs from a known start point.
+          It cannot be re-fired mid-execution in response to a signal, and its duration is set at
+          construction time rather than at trigger time.
+        </p>
+        <p>
+          <code>TimedAction</code> has no predetermined choreography. The same object can be
+          re-executed from different callbacks with different durations computed at trigger time.
+          Here the duration is <code>get_uniform_random(0.5, 2.0)</code>: a different value on
+          every impulse, determined by when the impulse fires, not by anything declared in advance.
+        </p>
+        <p>
+          Use EventChain when the sequence is known in advance and has multiple steps. Use
+          <code>TimedAction</code> when you have a single reversible state change that needs to be
+          triggered from anywhere, at any time, with a duration determined by the trigger context.
+        </p>
+      </details>
+
+      <details>
+        <summary>Expansion 3: What <code>&gt;&gt; Time(N) | Audio[ch]</code> actually does</summary>
+        <p>
+          The expression creates a <code>TemporalActivation</code> that registers the node with
+          the audio graph on the specified channel immediately, then schedules a timer to
+          unregister it after N seconds. The node is held alive by the graph registration for that
+          duration with no explicit <code>store</code> needed. When the timer fires, the node
+          leaves the graph and is released.
+        </p>
+        <p>
+          The node has no awareness of its bounded lifetime. It processes normally for the
+          duration, and any modulators or hooks attached to it continue to work. The graph simply
+          stops calling it after N seconds.
+        </p>
+        <p>
+          This is not the same as setting amplitude to zero. A node at zero amplitude still runs
+          <code>process_sample</code> on every sample. A node outside the graph does not. At large
+          counts of simultaneous transient nodes the CPU difference is meaningful.
+        </p>
+      </details>
+
+      <details>
+        <summary>Expansion 4: The layered decay shape</summary>
+        <p>
+          Three partials enter the graph simultaneously with durations <code>dur</code>,
+          <code>dur * 0.6</code>, and <code>dur * 0.35</code>. The shortest expires first,
+          leaving a pair. Then the middle one expires, leaving only the longest. Then silence
+          until the next impulse.
+        </p>
+        <p>
+          This decay shape (full chord, then subset, then single, then silence) emerges from the
+          duration arithmetic alone. No envelope node, no amplitude ramp, no explicit sequencing.
+          The shape is determined entirely by which nodes are alive in the graph at each moment.
+          Change the scale factors to <code>1.0</code>, <code>0.98</code>, <code>0.96</code>
+          and the three partials expire almost simultaneously: a tight staccato cut rather than
+          a layered decay.
+        </p>
+      </details>
+
+      <details>
+        <summary>Expansion 5: Gate vs Trigger vs Toggle</summary>
+        <p>
+          <code>Gate</code> fires its callback on every sample where the Logic output is currently
+          true (level-sensitive). <code>Trigger</code> fires once per rising edge: the single
+          sample where output transitions from false to true. <code>Toggle</code> fires on any
+          state change, rising or falling.
+        </p>
+        <p>
+          All three are coroutines built on the same loop: drive the Logic node one sample at a
+          time, check its output, fire the registered hook when the condition matches. The
+          difference is which hook type is registered (<code>while_true</code>,
+          <code>on_change_to</code>, or <code>on_change</code>).
+        </p>
+        <p>
+          Gate needs decimation inside the callback when the intended event rate is coarser than
+          sample rate. Trigger does not, because it fires at most once per gate opening by
+          definition. Replacing Gate with Trigger in the bowl example below would fire one partial
+          per Phasor cycle rather than a burst of them over the open window.
+        </p>
+      </details>
+
+      <h2>Try It: Singing bowl</h2>
+      <pre><code class="language-cpp">void compose() {
+    auto fundamental = vega.Sine(196.0f) | Audio[0];
+    fundamental-&gt;set_amplitude(0.25);
+    auto wobble = vega.Sine(0.13f);
+    auto wobble_depth = vega.Polynomial([](double x) { return x * 2.8; });
+    wobble &gt;&gt; wobble_depth;
+    fundamental-&gt;set_frequency_modulator(wobble_depth);
+
+    const std::vector&lt;float&gt; bowl_harmonics = {
+        392.3f,   // ~2x + asymmetry
+        588.7f,   // ~3x
+        789.1f,   // ~4x - more inharmonic
+        1179.4f,  // ~6x
+    };
+    for (int i = 0; i &lt; 4; ++i) {
+        auto h = vega.Sine(bowl_harmonics[i]) | Audio[0];
+        h-&gt;set_amplitude(0.12f / (i + 1));
+        auto beat = vega.Sine(get_uniform_random(0.03, 0.19));
+        auto bdep = vega.Polynomial([i](double x) { return x * (3.0 - i * 0.5); });
+        beat &gt;&gt; bdep;
+        h-&gt;set_frequency_modulator(bdep);
+        h-&gt;set_amplitude_modulator(
+            vega.Sine(static_cast&lt;float&gt;(get_uniform_random(0.07, 0.31))));
+    }
+
+    auto rotor     = vega.Phasor(0.11f) | Audio[0];
+    auto gate_logic = std::make_shared&lt;Nodes::Generator::Logic&gt;(0.5);
+    gate_logic-&gt;set_input_node(rotor);
+
+    const std::vector&lt;float&gt; spiral = { 980.0f, 1372.0f, 1568.0f, 2156.0f, 2940.0f };
+
+    auto gate = std::make_shared&lt;Vruta::SoundRoutine&gt;(
+        Kriya::Gate(*get_scheduler(), [spiral]() {
+            static uint64_t n = 0;
+            if (++n % 24000 != 0) return;
+            auto s = vega.Sine(spiral[(int)get_uniform_random(0, 4)]);
+            s-&gt;set_amplitude(get_uniform_random(0.04, 0.09));
+            s &gt;&gt; Time(get_uniform_random(0.4, 1.2)) | Audio[0];
+        }, gate_logic));
+    get_scheduler()-&gt;add_task(gate, "bowl_gate");
+}</code></pre>
+      <p>
+        A fundamental at 196Hz sustains with a slow 2.8Hz frequency wobble. Four harmonics at
+        slightly inharmonic ratios (mimicking a real bowl's asymmetric modes) each have
+        independent slow amplitude and frequency modulators at incommensurate rates; their beating
+        pattern never locks into a repeating cycle.
+      </p>
+      <p>
+        A Phasor at 0.11Hz (roughly a 9 second cycle) feeds a threshold Logic node. The Gate
+        coroutine drives that Logic node sample-by-sample. While the Phasor is above 0.5 (roughly
+        half of each cycle) the gate is open. Every 24000 samples (0.5 seconds at 48kHz) a
+        partial from the <code>spiral</code> array enters the graph for 0.4 to 1.2 seconds.
+        These upper partials overlap with each other and with the bowl harmonics, creating a
+        texture that waxes and wanes with the Phasor rotation.
+      </p>
+      <p>
+        Change the Phasor frequency to <code>0.04f</code> for a slower rotation (25 second
+        cycles, longer open and closed windows). Change the threshold from <code>0.5</code> to
+        <code>0.8</code> and the gate is open for only 20% of each cycle: brief dense bursts of
+        spiral partials separated by long silences.
+      </p>
 
     </section>
   </div>
