@@ -5,7 +5,7 @@ title: "Workshop 2 - Computational Audio-Visual Thinking"
 ## Quick info
 - **Online**
 - **Organized with the Indian Sonic Research Organization**
-- **May 8-10 2026 - Duration per day TBD**
+- **May 8-10 2026 - Core session (4pm-7pm IST) (12:30-3:30 CET). Optional 1 hour prior and after. See schedule below.**
 - **Sign up on the discord server to reserve your spot and get updates: [Discord](https://discord.gg/GrKtdHB68)**
 - [download](/download):
 
@@ -97,6 +97,19 @@ More at mayaflux.org
 
 [Discord](https://discord.gg/GrKtdHB68)
 The meeting room will be announced in the server channel calendar on the day of the event.
+
+## Schedule
+
+* **Core session (all 3 days):**
+  4:00–7:00 PM IST / 12:30–3:30 PM CET
+
+* **Pre-session (optional):**
+  3:00–4:00 PM IST / 11:30 AM–12:30 PM CET
+  Installation help, fixing prior issues (not for first-time setup)
+
+* **Post-session (optional):**
+  7:00–8:00 PM IST / 3:30–4:30 PM CET
+  Q&A, deeper dives, extra examples, discussion
 
 ## In the meantime:
 
