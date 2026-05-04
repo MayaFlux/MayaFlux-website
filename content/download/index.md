@@ -232,8 +232,8 @@ tar -xzf Weave-X.X.X-linux.tar.gz -C ~/.local/
 
 ### Mode Selection
 
-- **Install MayaFlux** — first-time setup
-- **Create Project** — if MayaFlux already installed
+- **Install MayaFlux:** first-time setup
+- **Create Project:** if MayaFlux already installed
 
 ### Supported Behaviours
 
@@ -337,11 +337,11 @@ cmake --build . --config Release
 
 # Documentation
 
-- **macOS Guide** — installation, troubleshooting, uninstall
-- **Linux Guide** — distro notes, troubleshooting, uninstall
-- **Windows Guide** — step-by-step walk-through
-- **Package Overview** — FAQ, architecture
-- **Development Guide** — build Weave from source
+- **macOS Guide:** installation, troubleshooting, uninstall
+- **Linux Guide:** distro notes, troubleshooting, uninstall
+- **Windows Guide:** step-by-step walk-through
+- **Package Overview:** FAQ, architecture
+- **Development Guide:** build Weave from source
 
 View all at:
 ➡️ [Weave Docs](https://github.com/MayaFlux/Weave/tree/main/docs)

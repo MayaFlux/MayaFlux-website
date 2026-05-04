@@ -76,7 +76,7 @@ This signals that a runnable example follows.</p>
 
 <div class="card vertical">
 <h3>3. Optional Panels</h3>
-<p>API notes, design notes, and advanced variations — all collapsed by default.</p>
+<p>API notes, design notes, and advanced variations, all collapsed by default.</p>
 </div>
 
 <div class="card vertical">
@@ -121,22 +121,22 @@ or spend days exploring optional subsections.</p>
 <div class="card-grid">
 
 <div class="card wide">
-<h3><a href="/tutorials/sculpting-data/foundations/">Part I — Foundations of Form</a></h3>
+<h3><a href="/tutorials/sculpting-data/foundations/">Part I: Foundations of Form</a></h3>
 <p>Containers → Buffers → Form.</p>
 </div>
 
 <div class="card wide">
-<h3><a href="/tutorials/sculpting-data/processing_expression">Part II — Processing Expression </a></h3>
+<h3><a href="/tutorials/sculpting-data/processing_expression">Part II: Processing Expression </a></h3>
 <p>Processors, operations, shaping behaviour.</p>
 </div>
 
 <div class="card wide">
-<h3><a href="/tutorials/sculpting-data/visual_materiality_i">Part III — Visual Materiality I </a></h3>
+<h3><a href="/tutorials/sculpting-data/visual_materiality_i">Part III: Visual Materiality I </a></h3>
 <p>Introduction to declarative graphics</p>
 </div>
 
 <div class="card wide">
-<h3><a href="/tutorials/sculpting-data/temporal_plurality/">Part IV — Temporal Plurality [WIP] </a></h3>
+<h3><a href="/tutorials/sculpting-data/temporal_plurality/">Part IV: Temporal Plurality [WIP] </a></h3>
 <p>Conditional adaptation and dynamic pipelines.</p>
 </div>
 

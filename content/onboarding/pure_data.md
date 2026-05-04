@@ -141,7 +141,7 @@ MayaFlux lets you reach into those details when that becomes part of the creativ
 ```cpp
 auto wave = vega.Sine(440.0, 0.3) | Audio[0];
 
-// Hook into processing—48,000 times per second
+// Hook into processing (runs 48,000 times per second)
 wave->on_tick([](NodeContext ctx) {
     if (ctx.value > 0.95) {
         // React to wave peaks

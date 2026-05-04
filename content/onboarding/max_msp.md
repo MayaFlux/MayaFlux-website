@@ -28,7 +28,7 @@ become an all-encompassing environment. That restraint is architectural, not acc
 
 Because of this, PD is the clearest place to surface assumptions you may not realize you learned.
 If you come from Max/MSP, read the <strong><a href="../pure_data/">Pure Data onboarding</a></strong>
-onboarding before continuing—not because you “need PD knowledge” to understand MayaFlux,
+onboarding before continuing. Not because you "need PD knowledge" to understand MayaFlux,
 but because PD strips the ecosystem down to its bones, making visible what Max’s scale, polish, and convenience layers can obscure.
 
 </div>
@@ -47,8 +47,8 @@ or patch-as-artifact practices.
 Instead, it focuses on two places where Max most clearly exposes
 its internal tensions:
 
-- **gen~** — where DSP becomes computational
-- **Jitter** — where data becomes multi-dimensional
+- **gen~:** where DSP becomes computational
+- **Jitter:** where data becomes multi-dimensional
 
 These are the points where Max stops simulating hardware
 and starts brushing against digital-first thinking.
@@ -60,7 +60,7 @@ Read it to notice moments where you think:
 
 _“I always assumed this had to work this way.”_
 
-Those assumptions — about time, data, state, and structure —
+Those assumptions (about time, data, state, and structure)
 are the subject of this Rosetta Stone.
 
 </div>
@@ -112,7 +112,7 @@ But it becomes **architecturally incoherent** when you need:
 
 gen~ tried to solve this by creating a **sandboxed computational space** where you could think in transformations instead of object graphs.
 
-And it worked—sort of.
+And it worked, sort of.
 
 </div>
 
@@ -132,7 +132,7 @@ Want to implement a simple FIR filter with 64 taps?
 In code: `sum(coefficients[i] * history[i])` for i in 0..63  
 In gen~: 64 `[*]` objects, 64 `[history]` objects, 63 `[+]` objects, all carefully arranged spatially
 
-**The visual paradigm becomes cognitive overhead** instead of clarifying aid. You're not looking at the algorithm—you're looking at plumbing.
+**The visual paradigm becomes cognitive overhead** instead of clarifying aid. You're not looking at the algorithm. You're looking at plumbing.
 
 </details>
 
@@ -177,7 +177,7 @@ The answer is both, and that cognitive friction is always present.
 <details>
 <summary><strong>Explicit State Management in a Stateless Paradigm</strong></summary>
 
-Max's core paradigm is **stateless message passing**. Objects don't inherently remember anything—state is an exception you explicitly manage with `[int]`, `[float]`, etc.
+Max's core paradigm is **stateless message passing**. Objects don't inherently remember anything. State is an exception you explicitly manage with `[int]`, `[float]`, etc.
 
 gen~ inherits this, so **history is expensive and explicit**:
 
@@ -372,7 +372,7 @@ pipeline->execute_buffer_rate();
 
 The `>>` operator composes operations. `PHASED` strategy means: gather all captures first, then transform, then route. Data flow becomes syntactic structure.
 
-This isn't better or worse than careful `[buffer~]` management—it's a different way of expressing the same computational intent.
+This isn't better or worse than careful `[buffer~]` management. It's a different way of expressing the same computational intent.
 
 ---
 
@@ -408,7 +408,7 @@ MayaFlux::attac_quick_process([grammar, pipeline](auto& buf) {
 
 Every processing cycle, the grammar evaluates: "Does this data match the rule conditions?" If peak level > 0.8, apply compression. The transformation is determined by **what the data is**, not just preset routing.
 
-This is data-driven processing—rules that activate based on signal characteristics.
+This is data-driven processing: rules that activate based on signal characteristics.
 
 ---
 
@@ -541,7 +541,7 @@ A gate that opens when a specific frequency band has been loud for N consecutive
 
 ### In gen~: Architectural Impossibility
 
-You can't do multi-bin FFT analysis in gen~ at all—it requires `[pfft~]` which lives outside gen~ in MSP. So you'd need:
+You can't do multi-bin FFT analysis in gen~ at all. It requires `[pfft~]` which lives outside gen~ in MSP. So you'd need:
 
 1. Route signal out of gen~ to `[pfft~]`
 2. Analyze bins in Max (not sample-accurate)
@@ -778,7 +778,7 @@ auto pipeline = std::make_shared<ComputePipeline<InputType, OutputType>>(grammar
 // Grammar evaluates each cycle, picks ONE algorithm based on data characteristics
 ```
 
-**Only the matched algorithm executes.** No clicks. Add/remove algorithms by adding/removing rules—no patch rewiring. Thresholds are in code, not visual layout.
+**Only the matched algorithm executes.** No clicks. Add/remove algorithms by adding/removing rules. No patch rewiring. Thresholds are in code, not visual layout.
 
 ---
 

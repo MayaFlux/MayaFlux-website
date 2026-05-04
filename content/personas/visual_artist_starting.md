@@ -49,7 +49,7 @@ void compose() {
 
 <p>
 You didn't write a render loop. You declared what exists, and the substrate displays it at 60 FPS automatically.
-The image isn't "drawn" — it exists as data that gets presented each frame.
+The image isn't "drawn." It exists as data that gets presented each frame.
 </p>
 </div>
 
@@ -90,7 +90,7 @@ void compose() {
 
 <p>
 <code>schedule_metro(0.016, ...)</code> creates a temporal event every 16ms (60 FPS).
-<code>set_position(x, y)</code> marks the geometry as dirty — the processor regenerates vertices next frame.
+<code>set_position(x, y)</code> marks the geometry as dirty, triggering vertex regeneration on the next frame.
 Circular motion emerges from trigonometric functions, not manual animation keyframes.
 </p>
 
@@ -275,7 +275,7 @@ MayaFlux::schedule_metro(0.016, [tex_buffer, base_vertices]() mutable {
 
 <p>
 You're not "distorting pixels." You're transforming the sampling coordinates that determine which texture pixels appear at which screen positions.
-The image data never changes — only how it's accessed.
+The image data itself stays fixed. What changes is only how it's accessed.
 </p>
 </div>
 
@@ -436,7 +436,7 @@ void compose() {
 ```
 
 <p>
-These patterns aren't "drawn" — they're **data generated from mathematical functions**.
+These patterns aren't "drawn." They're **data generated from mathematical functions**.
 Position, color, size all emerge from equations. Change the equation, change the form.
 </p>
 </div>
@@ -449,12 +449,12 @@ Position, color, size all emerge from equations. Change the equation, change the
 <p>You now understand the foundations:</p>
 
 <ul>
-<li><strong>Images as data</strong> — load once, transform continuously</li>
-<li><strong>Quad transformations</strong> — position, scale, rotation modify geometry</li>
-<li><strong>UV manipulation</strong> — distort texture sampling without changing pixels</li>
-<li><strong>Point collections</strong> — aggregate geometric data into efficient structures</li>
-<li><strong>Temporal scheduling</strong> — <code>schedule_metro</code> for continuous evolution</li>
-<li><strong>Mathematical generation</strong> — forms emerge from equations, not drawing commands</li>
+<li><strong>Images as data:</strong> load once, transform continuously</li>
+<li><strong>Quad transformations:</strong> position, scale, rotation modify geometry</li>
+<li><strong>UV manipulation:</strong> distort texture sampling without changing pixels</li>
+<li><strong>Point collections:</strong> aggregate geometric data into efficient structures</li>
+<li><strong>Temporal scheduling:</strong> <code>schedule_metro</code> for continuous evolution</li>
+<li><strong>Mathematical generation:</strong> forms emerge from equations, not drawing commands</li>
 </ul>
 
 <p>
@@ -476,7 +476,7 @@ MayaFlux: "This data exists and evolves according to these rules."
 <div class="card wide">
 <h2>What Comes Next</h2>
 
-<p>The examples above manipulate data on the CPU — positions calculated in C++, uploaded to GPU each frame.
+<p>The examples above manipulate data on the CPU: positions calculated in C++, uploaded to GPU each frame.
 But there's another paradigm: <strong>let the GPU do the computation.</strong></p>
 
 <p>Instead of:</p>
@@ -498,10 +498,10 @@ But there's another paradigm: <strong>let the GPU do the computation.</strong></
 <p><strong>Shaders</strong> are where this happens. You'll learn:</p>
 
 <ul>
-<li><strong>Fragment shaders</strong> — pixel-level transformations (distortions, effects, filters)</li>
-<li><strong>Vertex shaders</strong> — procedural geometry generation on GPU</li>
-<li><strong>Node bindings</strong> — audio data driving shader parameters in real-time</li>
-<li><strong>Cross-domain flow</strong> — sound controlling visuals, visuals affecting sound</li>
+<li><strong>Fragment shaders:</strong> pixel-level transformations (distortions, effects, filters)</li>
+<li><strong>Vertex shaders:</strong> procedural geometry generation on GPU</li>
+<li><strong>Node bindings:</strong> audio data driving shader parameters in real-time</li>
+<li><strong>Cross-domain flow:</strong> sound controlling visuals, visuals affecting sound</li>
 </ul>
 
 <p>
@@ -617,7 +617,7 @@ void compose() {
 <p>
 <code>layout(push_constant)</code> declares parameters that update every frame.
 <code>NodeBindingsProcessor</code> automatically writes node outputs to these parameters.
-The GPU runs <code>main()</code> for every pixel — 2 million times at 1080p — in parallel.
+The GPU runs <code>main()</code> for every pixel in parallel (2 million times at 1080p).
 </p>
 
 <p>
@@ -896,7 +896,7 @@ void compose()
 <h2>Vertex Shaders: Procedural Geometry</h2>
 
 <p>
-Vertex shaders run once per vertex. But vertices don't need to come from CPU data—you can generate positions from <code>gl_VertexIndex</code>.
+Vertex shaders run once per vertex. But vertices don't need to come from CPU data. You can generate positions directly from <code>gl_VertexIndex</code>.
 </p>
 
 <p>
@@ -1003,7 +1003,7 @@ void compose() {
 ```
 
 <p>
-The vertex data is meaningless—just a count. The shader generates positions from <code>gl_VertexIndex</code>.
+The vertex data is just a count. The shader generates positions from <code>gl_VertexIndex</code>.
 500 vertices uploaded once. Every frame: send 12 bytes of parameters, GPU computes 500 positions.
 </p>
 
@@ -1334,7 +1334,7 @@ You're "defining an algorithm and executing it massively parallel on the GPU."
 
 <p>
 The spiral doesn't exist in RAM. The Lorenz attractor doesn't exist as a buffer of vertices.
-They exist as <strong>shader programs</strong>—mathematical functions evaluated in parallel.
+They exist as <strong>shader programs</strong>: mathematical functions evaluated in parallel.
 </p>
 
 <p>
@@ -1343,7 +1343,7 @@ MayaFlux with shaders: Parameters → GPU computes everything → Display
 </p>
 
 <p>
-This is the endpoint of "data as computational substrate." The data isn't data anymore—it's <strong>pure algorithm</strong>.
+This is the endpoint of "data as computational substrate." The data has become <strong>pure algorithm</strong>.
 </p>
 </div>
 
@@ -1377,7 +1377,7 @@ The pattern is identical to everything before:
 </ul>
 
 <p>
-Fragment shaders, vertex shaders, compute shaders (later)—all the same pattern.
+Fragment shaders, vertex shaders, compute shaders (later): all the same pattern.
 Just different places to execute the math.
 </p>
 </div>
@@ -1405,7 +1405,7 @@ Same shaders. Same infrastructure. Just replace the nodes.
 <h2>Audio Processes Driving Shader Parameters</h2>
 
 <p>
-Now we connect actual sonic processes to shader parameters. Not "audio visualization"—shared computational substrate generating both audible and visible structure.
+Now we connect actual sonic processes to shader parameters. Not "audio visualization" but a shared computational substrate generating both audible and visible structure.
 </p>
 
 </div>
@@ -1574,13 +1574,13 @@ void compose() {
 ```
 
 <p>
-The audio creates a resonant network—impulses decay through multiple delay paths, creating spectral interference.
+The audio creates a resonant network where impulses decay through multiple delay paths, creating spectral interference.
 Three feature extractors measure different aspects: overall energy, temporal coherence, spectral balance.
 Those measurements directly modulate distortion magnitude, chromatic aberration, and directional bias.
 </p>
 
 <p>
-Same numbers. Ears hear decay patterns. Eyes see distortion patterns. No conversion—just routing.
+Same numbers. Ears hear decay patterns. Eyes see distortion patterns. No conversion, just routing.
 </p>
 
 </div>
@@ -2197,7 +2197,7 @@ Just: create process, get output, write to struct.
 </p>
 
 <p>
-The audio processes are sophisticated—recursive networks, stochastic correlators, chaotic dynamics, granular synthesis.
+The audio processes are sophisticated: recursive networks, stochastic correlators, chaotic dynamics, granular synthesis.
 But the connection to visuals is trivial: <code>get_last_output()</code>.
 </p>
 
@@ -2216,7 +2216,7 @@ You've seen nodes produce data, processors transform it, shaders consume it. Aud
 </p>
 
 <p>
-But these examples are just <strong>entry points</strong>—bridges from familiar territory into MayaFlux's paradigm. They leverage what you already know about visual processing to demonstrate the framework's approach. The actual creative territory extends far beyond what's shown here.
+But these examples are just <strong>entry points</strong>: bridges from familiar territory into MayaFlux's paradigm. They leverage what you already know about visual processing to demonstrate the framework's approach. The actual creative territory extends far beyond what's shown here.
 </p>
 
 </div>
@@ -2242,12 +2242,12 @@ But MayaFlux's scope includes approaches you haven't encountered:
 </p>
 
 <ul>
-<li><strong>Compute shaders for parallel physics</strong> — particle systems with 100,000+ agents, modal resonators simulating physical materials, fluid dynamics generating both sonic and visual textures</li>
-<li><strong>Feedback loops across domains</strong> — visual analysis driving audio processes driving visual parameters, creating self-modifying systems</li>
-<li><strong>Network topologies</strong> — ModalNetwork for physical modeling synthesis, ParticleNetwork for emergent behaviors, custom NodeNetwork structures for domain-specific logic</li>
-<li><strong>Temporal coordination beyond metro</strong> — coroutines synchronizing processes at different rates, awaitable buffers for deterministic timing, event-driven architectures</li>
-<li><strong>Live coding through Lila</strong> — JIT compilation of C++ with ~1 frame latency, enabling algorithmic improvisation and runtime exploration</li>
-<li><strong>Custom processor chains</strong> — building your own BufferProcessor implementations, GPU compute pipelines, specialized transformation strategies</li>
+<li><strong>Compute shaders for parallel physics:</strong> particle systems with 100,000+ agents, modal resonators simulating physical materials, fluid dynamics generating both sonic and visual textures</li>
+<li><strong>Feedback loops across domains:</strong> visual analysis driving audio processes driving visual parameters, creating self-modifying systems</li>
+<li><strong>Network topologies:</strong> ModalNetwork for physical modeling synthesis, ParticleNetwork for emergent behaviors, custom NodeNetwork structures for domain-specific logic</li>
+<li><strong>Temporal coordination beyond metro:</strong> coroutines synchronizing processes at different rates, awaitable buffers for deterministic timing, event-driven architectures</li>
+<li><strong>Live coding through Lila:</strong> JIT compilation of C++ with ~1 frame latency, enabling algorithmic improvisation and runtime exploration</li>
+<li><strong>Custom processor chains:</strong> building your own BufferProcessor implementations, GPU compute pipelines, specialized transformation strategies</li>
 </ul>
 
 <p>
@@ -2286,7 +2286,7 @@ Each step moved further from "creative coding as drawing" toward "creative codin
 </p>
 
 <p>
-But even the final examples—delay networks, stochastic systems, chaotic attractors—are still <strong>pedagogical bridges</strong>. They're sophisticated enough to demonstrate the paradigm, simple enough to understand quickly. Real creative work involves processes that don't fit tutorial narratives.
+But even the final examples (delay networks, stochastic systems, chaotic attractors) are still <strong>pedagogical bridges</strong>. They're sophisticated enough to demonstrate the paradigm, simple enough to understand quickly. Real creative work involves processes that don't fit tutorial narratives.
 </p>
 
 </div>
@@ -2301,23 +2301,23 @@ Consider what becomes possible when you stop thinking in terms of "audio visuali
 </p>
 
 <p>
-<strong>Recursive modal synthesis</strong> where each resonator's output feeds back through a network of coupled oscillators, and the same coupling coefficients control both spectral evolution and geometric deformation of 3D meshes. Not "sound controlling visuals"—shared dynamical system with multiple perceptual outputs.
+<strong>Recursive modal synthesis</strong> where each resonator's output feeds back through a network of coupled oscillators, and the same coupling coefficients control both spectral evolution and geometric deformation of 3D meshes. Not "sound controlling visuals" but a shared dynamical system with multiple perceptual outputs.
 </p>
 
 <p>
-<strong>Stochastic texture synthesis</strong> where Markov chains operating on spectral features generate both sonic grain clouds and pixel displacement fields. The probability distributions don't "visualize audio"—they define the computational substrate that manifests in both domains.
+<strong>Stochastic texture synthesis</strong> where Markov chains operating on spectral features generate both sonic grain clouds and pixel displacement fields. The probability distributions don't "visualize audio." They define the computational substrate that manifests in both domains.
 </p>
 
 <p>
-<strong>Cellular automata on compute shaders</strong> processing millions of cells per frame, where rule sets produce both sample-rate audio buffers (through read-back) and realtime visual evolution. The automaton isn't "making sound and graphics"—it's a unified discrete dynamical system with observers in different channels.
+<strong>Cellular automata on compute shaders</strong> processing millions of cells per frame, where rule sets produce both sample-rate audio buffers (through read-back) and realtime visual evolution. The automaton isn't "making sound and graphics." It's a unified discrete dynamical system with observers in different channels.
 </p>
 
 <p>
-<strong>Grammar-based structural generation</strong> where L-systems or other formal grammars define both temporal event sequences (MIDI-like note structures) and spatial branching patterns (tree-like geometries). The grammar doesn't "control" anything—it <strong>is</strong> the structure, interpreted through different lenses.
+<strong>Grammar-based structural generation</strong> where L-systems or other formal grammars define both temporal event sequences (MIDI-like note structures) and spatial branching patterns (tree-like geometries). The grammar doesn't "control" anything. It <strong>is</strong> the structure, interpreted through different lenses.
 </p>
 
 <p>
-These approaches have no equivalents in Processing, openFrameworks, Max/MSP, or Pure Data. They require thinking about creative computation differently—not as "making audio" or "making visuals," but as <strong>designing computational conditions where interesting structure emerges</strong>.
+These approaches have no equivalents in Processing, openFrameworks, Max/MSP, or Pure Data. They require thinking about creative computation differently: not as "making audio" or "making visuals," but as <strong>designing computational conditions where interesting structure emerges</strong>.
 </p>
 
 </div>
@@ -2358,7 +2358,7 @@ auto process = vega.Polynomial([](std::span<double> history) {
 ```
 
 <p>
-That process doesn't "make audio." It produces numbers at sample rate. What you do with those numbers—send to DAC, modulate shader parameters, control network topology, trigger events—is up to you. The process doesn't know. It doesn't care. It just computes.
+That process doesn't "make audio." It produces numbers at sample rate. What you do with those numbers (send to DAC, modulate shader parameters, control network topology, trigger events) is up to you. The process doesn't know. It doesn't care. It just computes.
 </p>
 
 <p>
@@ -2388,11 +2388,11 @@ Your next steps:
 </p>
 
 <ol>
-<li><strong>Explore compute shaders</strong> — move beyond vertex/fragment into general GPU computation</li>
-<li><strong>Design custom processes</strong> — write Polynomial functions that implement novel algorithms</li>
-<li><strong>Build feedback networks</strong> — connect outputs back to inputs for emergent behavior</li>
-<li><strong>Study the other tutorials</strong> — musicians and programmers approach from different angles, learn their perspectives</li>
-<li><strong>Read the technical documentation</strong> — understand NodeNetwork, BufferProcessor, domain tokens, coroutine coordination</li>
+<li><strong>Explore compute shaders:</strong> move beyond vertex/fragment into general GPU computation</li>
+<li><strong>Design custom processes:</strong> write Polynomial functions that implement novel algorithms</li>
+<li><strong>Build feedback networks:</strong> connect outputs back to inputs for emergent behavior</li>
+<li><strong>Study the other tutorials:</strong> musicians and programmers approach from different angles, learn their perspectives</li>
+<li><strong>Read the technical documentation:</strong> understand NodeNetwork, BufferProcessor, domain tokens, coroutine coordination</li>
 </ol>
 
 <p>
@@ -2400,7 +2400,7 @@ Most importantly: <strong>stop thinking about "making visuals."</strong> Start t
 </p>
 
 <p>
-The examples here showed familiar patterns to ease the transition. Real work involves patterns that don't exist yet—approaches that only become possible when you stop accepting the limitations of analog-inspired frameworks.
+The examples here showed familiar patterns to ease the transition. Real work involves patterns that don't exist yet: approaches that only become possible when you stop accepting the limitations of analog-inspired frameworks.
 </p>
 
 </div>
@@ -2415,7 +2415,7 @@ These tutorials are <strong>bridges, not destinations</strong>. They connect you
 </p>
 
 <p>
-The spiral examples, kaleidoscope distortions, delay networks, granular fields—these are <strong>pedagogical constructs</strong>. They're simple enough to understand in a tutorial, complex enough to demonstrate the paradigm. They're not templates to copy; they're patterns to transcend.
+The spiral examples, kaleidoscope distortions, delay networks, and granular fields are <strong>pedagogical constructs</strong>. They're simple enough to understand in a tutorial, complex enough to demonstrate the paradigm. They're not templates to copy; they're patterns to transcend.
 </p>
 
 <p>
@@ -2423,7 +2423,7 @@ MayaFlux doesn't exist to replicate what's already possible in Processing or Tou
 </p>
 
 <p>
-When you find yourself thinking "how do I map audio to visuals in MayaFlux?"—stop. That's the wrong question. The right question is: "what computational process generates the structure I want, and how do I route its outputs?"
+When you find yourself thinking "how do I map audio to visuals in MayaFlux?" stop. That's the wrong question. The right question is: "what computational process generates the structure I want, and how do I route its outputs?"
 </p>
 
 <p>
@@ -2442,8 +2442,8 @@ Explore the other persona tutorials to see different entry points into the same 
 </p>
 
 <ul>
-<li><strong><a href="../musician_starting/">Starting as a Musician</a></strong> — approaching MayaFlux from audio synthesis and digital signal processing</li>
-<li><strong><a href="../programmer/">Starting as a Programmer</a></strong> — understanding the architectural patterns, memory models, and C++20 features [Coming Soon]</li>
+<li><strong><a href="../musician_starting/">Starting as a Musician</a></strong>: approaching MayaFlux from audio synthesis and digital signal processing</li>
+<li><strong><a href="../programmer/">Starting as a Programmer</a></strong>: understanding the architectural patterns, memory models, and C++20 features [Coming Soon]</li>
 </ul>
 
 <p>

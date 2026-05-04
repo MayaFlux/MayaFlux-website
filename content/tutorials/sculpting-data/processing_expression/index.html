@@ -20,8 +20,8 @@ layout: "tutorial"
 
 <p>
   <em>
-    In MayaFlux, polynomials don't calculate—they sculpt. Logic doesn't
-    branch—it decides. This tutorial shows you how mathematical expressions
+    In MayaFlux, polynomials sculpt rather than calculate. Logic decides
+    rather than branches. This tutorial shows you how mathematical expressions
     become sonic transformations.
   </em>
 </p>
@@ -54,7 +54,7 @@ void compose() {
       <p>Replace <code>"path/to/file.wav"</code> with an actual path.</p>
 
       <p>
-        The audio sounds richer, warmer—subtle saturation. That's harmonic
+        The audio sounds richer and warmer, with subtle saturation. That's harmonic
         content added by the squaring function.
       </p>
     </div>
@@ -82,7 +82,7 @@ void compose() {
 
     <p>
       This asymmetry adds harmonics. The waveform's shape
-      <strong>bends</strong>—its geometry changes.
+      <strong>bends</strong>: its geometry changes.
     </p>
 
     <p>
@@ -107,7 +107,7 @@ void compose() {
 
     <p>
       <code>vega.Polynomial([](double x) { return x * x; })</code>
-      creates a <strong>Polynomial node</strong>—a mathematical expression that
+      creates a <strong>Polynomial node</strong>, a mathematical expression that
       processes one sample at a time.
     </p>
 
@@ -124,10 +124,10 @@ auto processor = MayaFlux::create_processor&lt;PolynomialProcessor&gt;(buffers[0
 
     <ul>
       <li>
-        <strong>Node</strong>: The math itself—reusable, chainable, inspectable
+        <strong>Node</strong>: The math itself (reusable, chainable, inspectable)
       </li>
       <li>
-        <strong>Processor</strong>: The attachment mechanism—knows
+        <strong>Processor</strong>: The attachment mechanism that knows
         <em>how</em> to apply the node to a buffer
       </li>
     </ul>
@@ -164,7 +164,7 @@ auto processor = MayaFlux::create_processor&lt;PolynomialProcessor&gt;(buffers[0
     </ul>
 
     <p>
-      Right now you're using DIRECT mode—each sample transformed independently.
+      In DIRECT mode (what you're using now), each sample is transformed independently.
       This is <strong>memoryless</strong> waveshaping.
     </p>
 
@@ -240,7 +240,7 @@ auto poly = vega.Polynomial([](double x) {
   </p>
 
   <p>
-    You're not "processing audio"—you're
+    Think of it not as "processing audio" but as
     <strong>sculpting the transfer function</strong>.
   </p>
 </section>
@@ -282,7 +282,7 @@ void compose() {
             </code></pre>
 
             <p>
-            Run this. You hear echo/resonance—the signal feeds back into itself.
+            Run this. You hear echo and resonance as the signal feeds back into itself.
             </p>
         </div>
 
@@ -306,7 +306,7 @@ y[n] = b0*x[n] + a1*y[n-1] + a2*y[n-2]
         </code></pre>
 
         <p>
-        Your recursive polynomial <strong>is</strong> that filter—just written as a lambda:
+        Your recursive polynomial <strong>is</strong> that filter, just written as a lambda:
         </p>
 
         <pre><code class="language-cpp">
@@ -330,7 +330,7 @@ y[n] = b0*x[n] + a1*y[n-1] + a2*y[n-2]
         </p>
 
         <p>
-        Polynomials let you design arbitrary recursive functions—not just linear filters.
+        Polynomials let you design arbitrary recursive functions, not just linear filters.
         </p>
 
     </details>
@@ -376,7 +376,7 @@ history[1] = y[n-2]  (two samples ago)
         </code></pre>
 
         <p>
-        This is how you build delays, reverbs, resonant filters—anything that needs temporal memory.
+        This is how you build delays, reverbs, resonant filters, and anything else that needs temporal memory.
         </p>
 
     </details>
@@ -408,7 +408,7 @@ return 1.2*history[0];  // WILL EXPLODE (unbounded growth)
         </p>
 
         <p>
-        MayaFlux won't stop you—this is a creative tool, not a safety guard.
+        MayaFlux won't stop you. This is a creative tool, not a safety guard.
         Instability can be interesting (briefly).
         Controlled feedback explosion creates chaotic textures.
         </p>
@@ -544,7 +544,7 @@ void compose() {
             </code></pre>
 
             <p>
-            What you hear: 2 Hz pulse train—beeps every half second.
+            What you hear: a 2 Hz pulse train, beeping every half second.
             </p>
 
             <p>
@@ -594,7 +594,7 @@ void compose() {
         </p>
 
         <p>
-        Digital doesn't care what the input "means"—just whether it passes the test.
+        Digital doesn't care what the input "means", only whether it passes the test.
         </p>
 
     </details>
@@ -657,7 +657,7 @@ processor->set_modulation_type(LogicProcessor::ModulationType::REPLACE);
         </ul>
 
         <p>
-        Right now you're using THRESHOLD—the simplest test.
+        Right now you're using THRESHOLD, the simplest test.
         </p>
 
         <p>
@@ -854,7 +854,7 @@ bitcrush → freeze → destroy
 
         <p>
         Each processor transforms the output of the previous one.
-        This is <strong>compositional signal processing</strong>—you build
+        This is <strong>compositional signal processing</strong>: you build
         complex effects by chaining simple operations.
         </p>
 
@@ -1120,7 +1120,7 @@ Speakers
         </p>
 
         <p>
-        (Parallel routing requires <code>BufferPipeline</code>—covered in a later tutorial.)
+        (Parallel routing requires <code>BufferPipeline</code>, which is covered in a later tutorial.)
         </p>
 
     </details>
@@ -1170,7 +1170,7 @@ Speakers
 
         <p>
         The <strong>default processor</strong> is fixed per buffer type.
-        You can replace it, but usually you don't need to—the chain
+        You can replace it, but usually you don't need to. The chain
         is where creativity happens.
         </p>
 
@@ -1298,7 +1298,7 @@ void compose() {
 
       <p><strong>Why this matters:</strong></p>
 
-      <p>Nodes are mathematical expressions—infinite generators. Buffers are temporal accumulators—finite chunks.</p>
+      <p>Nodes are mathematical expressions (infinite generators). Buffers are temporal accumulators (finite chunks).</p>
 
       <p><code>NodeBuffer</code> bridges the two: <strong>continuous expression → discrete blocks</strong>.</p>
 
@@ -1417,7 +1417,7 @@ void compose() {
 
       <p>Run this. You hear: repeating echoes, each 70% of the previous amplitude.</p>
 
-      <p>The buffer <strong>feeds back into itself</strong>—output becomes input next cycle.</p>
+      <p>The buffer <strong>feeds back into itself</strong>: output becomes input next cycle.</p>
     </div>
   </div>
 
@@ -1463,7 +1463,7 @@ void compose() {
     <details>
       <summary>Click to expand: What FeedbackBuffer Cannot Do</summary>
 
-      <p><code>FeedbackBuffer</code> is simple—intentionally. It implements <strong>one specific recursive algorithm</strong>: linear feedback delay.</p>
+      <p><code>FeedbackBuffer</code> is deliberately simple. It implements <strong>one specific recursive algorithm</strong>: linear feedback delay.</p>
 
       <p><strong>Limitations:</strong></p>
 
@@ -1486,7 +1486,7 @@ void compose() {
         <li>Build custom feedback networks with multiple buffers</li>
       </ul>
 
-      <p><code>FeedbackBuffer</code> is for <strong>simple echoes and resonances</strong>—quick and efficient.</p>
+      <p><code>FeedbackBuffer</code> is for <strong>simple echoes and resonances</strong>: quick and efficient.</p>
     </details>
 
     <h2>Expansion 3: When to Use FeedbackBuffer</h2>
@@ -1548,7 +1548,7 @@ auto feedback_buf = vega.FeedbackBuffer(0, 512, 0.996f, 100) | Audio[0];  // ~48
 auto noise = vega.Random();
 vega.NodeBuffer(0, 512, noise, false) | Audio[0];
 
-// Ping-pong delay (requires two buffers—teaser for later)
+// Ping-pong delay (two-buffer technique, covered later)
 // auto left = vega.FeedbackBuffer(0, 512, 0.6f, 2400) | Audio[0];
 // auto right = vega.FeedbackBuffer(1, 512, 0.6f, 2400) | Audio[1];
 // Route left → right, right → left (needs BufferPipeline)
@@ -1651,7 +1651,7 @@ left_buffer-&gt;get_processing_chain()-&gt;add_processor(writer_L);
 right_buffer-&gt;get_processing_chain()-&gt;add_processor(writer_R);
       </code></pre>
 
-      <p>Result: Stereo file captured to stereo stream—channels preserved.</p>
+      <p>Result: Stereo file captured to stereo stream, with channels preserved.</p>
 
       <p><strong>Critical:</strong> Buffer's <code>channel_id</code> determines which stream channel receives data. Mismatch = warning + skip.</p>
     </details>
@@ -1712,7 +1712,7 @@ auto writer = std::make_shared&lt;SoundStreamWriter&gt;(stream);
         <li><strong>Rolling analysis</strong>: Keep only the most recent N seconds</li>
       </ul>
 
-      <p>Without circular mode, the stream grows unbounded—useful for full recording, problematic for long-running systems.</p>
+      <p>Without circular mode, the stream grows unbounded: useful for full recording, but problematic for long-running systems.</p>
     </details>
 
     <hr />
@@ -1779,7 +1779,7 @@ Processing Chain (transform data)
 Output (speakers/containers/other buffers)
   </code></pre>
 
-  <p><strong>Next:</strong> Buffer routing, cloning, and supply mechanics—how to send processed buffers to multiple channels/domains.</p>
+  <p><strong>Next:</strong> Buffer routing, cloning, and supply mechanics: how to send processed buffers to multiple channels and domains.</p>
 
 <!-- </div> -->
 <!-- </section> -->
@@ -2181,7 +2181,7 @@ void compose() {
 
       <p>Run this. You hear <strong>three independent sine waves</strong> on three channels.</p>
 
-      <p>Each clone processes <strong>independently</strong>—they don't share data.</p>
+      <p>Each clone processes <strong>independently</strong>. The clones don't share data.</p>
     </div>
   </div>
 
@@ -2243,7 +2243,7 @@ MayaFlux::clone_buffer_to_channels(noise_template, {0, 1, 2, 3});
         <li><strong>Same buffer type</strong> (NodeBuffer, FeedbackBuffer, etc.)</li>
         <li><strong>Same default processor</strong> configuration</li>
         <li><strong>Same processing chain</strong> (all added processors)</li>
-        <li><strong>Independent data</strong> (not shared—each clone has its own samples)</li>
+        <li><strong>Independent data</strong> (not shared; each clone has its own samples)</li>
         <li><strong>Independent state</strong> (feedback buffers have separate history)</li>
       </ul>
 
