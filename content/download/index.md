@@ -4,7 +4,7 @@ title: "Download"
 
 <div class="card collapsible">
 <div class="collapsible-header">
-  <h2>External Dependencies (Platform-Imposed)</h2>
+  <h2>External Dependencies (Platform-Imposed, Required!!)</h2>
 </div>
 <p class="hint">Click to expand</p>
 
@@ -135,7 +135,7 @@ Linux remains the only platform where a minimal compiler + standard library setu
 
 <br />
 
-# Get Started with Weave (Stable channel)
+# Get Started with Weave
 
 The unified installer and project creator for **MayaFlux**.
 
@@ -313,6 +313,7 @@ cmake --build . --parallel
 ### Prerequisites
 
 - Windows 10 or later (64-bit only)
+- Visual Studio 2022 with "Desktop development with C++" workload
 
 ### Create & Build
 
