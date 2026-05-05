@@ -137,7 +137,7 @@ or spend days exploring optional subsections.</p>
 
 <div class="card wide">
 <h3><a href="/tutorials/sculpting-data/temporal_plurality/">Part IV: Temporal Plurality [WIP] </a></h3>
-<p>Conditional adaptation and dynamic pipelines.</p>
+<p>Time as malleable material, Time as signal source,signal receiver</p>
 </div>
 
 </div>
