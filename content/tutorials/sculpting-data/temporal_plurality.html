@@ -963,7 +963,6 @@ particles->map_parameter("interaction_radius", env, MappingMode::BROADCAST);</co
 <hr>
 
 <div id="audio-interface">
-    <h2>Direct PipeWire Stream</h2>
     <audio id="player" controls src="/t4_c4.wav" loop></audio>
     <script>
         const player = document.getElementById('player');
@@ -1239,6 +1238,441 @@ particles->map_parameter("interaction_radius", env, MappingMode::BROADCAST);</co
         <code>0.8</code> and the gate is open for only 20% of each cycle: brief dense bursts of
         spiral partials separated by long silences.
       </p>
+
+    </section>
+  </div>
+</section>
+
+<hr>
+
+<img src="/t4_c5_1.gif" alt="External Face" width="960">
+<img src="/t4_c5_2.gif" alt="External Sun" width="960">
+
+<section class="tutorial-section">
+  <div class="tutorial-row">
+    <div class="tutorial-card" data-target="external-time-detail">
+      <h3>Card 5: External Time</h3>
+      <p class="hint">Click this card to reveal full explanation</p>
+
+      <p>
+        All previous cards drew time from internal sources: oscillators, counters, coroutines, signal conditions.
+        This card is about input that arrives from outside the processing graph entirely: a key press, a mouse
+        position, an OSC message. None of these has a sample-accurate clock. They arrive when they arrive.
+      </p>
+      <p>
+        The mechanism is the same regardless of source. External events convert into either window event
+        coroutines or <code>InputNode</code> values. From that point the hook vocabulary from the previous
+        cards applies normally.
+      </p>
+
+      <h4 class="tutorial-title">Tutorial: Keyboard events reshaping mesh slot transforms</h4>
+      <pre><code class="language-cpp">void compose() {
+    auto window = MayaFlux::create_window({ "External", 1200, 800 });
+
+    auto make_face = [](glm::vec3 color, glm::vec3 normal, glm::vec3 tangent,
+                         std::array&lt;glm::vec3, 4&gt; corners)
+        -&gt; std::pair&lt;std::vector&lt;MeshVertex&gt;, std::vector&lt;uint32_t&gt;&gt; {
+        std::vector&lt;MeshVertex&gt; verts;
+        verts.reserve(4);
+        const std::array&lt;glm::vec2, 4&gt; uvs = { glm::vec2{0,0},{1,0},{1,1},{0,1} };
+        for (int i = 0; i &lt; 4; ++i)
+            verts.push_back({ corners[i], color, 1.f, uvs[i], normal, tangent });
+        return { verts, { 0, 1, 2, 2, 3, 0 } };
+    };
+
+    constexpr float H = 0.5f;
+
+    struct FaceSpec {
+        std::string name;
+        glm::vec3 color, normal, tangent;
+        std::array&lt;glm::vec3, 4&gt; corners;
+    };
+    const std::vector&lt;FaceSpec&gt; specs = {
+        { "front",  {0.9f,0.3f,0.2f}, { 0, 0, 1}, { 1, 0, 0}, {{{-H,-H, H},{ H,-H, H},{ H, H, H},{-H, H, H}}} },
+        { "back",   {0.2f,0.5f,0.9f}, { 0, 0,-1}, {-1, 0, 0}, {{{ H,-H,-H},{-H,-H,-H},{-H, H,-H},{ H, H,-H}}} },
+        { "top",    {0.2f,0.9f,0.3f}, { 0, 1, 0}, { 1, 0, 0}, {{{-H, H,-H},{ H, H,-H},{ H, H, H},{-H, H, H}}} },
+        { "bottom", {0.9f,0.8f,0.1f}, { 0,-1, 0}, { 1, 0, 0}, {{{-H,-H, H},{ H,-H, H},{ H,-H,-H},{-H,-H,-H}}} },
+        { "right",  {0.7f,0.2f,0.9f}, { 1, 0, 0}, { 0, 0,-1}, {{{ H,-H, H},{ H,-H,-H},{ H, H,-H},{ H, H, H}}} },
+        { "left",   {0.9f,0.5f,0.1f}, {-1, 0, 0}, { 0, 0, 1}, {{{-H,-H,-H},{-H,-H, H},{-H, H, H},{-H, H,-H}}} },
+    };
+
+    auto net = vega.MeshNetwork() | Graphics;
+
+    struct SlotState {
+        glm::vec3 normal;
+        std::atomic&lt;float&gt; offset   { 0.f };
+        std::atomic&lt;float&gt; velocity { 0.f };
+        std::atomic&lt;bool&gt;  held     { false };
+    };
+    auto states = std::make_shared&lt;std::vector&lt;SlotState&gt;&gt;(specs.size());
+
+    for (size_t i = 0; i &lt; specs.size(); ++i) {
+        auto [verts, indices] = make_face(
+            specs[i].color, specs[i].normal, specs[i].tangent, specs[i].corners);
+        auto node = std::make_shared&lt;Nodes::GpuSync::MeshWriterNode&gt;(4);
+        node-&gt;set_mesh(verts, indices);
+        net-&gt;add_slot(specs[i].name, node);
+        (*states)[i].normal = specs[i].normal;
+    }
+
+    auto buf = vega.MeshNetworkBuffer(net) | Graphics;
+    buf-&gt;setup_rendering({ .target_window = window });
+    buf-&gt;get_render_processor()-&gt;set_view_transform(
+        Kinesis::look_at_perspective(
+            {2.5f, 2.0f, 3.5f}, {0,0,0},
+            glm::radians(50.f), 1200.f/800.f, 0.01f, 1000.f));
+    window-&gt;show();
+
+    MayaFlux::schedule_metro(1.0 / 60.0, [net, states]() {
+        auto&amp; slots = net-&gt;slots();
+        for (size_t i = 0; i &lt; slots.size(); ++i) {
+            auto&amp; s = (*states)[i];
+            float v = s.velocity.load();
+            float o = s.offset.load();
+            if (s.held.load()) v += 0.012f;
+            o += v;
+            v *= 0.88f;
+            o *= 0.94f;
+            s.offset.store(o);
+            s.velocity.store(v);
+            slots[i].local_transform = glm::translate(glm::mat4(1.f), s.normal * o);
+            slots[i].dirty = true;
+        }
+    });
+
+    MayaFlux::on_key_pressed(window,  IO::Keys::I, [states]() { (*states)[0].held.store(true,  std::memory_order_relaxed); });
+    MayaFlux::on_key_released(window, IO::Keys::I, [states]() { (*states)[0].held.store(false, std::memory_order_relaxed); });
+    MayaFlux::on_key_pressed(window,  IO::Keys::O, [states]() { (*states)[1].held.store(true,  std::memory_order_relaxed); });
+    MayaFlux::on_key_released(window, IO::Keys::O, [states]() { (*states)[1].held.store(false, std::memory_order_relaxed); });
+    MayaFlux::on_key_pressed(window,  IO::Keys::K, [states]() { (*states)[2].held.store(true,  std::memory_order_relaxed); });
+    MayaFlux::on_key_released(window, IO::Keys::K, [states]() { (*states)[2].held.store(false, std::memory_order_relaxed); });
+    MayaFlux::on_key_pressed(window,  IO::Keys::J, [states]() { (*states)[3].held.store(true,  std::memory_order_relaxed); });
+    MayaFlux::on_key_released(window, IO::Keys::J, [states]() { (*states)[3].held.store(false, std::memory_order_relaxed); });
+    MayaFlux::on_key_pressed(window,  IO::Keys::H, [states]() { (*states)[4].held.store(true,  std::memory_order_relaxed); });
+    MayaFlux::on_key_released(window, IO::Keys::H, [states]() { (*states)[4].held.store(false, std::memory_order_relaxed); });
+    MayaFlux::on_key_pressed(window,  IO::Keys::L, [states]() { (*states)[5].held.store(true,  std::memory_order_relaxed); });
+    MayaFlux::on_key_released(window, IO::Keys::L, [states]() { (*states)[5].held.store(false, std::memory_order_relaxed); });
+
+    bind_viewport_preset(window,
+        buf-&gt;get_render_processor(), ViewportPresetMode::Fly, {}, "cube_keys");
+}</code></pre>
+      <p>
+        Run this. Six colored faces sit assembled as a cube. Press I and the front face slides outward
+        along its normal. Hold it and it continues to push. Release and it decays back. H/J/K/L/I/O each
+        control one face independently. Multiple keys held simultaneously push multiple faces outward.
+        The Fly preset binds its own camera keys separately; both sets of bindings coexist and do different things.
+      </p>
+
+      <h4 class="tutorial-title">Tutorial: Mouse position deforming mesh vertices</h4>
+      <pre><code class="language-cpp">void compose() {
+    auto window = MayaFlux::create_window({ "External", 1200, 800 });
+
+    constexpr int   N    = 24;
+    constexpr float SIZE = 2.0f;
+    constexpr float STEP = SIZE / static_cast&lt;float&gt;(N - 1);
+
+    std::vector&lt;uint32_t&gt; indices;
+    for (int row = 0; row &lt; N - 1; ++row)
+        for (int col = 0; col &lt; N - 1; ++col) {
+            uint32_t tl = row * N + col;
+            indices.insert(indices.end(), { tl, tl+N, tl+1, tl+1, tl+N, tl+N+1 });
+        }
+
+    std::vector&lt;MeshVertex&gt; verts(N * N);
+    for (int row = 0; row &lt; N; ++row)
+        for (int col = 0; col &lt; N; ++col) {
+            auto&amp; v   = verts[row * N + col];
+            v.position = { col * STEP - SIZE * 0.5f, 0.f, row * STEP - SIZE * 0.5f };
+            v.color    = { 0.3f, 0.6f, 0.9f };
+            v.normal   = { 0.f, 1.f, 0.f };
+            v.tangent  = { 1.f, 0.f, 0.f };
+            v.uv       = { float(col)/(N-1), float(row)/(N-1) };
+            v.weight   = 0.f;
+        }
+
+    auto mesh = vega.MeshWriterNode(N * N) | Graphics;
+    mesh-&gt;set_mesh(verts, indices);
+
+    auto buf = vega.GeometryBuffer(mesh) | Graphics;
+    buf-&gt;setup_rendering({ .target_window = window });
+    buf-&gt;get_render_processor()-&gt;set_view_transform(
+        Kinesis::look_at_perspective(
+            {0.f, 3.f, 3.f}, {0.f, 0.f, 0.f},
+            glm::radians(50.f), 1200.f/800.f, 0.1f, 100.f));
+    window-&gt;show();
+
+    auto mouse_x = std::make_shared&lt;std::atomic&lt;float&gt;&gt;(0.f);
+    auto mouse_y = std::make_shared&lt;std::atomic&lt;float&gt;&gt;(0.f);
+
+    MayaFlux::on_mouse_move(window, [mouse_x, mouse_y, window](double x, double y) {
+        const auto&amp; ws = window-&gt;get_state();
+        mouse_x-&gt;store(float(x / ws.current_width)  * 2.f - 1.f, std::memory_order_relaxed);
+        mouse_y-&gt;store(float(y / ws.current_height) * 2.f - 1.f, std::memory_order_relaxed);
+    });
+
+    MayaFlux::schedule_metro(1.0 / 60.0, [mesh, verts, mouse_x, mouse_y]() mutable {
+        const float mx = mouse_x-&gt;load(std::memory_order_relaxed);
+        const float my = mouse_y-&gt;load(std::memory_order_relaxed);
+        for (auto&amp; v : verts) {
+            const float dx = v.position.x - mx;
+            const float dz = v.position.z - my;
+            const float y  = std::exp(-(dx*dx + dz*dz) * 2.5f) * 0.6f;
+            v.position.y   = y;
+            v.weight       = y / 0.6f;
+            v.color        = glm::mix(
+                glm::vec3(0.1f, 0.3f, 0.8f),
+                glm::vec3(0.9f, 0.7f, 0.2f),
+                v.weight);
+        }
+        mesh-&gt;set_mesh_vertices(verts);
+    });
+}</code></pre>
+      <p>
+        Run this. A flat grid deforms under a Gaussian hill centered on the mouse cursor. Move the
+        mouse and the hill follows, coloring from blue to gold at the peak. Change <code>2.5f</code>
+        in the exponent to <code>8.0f</code> for a sharper, narrower peak. Change <code>0.6f</code>
+        for a taller hill.
+      </p>
+
+      <h4 class="tutorial-title">Tutorial: OSC driving mesh slot transforms</h4>
+<details><summary> OSC example with optional internal sender for testing without hardware</summary>
+      <pre><code class="language-cpp">
+// Not needed if you have an actual OSC hardware sending messages to port 9000
+void osc_sender() {
+    auto sink = make_persistent_shared&lt;Portal::Network::NetworkSink&gt;(
+        Portal::Network::StreamConfig {
+            .name      = "osc_loopback",
+            .endpoint  = { .address = "127.0.0.1", .port = 9000 },
+            .profile   = Portal::Network::StreamProfile::REALTIME_SMALL,
+            .transport = Portal::Network::NetworkTransportHint::UDP,
+        });
+    float t = 0.f;
+    schedule_metro(0.05, [&amp;t, sink]() {
+        if (!sink-&gt;is_open()) return;
+        float rotate_val = (std::sin(t * 0.4f)  + 1.f) * 0.5f;
+        float scale_val  = (std::sin(t * 0.17f) + 1.f) * 0.5f;
+        auto r = Portal::Network::serialize_osc("/rotate", {{ rotate_val }});
+        auto s = Portal::Network::serialize_osc("/scale",  {{ scale_val  }});
+        sink-&gt;send({ r.data(), r.size() });
+        sink-&gt;send({ s.data(), s.size() });
+        t += 0.05f;
+    }, "osc_loopback_sender");
+}
+
+void settings() {
+    auto&amp; cfg       = MayaFlux::Config::get_global_stream_info();
+    cfg.osc.enabled = true;
+    cfg.osc.port    = 9000;
+}
+
+void compose() {
+    osc_sender(); // ONLY NEEDED if you do not want to use an actual OSC hardware
+
+    auto window = MayaFlux::create_window({ "External", 1200, 800 });
+
+    auto make_tetra = [](glm::vec3 color)
+        -&gt; std::pair&lt;std::vector&lt;MeshVertex&gt;, std::vector&lt;uint32_t&gt;&gt;
+    {
+        std::vector&lt;MeshVertex&gt; v = {
+            {{ 0.f,  0.6f, 0.f }, color, 1.f, {0.5f,1.f}, { 0, 1, 0}, {1,0,0}},
+            {{-0.5f,-0.3f,-0.5f}, color, 1.f, {0.f, 0.f}, { 0,-1, 0}, {1,0,0}},
+            {{ 0.5f,-0.3f,-0.5f}, color, 1.f, {1.f, 0.f}, { 0,-1, 0}, {1,0,0}},
+            {{ 0.f, -0.3f, 0.5f}, color, 1.f, {0.5f,0.f}, { 0,-1, 0}, {1,0,0}},
+        };
+        return { v, { 0,1,2, 0,2,3, 0,3,1, 1,3,2 } };
+    };
+
+    auto net = vega.MeshNetwork() | Graphics;
+
+    for (auto [color, tx] : std::array{
+             std::pair{ glm::vec3{0.8f,0.3f,0.2f}, -0.8f },
+             std::pair{ glm::vec3{0.2f,0.5f,0.9f},  0.8f } })
+    {
+        auto [verts, indices] = make_tetra(color);
+        auto node = std::make_shared&lt;Nodes::GpuSync::MeshWriterNode&gt;(4);
+        node-&gt;set_mesh(verts, indices);
+        net-&gt;add_slot("", node);
+        net-&gt;get_slot(net-&gt;slot_count() - 1).local_transform =
+            glm::translate(glm::mat4(1.f), {tx, 0.f, 0.f});
+    }
+
+    auto buf = vega.MeshNetworkBuffer(net) | Graphics;
+    buf-&gt;setup_rendering({ .target_window = window });
+    buf-&gt;get_render_processor()-&gt;set_view_transform(
+        Kinesis::look_at_perspective(
+            {0.f, 2.f, 4.f}, {0.f, 0.f, 0.f},
+            glm::radians(45.f), 1200.f/800.f, 0.1f, 100.f));
+    window-&gt;show();
+
+    auto rotate_ctrl = vega.read_osc(
+        OSCConfig::normalized(0.0, 1.0),
+        Core::InputBinding::osc("/rotate"));
+
+    auto scale_ctrl = vega.read_osc(
+        OSCConfig::normalized(0.0, 1.0),
+        Core::InputBinding::osc("/scale"));
+
+    float angle = 0.f;
+    MayaFlux::schedule_metro(1.0 / 60.0, [net, rotate_ctrl, scale_ctrl, &amp;angle]() {
+        const float speed = static_cast&lt;float&gt;(rotate_ctrl-&gt;get_last_output());
+        const float scale = 0.4f + static_cast&lt;float&gt;(scale_ctrl-&gt;get_last_output()) * 1.2f;
+        angle += speed * 0.08f;
+
+        auto&amp; slot_a = net-&gt;get_slot(0);
+        slot_a.local_transform =
+            glm::translate(glm::mat4(1.f), {-0.8f, 0.f, 0.f}) *
+            glm::rotate(glm::mat4(1.f), angle, {0.f, 1.f, 0.f});
+        slot_a.dirty = true;
+
+        auto&amp; slot_b = net-&gt;get_slot(1);
+        slot_b.local_transform =
+            glm::translate(glm::mat4(1.f), {0.8f, 0.f, 0.f}) *
+            glm::scale(glm::mat4(1.f), glm::vec3(scale));
+        slot_b.dirty = true;
+    });
+}</code></pre>
+      <p>
+        Run this. The left tetrahedron spins at a rate driven by <code>/rotate</code>, the right one
+        breathes in scale driven by <code>/scale</code>. The loopback sender in <code>osc_sender()</code>
+        generates both values internally so no external client is needed. Replace it with any OSC sender
+        targeting port 9000 and the same addresses to control it from a phone, another program, or hardware.
+      </p>
+      <p>
+        <code>read_osc</code> registers the node internally before returning. No <code>| Audio</code> pipe
+        is needed. <code>get_last_output()</code> on the graphics metro thread is a lock-free read of an
+        atomic written by the OSC receive thread.
+      </p>
+</details>
+<hr>
+    </div>
+
+    <section id="external-time-detail" class="tutorial-expanded">
+
+      <p>
+        Key events, mouse movement, and OSC messages all arrive on threads that have nothing to do with the
+        audio scheduler or the graphics frame loop. The pattern for all three is the same: the external event
+        writes to an atomic or an <code>InputNode</code> internal value, and the scheduler or metro reads it
+        on its own cadence. The two sides never share a lock.
+      </p>
+      <p>
+        The only thing that changes between input sources is the binding call. Once the value is in an atomic
+        or a node, everything downstream is identical.
+      </p>
+
+      <details>
+        <summary>Expansion 1: Event domain vs scheduler domain</summary>
+        <p>
+          <code>on_key_pressed</code>, <code>on_mouse_move</code>, and <code>on_mouse_pressed</code> create
+          <code>Vruta::Event</code> coroutines managed by <code>EventManager</code>, not by
+          <code>TaskScheduler</code>. They run on the windowing thread when GLFW delivers events.
+          The <code>TaskScheduler</code> runs on the audio thread. These are different execution contexts
+          with no shared lock.
+        </p>
+        <p>
+          Atomics are the correct bridge: write in the event coroutine, read in the scheduler task. Never
+          call mesh mutation methods directly from event callbacks. <code>set_mesh_vertices</code> is not
+          thread-safe against the graphics processor uploading the same buffer. Write to atomics in the
+          event callback and apply the mutation in the metro.
+        </p>
+      </details>
+
+      <details>
+        <summary>Expansion 2: The held-state accumulator pattern</summary>
+        <p>
+          The keyboard tutorial does not route key events to velocity directly. It routes them to a boolean
+          flag, and a separate metro reads that flag each frame to accumulate velocity. This split is
+          intentional.
+        </p>
+        <p>
+          Key events are sparse and irregular: they arrive when the OS delivers them. The metro is regular
+          at 60Hz. If you wrote velocity directly in the key callback, the push rate would be event-rate
+          (unpredictable) rather than frame-rate (uniform). Two keys held for the same duration would push
+          different amounts depending on how many events the OS generated.
+        </p>
+        <p>
+          The flag-and-accumulate pattern converts asynchronous signal to time-uniform force. The OS
+          delivers events, the events write a state, the regular integrator reads that state on a fixed
+          cadence.
+        </p>
+      </details>
+
+      <details>
+        <summary>Expansion 3: <code>on_mouse_pressed</code> vs <code>on_mouse_move</code> vs <code>on_key_pressed</code></summary>
+        <p>
+          <code>on_key_pressed</code> fires once per physical key-down event. It does not repeat. Holding
+          a key does not re-fire it; that is what <code>on_key_released</code> brackets. Use it for
+          one-shot state changes: begin a sequence, toggle a flag, fire a <code>TimedAction</code>.
+        </p>
+        <p>
+          <code>on_mouse_pressed</code> fires once per button-down, with a position argument. Use it for
+          picking or anchoring: record the cursor position at click time, start measuring drag distance
+          from there.
+        </p>
+        <p>
+          <code>on_mouse_move</code> fires on every cursor movement event the OS generates. At high mouse
+          sensitivity and low system load this can exceed 1000 events per second. The callback must be
+          cheap. Writing two atomics is cheap. Calling <code>set_mesh_vertices</code> from inside it is not.
+        </p>
+        <p>
+          All three create <code>Vruta::Event</code> coroutines. None of them block or sleep: they run
+          their callback and yield immediately.
+        </p>
+      </details>
+
+      <details>
+        <summary>Expansion 4: OSC input is asynchronous then synchronous</summary>
+        <p>
+          The OSC message arrives over UDP on a network thread, gets pushed into a lock-free queue in
+          <code>InputManager</code>, dispatched to the matching <code>OSCNode</code>, and written to a
+          <code>std::atomic&lt;double&gt;</code> inside the node. From that point it behaves like any other
+          node: <code>get_last_output()</code> reads the atomic. The asynchrony is fully contained inside
+          the input infrastructure. The processing graph never sees a thread boundary.
+        </p>
+        <p>
+          <code>read_osc</code> calls <code>register_input_node</code> internally before returning, so
+          no <code>| Audio</code> pipe is needed. This is different from nodes created via the macro-generated
+          <code>vega.Sine()</code> path, which only constructs and returns without registering.
+        </p>
+      </details>
+
+      <details>
+        <summary>Expansion 5: MIDI and HID follow the same pattern</summary>
+        <pre><code class="language-cpp">// MIDI CC 74 -> filter cutoff
+auto filter_ctrl = vega.read_midi(
+    MIDIConfig::cc(74, 0.0, 1.0),
+    Core::InputBinding::midi_cc(74));
+
+// HID gamepad left stick X axis -> rotation speed
+auto stick_x = vega.read_hid(
+    HIDConfig::axis(0, -1.0, 1.0),
+    Core::InputBinding::hid(0, HIDAxis::LEFT_X));</code></pre>
+        <p>
+          Both return nodes. <code>get_last_output()</code> reads their current value the same way as an
+          OSC node. The binding call registers with <code>InputManager</code> to route incoming hardware
+          events to the node's internal atomic. The processing graph sees no difference between a MIDI CC
+          value, a gamepad axis, and a Sine oscillator. They are all numbers.
+        </p>
+      </details>
+
+      <details>
+        <summary>Expansion 6: Gaussian deformation as a general pattern</summary>
+        <p>
+          The mouse example uses a Gaussian: <code>exp(-dist^2 * falloff) * height</code>. The falloff
+          and height parameters are decoupled. Falloff controls how far the influence spreads; height
+          controls its magnitude. Changing falloff from <code>2.5</code> to <code>12.0</code> produces a
+          sharp, nearly binary on/off at close range.
+        </p>
+        <p>
+          A sum of multiple Gaussians with different centers, falloffs, and signs produces terrain:
+          positive centers are hills, negative are craters, overlapping terms produce ridges.
+          The cursor position is just one source; OSC coordinates, counter phase, or any computed
+          value works equally.
+        </p>
+        <pre><code class="language-cpp">// Two cursors: one hill, one crater
+const float y_hill   =  std::exp(-(dx1*dx1 + dz1*dz1) * 3.0f) * 0.5f;
+const float y_crater = -std::exp(-(dx2*dx2 + dz2*dz2) * 5.0f) * 0.3f;
+v.position.y = y_hill + y_crater;</code></pre>
+      </details>
 
     </section>
   </div>
