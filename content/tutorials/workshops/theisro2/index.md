@@ -7,7 +7,7 @@ title: "Workshop 2 - Computational Audio-Visual Thinking"
 - **Organized with the Indian Sonic Research Organization**
 - **May 8-10 2026 - Core session (4pm-7pm IST) (12:30-3:30 CET). Optional 1 hour prior and after. See schedule below.**
 - **Sign up on the discord server to reserve your spot and get updates: [Discord](https://discord.gg/GrKtdHB68)**
-- [download](/download):
+- [Download](/download): Required before the session. (5-30 minutes based on OS, hardware, internet connection)
 
 ---
 
