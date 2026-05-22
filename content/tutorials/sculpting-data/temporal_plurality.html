@@ -2211,3 +2211,490 @@ if (thr &amp;&amp; density &gt; *thr) { /* draw */ }</code></pre>
     </section>
   </div>
 </section>
+
+<hr>
+
+<section class="tutorial-section">
+    <div class="tutorial-card tutorial-parent">
+
+      <h3 class="tutorial-title">Card 7: Declarative Compositions</h3>
+
+      <p>
+        Every card so far has been imperative. You decide when things run, you hold the state, you
+        write the callbacks. This card takes a different posture. You describe a flow or a spatial
+        relationship and the system runs it. You do not call <code>process()</code>. You do not count
+        cycles. You declare what should happen and step back.
+      </p>
+      <p>
+        Two systems. <code>BufferPipeline</code> for data flows that span more than one buffer cycle.
+        <code>Fabric</code> for spatial entities whose position is the only thing audio and graphics
+        share.
+      </p>
+
+  <div class="tutorial-row">
+    <div class="tutorial-card" data-target="declarative-detail">
+      <h3 class="tutorial-title">Pipelines: declared data flows</h3>
+      <p class="hint">Click this card to reveal full explanation</p>
+
+      <h4 class="tutorial-title">Tutorial: Live waveshaper, one cycle in one cycle out</h4>
+      <pre><code class="language-cpp">void settings() {
+    auto&amp; stream = MayaFlux::Config::get_global_stream_info();
+    stream.input.enabled  = true;
+    stream.input.channels = 1;
+}
+
+void compose() {
+    auto mic = MayaFlux::create_input_listener_buffer(0, true);
+
+    auto pipeline = MayaFlux::create_buffer_pipeline();
+    pipeline->with_strategy(Kriya::ExecutionStrategy::STREAMING);
+
+    pipeline
+        &gt;&gt; BufferOperation::capture_from(mic).for_cycles(1)
+        &gt;&gt; BufferOperation::modify_buffer(mic,
+            [](const std::shared_ptr&lt;Buffers::AudioBuffer&gt;&amp; buf) {
+                for (auto&amp; s : buf-&gt;get_data()) {
+                    s = std::tanh(s * 6.0) * 0.7;
+                }
+            }).as_streaming();
+
+    pipeline-&gt;execute_buffer_rate();
+}</code></pre>
+      <p>
+        Run this with a microphone connected. You hear your input through heavy <code>tanh</code>
+        saturation. The pipeline captures one buffer cycle from the mic, modifies it in place, and the
+        modified data leaves through the mic buffer's normal routing. No explicit loop, no cycle
+        counter, no callback registered on any node.
+      </p>
+      <p>
+        Change <code>6.0</code> to <code>1.5</code> and the saturation softens toward gentle clipping.
+        Change it to <code>20.0</code> for hard rectangular clipping. The lambda is the only thing that
+        changes. The pipeline structure stays identical.
+      </p>
+
+      <h4 class="tutorial-title">Tutorial: Mouse-painted accumulating looper</h4>
+      <pre><code class="language-cpp">void settings() {
+    auto&amp; stream = MayaFlux::Config::get_global_stream_info();
+    stream.input.enabled  = true;
+    stream.input.channels = 1;
+}
+
+void compose() {
+    auto window = MayaFlux::create_window({ "Looper", 800, 600 });
+    window-&gt;show();
+
+    auto mic = MayaFlux::create_input_listener_buffer(0, true);
+
+    const uint32_t buf_size = MayaFlux::get_buffer_manager()
+        -&gt;get_buffer_size(Buffers::ProcessingToken::AUDIO_BACKEND);
+    const uint64_t loop_frames = static_cast&lt;uint64_t&gt;(buf_size) * 64;
+
+    auto loop = std::make_shared&lt;Kakshya::DynamicSoundStream&gt;(48000, 1);
+    loop-&gt;set_auto_resize(false);
+    loop-&gt;ensure_capacity(loop_frames);
+
+    auto layer = MayaFlux::create_sampler_from_stream(loop, 0);
+    layer-&gt;play_continuous(0, layer-&gt;slice_from_stream());
+    store(layer);
+
+    auto&amp; brush_pos   = make_persistent(0.5f);
+    auto&amp; brush_width = make_persistent(0.5f);
+    auto&amp; wipe        = make_persistent(false);
+
+    MayaFlux::on_mouse_move(window, [&amp;brush_pos, &amp;brush_width, window]
+    (double x, double y) {
+        const auto ndc = normalize_coords(x, y, window);
+        brush_pos = ndc.x;
+        brush_width = 0.05f + 0.6f * ndc.y;
+    });
+
+    MayaFlux::on_key_pressed(window, IO::Keys::Space, [&amp;wipe]() { wipe = true; });
+
+    auto pipeline = MayaFlux::create_buffer_pipeline();
+    pipeline-&gt;with_strategy(Kriya::ExecutionStrategy::PHASED)
+             .capture_timing(Vruta::DelayContext::BUFFER_BASED);
+
+    pipeline
+        &gt;&gt; BufferOperation::capture_from(mic).for_cycles(64)
+        &gt;&gt; BufferOperation::dispatch_to(
+            [loop, loop_frames, &amp;brush_pos, &amp;brush_width, &amp;wipe]
+            (Kakshya::DataVariant&amp; data, uint32_t) {
+                const auto&amp; fresh = std::get&lt;std::vector&lt;double&gt;&gt;(data);
+
+                std::vector&lt;double&gt; existing(loop_frames, 0.0);
+                loop-&gt;get_channel_frames(existing, 0, 0);
+
+                if (wipe) {
+                    wipe = false;
+                    std::ranges::fill(existing, 0.0);
+                }
+
+                const size_t n = std::min&lt;size_t&gt;(fresh.size(), loop_frames);
+                std::vector&lt;double&gt; mixed(loop_frames, 0.0);
+                for (size_t i = 0; i &lt; loop_frames; ++i) {
+                    const double pos   = static_cast&lt;double&gt;(i) / loop_frames;
+                    const double d     = std::abs(pos - brush_pos);
+                    const double brush = std::exp(-(d * d) / (brush_width * brush_width));
+
+                    const double keep = 0.98 - 0.5 * brush;
+                    const double prev = existing[i] * keep;
+                    const double live = (i &lt; n) ? fresh[i] * brush : 0.0;
+                    mixed[i] = std::tanh(prev + live);
+                }
+
+                loop-&gt;write_frames(
+                    std::span&lt;const double&gt;(mixed.data(), mixed.size()), 0, 0);
+            });
+
+    pipeline-&gt;execute_buffer_rate();
+}</code></pre>
+      <p>
+        Run this with a microphone and make some sound. An empty window opens. The loop is a strip of
+        time laid left to right across the window, played back continuously underneath you. Wherever the
+        pointer sits, that region of the loop receives the fresh input painted in while the rest decays.
+        Drag across the window and you smear new sound into the part of the loop the cursor passes over,
+        leaving the rest to fade. Move down for a wider brush, up for a narrow one. Space wipes the loop.
+      </p>
+      <p>
+        Stop moving and the loop stabilises into whatever you last painted, repeating. Keep painting the
+        same spot and that region thickens toward saturation while the rest thins out. The texture is the
+        record of where your cursor has been.
+      </p>
+    </div>
+
+    <section id="declarative-detail" class="tutorial-expanded">
+
+      <p>
+        A <code>BufferPipeline</code> is a chain of operations joined by <code>&gt;&gt;</code> that runs
+        on the scheduler. You build the chain once and call <code>execute_buffer_rate</code>. From that
+        point the coroutine infrastructure handles every cycle. The two examples differ in one decision:
+        the execution strategy.
+      </p>
+      <p>
+        <code>STREAMING</code> sends each captured cycle straight through the operations that follow it.
+        Latency is one buffer cycle. It is the right choice for live effects where the processed output
+        should appear the moment the input arrives. The waveshaper is exactly this: capture one cycle,
+        modify it in place, done.
+      </p>
+      <p>
+        <code>PHASED</code> accumulates across all the <code>for_cycles(N)</code> iterations before any
+        processing operation runs. The looper captures 64 buffer cycles into one block before the
+        dispatch sees it. This is the strategy for anything that needs a span of time at once rather than
+        one cycle: accumulation, reversal, block analysis, anything where the operation needs context
+        beyond a single buffer.
+      </p>
+
+      <details>
+        <summary>Expansion 1: Why the looper cannot be a node</summary>
+        <p>
+          A node processes one sample at a time. It has no access to a block of past samples unless it
+          maintains its own ring buffer internally. The looper needs the whole 64-cycle block in hand to
+          paint a brush across it: the brush at the cursor position touches samples thousands of indices
+          apart, and the falloff is computed across the entire block at once.
+        </p>
+        <p>
+          <code>PHASED</code> gives you that block as a single <code>std::vector&lt;double&gt;</code>.
+          The dispatch reads the whole loop, mixes the fresh input into the brushed region, applies the
+          decay everywhere, and writes the whole thing back. There is no per-sample formulation of this
+          that produces the same result, because the decay and the brush both depend on a sample's
+          position within the block, not on its value.
+        </p>
+      </details>
+
+      <details>
+        <summary>Expansion 2: The loop is a stream, the playback reads it, they never coordinate</summary>
+        <p>
+          <code>loop</code> is a <code>DynamicSoundStream</code> sized once via
+          <code>ensure_capacity</code>. A second sampler, <code>layer</code>, plays it on a continuous
+          loop. The pipeline writes new contents into the stream every 64 cycles. The playback reads
+          whatever is currently there on its next pass.
+        </p>
+        <p>
+          Nothing connects the two. The pipeline does not tell the sampler anything changed. The sampler
+          does not ask the pipeline for data. The stream is the only shared state, and the write and the
+          read meet there. This is the same decoupling the whole card is about: declare two flows against
+          a shared target and let them run at their own rates.
+        </p>
+      </details>
+
+      <details>
+        <summary>Expansion 3: <code>dispatch_to</code> versus <code>modify_buffer</code> versus <code>transform</code></summary>
+        <p>
+          <code>modify_buffer</code> attaches a processor to a buffer and mutates it in place during that
+          buffer's normal processing. It is the streaming path: the waveshaper uses it because the
+          modification belongs to the live signal as it flows through.
+        </p>
+        <p>
+          <code>dispatch_to</code> hands the accumulated data to a handler that does whatever it likes
+          with it and produces no routed output of its own. The looper uses it because the endpoint is a
+          write into a stream, not a value flowing to a next operation. The handler is a sink.
+        </p>
+        <p>
+          <code>transform</code> sits between them: it takes the data, returns a new
+          <code>DataVariant</code>, and that result flows to the next operation in the chain, typically a
+          <code>route_to_buffer</code> or <code>route_to_container</code>. Use it when the processed block
+          needs to continue down the pipeline rather than terminate in a side effect.
+        </p>
+      </details>
+
+      <details>
+        <summary>Expansion 4: <code>make_persistent</code> and the painting controls</summary>
+        <p>
+          <code>brush_pos</code>, <code>brush_width</code>, and <code>wipe</code> are declared with
+          <code>make_persistent</code> because the pipeline dispatch and the mouse callbacks both outlive
+          <code>compose()</code>. The function returns immediately after building the chain and
+          registering the events, destroying all stack variables. <code>make_persistent</code> allocates
+          them with process lifetime and hands back references both sides can hold.
+        </p>
+        <p>
+          The mouse callback writes the cursor's normalized X into <code>brush_pos</code> and maps the Y
+          to a brush width. The dispatch reads both each pass. The window does nothing visual here; it is
+          purely a surface for the pointer to move across, a control space rather than a display. Card 5
+          covered this pattern: external events write a value, the processing side reads it on its own
+          cadence.
+        </p>
+      </details>
+
+      <details>
+        <summary>Expansion 5: What <code>for_cycles</code> means in each strategy</summary>
+        <p>
+          On a capture operation, <code>for_cycles(N)</code> means the capture executes N times per
+          pipeline cycle. Under <code>STREAMING</code> with <code>for_cycles(1)</code> that is one capture
+          flowing straight through. Under <code>PHASED</code> with <code>for_cycles(64)</code> the capture
+          runs 64 times and the results concatenate into one block before the dispatch runs once on the
+          whole thing.
+        </p>
+        <p>
+          Raising the looper's count from 64 lengthens the loop, lowering it shortens it. At 64 cycles
+          and a typical buffer size the loop is on the order of a second. The brush, the decay, and the
+          playback all scale with it automatically because they are expressed as fractions of the block,
+          not as absolute sample counts.
+        </p>
+      </details>
+
+    </section>
+
+  <div class="tutorial-row">
+    <div class="tutorial-card" data-target="fabric-detail">
+      <h3 class="tutorial-title">Fabric: one gesture for sound and light</h3>
+      <p class="hint">Click this card to reveal full explanation</p>
+
+      <h4 class="tutorial-title">Tutorial: Fabric, one gesture for sound and light</h4>
+      <pre><code class="language-cpp">Vruta::GraphicsRoutine weave_mode(
+    Vruta::TaskScheduler&amp;,
+    std::shared_ptr&lt;Nodes::GpuSync::PathGeneratorNode&gt; path,
+    std::shared_ptr&lt;Nodes::Network::ModalNetwork&gt; modal,
+    size_t mode_index,
+    glm::vec3 color) {
+    auto&amp; p = co_await Kriya::GetGraphicsPromise{};
+    glm::vec3 pos(0.0f);
+
+    while (!p.should_terminate) {
+        const auto&amp; modes = modal-&gt;get_modes();
+        if (mode_index &lt; modes.size()) {
+            const float a = static_cast&lt;float&gt;(modes[mode_index].amplitude);
+            const float angle = static_cast&lt;float&gt;(mode_index) / modes.size()
+                * glm::two_pi&lt;float&gt;();
+            const glm::vec3 target(
+                std::cos(angle) * (0.3f + a * 2.5f),
+                std::sin(angle) * (0.3f + a * 2.5f),
+                0.0f);
+            pos = glm::mix(pos, target, 0.05f);
+            path-&gt;add_control_point({ pos, color, 1.0f + a * 4.0f });
+        }
+        co_await Kriya::FrameDelay { .frames_to_wait = 2 };
+    }
+}
+
+void compose() {
+    auto window = MayaFlux::create_window({ "Gesture", 1200, 800 });
+    window-&gt;show();
+
+    auto modal = vega.ModalNetwork(8, 110.0,
+        Nodes::Network::ModalNetwork::Spectrum::INHARMONIC, 8.0) | Audio[{ 0, 1 }];
+    modal-&gt;set_coupling_enabled(true);
+
+    auto composite = vega.CompositeGeometryBuffer() | Graphics;
+
+    std::vector&lt;std::shared_ptr&lt;Nodes::GpuSync::PathGeneratorNode&gt;&gt; paths;
+    for (size_t i = 0; i &lt; 8; ++i) {
+        const glm::vec3 color = glm::mix(
+            glm::vec3(0.2f, 0.4f, 0.9f),
+            glm::vec3(0.9f, 0.3f, 0.2f),
+            static_cast&lt;float&gt;(i) / 7.0f);
+
+        auto path = vega.PathGeneratorNode(
+            Kinesis::InterpolationMode::CATMULL_ROM, 4, 256) | Graphics;
+        path-&gt;add_control_point({ glm::vec3(0.0f), color, 1.0f });
+        paths.push_back(path);
+
+        composite-&gt;add_geometry("m" + std::to_string(i), path,
+            Portal::Graphics::PrimitiveTopology::LINE_STRIP,
+            { .target_window   = window,
+              .vertex_shader   = "line_lit.vert",
+              .fragment_shader = "line_lit.frag",
+              .geometry_shader = "line_lit.geom" });
+    }
+
+    auto&amp; sched = *MayaFlux::get_scheduler();
+    auto&amp; evmgr = *MayaFlux::get_event_manager();
+    auto fabric = std::make_shared&lt;Nexus::Fabric&gt;(sched, evmgr);
+
+    for (size_t i = 0; i &lt; 8; ++i) {
+        auto driver = std::make_shared&lt;Nexus::Emitter&gt;(
+            [](const Nexus::InfluenceContext&amp;) {});
+        fabric-&gt;wire(driver)
+            .use([paths, modal, i](Vruta::TaskScheduler&amp; s) -&gt; Vruta::GraphicsRoutine {
+                const glm::vec3 c = glm::mix(
+                    glm::vec3(0.2f, 0.4f, 0.9f),
+                    glm::vec3(0.9f, 0.3f, 0.2f),
+                    static_cast&lt;float&gt;(i) / 7.0f);
+                return weave_mode(s, paths[i], modal, i, c);
+            })
+            .finalise();
+    }
+
+    auto cursor = std::make_shared&lt;Nexus::Emitter&gt;(
+        [modal](const Nexus::InfluenceContext&amp; ctx) {
+            const float t = (ctx.position.x + 1.0f) * 0.5f;
+            const float strength = (ctx.position.y + 1.0f) * 0.5f;
+            modal-&gt;excite_at_position(t, strength * 0.6f);
+        });
+
+    cursor-&gt;set_position(glm::vec3(0.0f));
+    cursor-&gt;set_color(glm::vec3(1.0f, 0.9f, 0.7f));
+    cursor-&gt;set_radius(1.5f);
+    for (const auto&amp; proc : composite-&gt;get_render_processors()) {
+        cursor-&gt;set_influence_target(proc);
+    }
+
+    fabric-&gt;wire(cursor).every(1.0 / 60.0).finalise();
+
+    MayaFlux::on_mouse_move(window, [cursor, window](double x, double y) {
+        const auto&amp; ws = window-&gt;get_state();
+        cursor-&gt;set_position(glm::vec3(
+            static_cast&lt;float&gt;(x / ws.current_width) * 2.0f - 1.0f,
+            1.0f - static_cast&lt;float&gt;(y / ws.current_height) * 2.0f,
+            0.0f));
+    });
+
+    auto commit_loop = [](Vruta::TaskScheduler&amp;,
+                          std::shared_ptr&lt;Nexus::Fabric&gt; fab) -&gt; Vruta::GraphicsRoutine {
+        auto&amp; p = co_await Kriya::GetGraphicsPromise {};
+        while (!p.should_terminate) {
+            fab-&gt;commit();
+            co_await Kriya::FrameDelay { .frames_to_wait = 1 };
+        }
+    };
+
+    MayaFlux::schedule_task("gesture_commit",
+        commit_loop(sched, fabric), false);
+}</code></pre>
+      <p>
+        Run this and move the mouse across the window. You strike a resonant body. Where the cursor sits
+        decides which modes ring and how hard: horizontal position sweeps which part of the body is
+        struck, vertical position sets how hard. The eight curves are woven from the network's own mode
+        amplitudes, so the louder a mode rings the further its curve reaches out. And the geometry lights
+        up around the cursor, because the same position that strikes the sound also drives the shader.
+      </p>
+      <p>
+        One <code>Emitter</code> does all of this. Its position is the only input. From that single
+        position the sound is struck, the curves are shaped by what rings, and the light falls where the
+        strike lands. Move the cursor and all three move together because they are the same number.
+      </p>
+    </div>
+  </div>
+
+  <section id="fabric-detail" class="tutorial-expanded">
+
+      <details>
+        <summary>Expansion 6: What an Emitter actually is</summary>
+        <p>
+          An <code>Emitter</code> is a point in space with an influence function. It is not a thing you
+          draw. When the <code>Fabric</code> commits, it reads the Emitter's position and calls the
+          influence function with that position in an <code>InfluenceContext</code>. The cursor Emitter's
+          function takes <code>ctx.position</code> and calls <code>excite_at_position</code> on the modal
+          network. That is the entire audio side: position in, excitation out.
+        </p>
+        <p>
+          The position is not a convenience. It is the shared variable. The audio reads it as a strike
+          location. The shader reads it as a light position. The curves read the consequence of the
+          strike. Nothing else connects these three domains. In an analog setup they would be three
+          separate signals you route by hand. Here they are one number, read three ways.
+        </p>
+      </details>
+
+      <details>
+        <summary>Expansion 7: <code>set_influence_target</code> and the shader UBO</summary>
+        <p>
+          <code>cursor-&gt;set_influence_target(proc)</code> creates a uniform buffer matching the
+          <code>Influence</code> block the <code>line_lit</code> shaders declare at
+          <code>set = 1, binding = 0</code>, registers it on the render processor, and binds it. On every
+          commit, the Emitter's position, color, intensity, and radius are packed into that buffer
+          automatically. No descriptor wiring appears in user code.
+        </p>
+        <p>
+          The fragment shader reads <code>position</code> from that block and lights each fragment by its
+          distance from it. So the cursor's world position, written once per commit, becomes the lit
+          point on screen with no glue between the Emitter and the shader beyond this one call. The loop
+          over <code>get_render_processors()</code> binds the same Emitter to all eight curve processors,
+          so every curve is lit by the same gesture.
+        </p>
+      </details>
+
+      <details>
+        <summary>Expansion 8: <code>weave_mode</code> draws the sound</summary>
+        <p>
+          Each of the eight curves is driven by a <code>GraphicsRoutine</code> that reads one mode's
+          amplitude every other frame and pushes a control point. The point's distance from center and
+          its thickness both scale with that amplitude. When you strike the body and a mode rings, its
+          curve reaches outward and thickens, then retracts as the mode decays.
+        </p>
+        <p>
+          The routine is wired through a silent <code>Emitter</code> via <code>.use(...)</code>, which is
+          how Fabric attaches an arbitrary graphics coroutine to an entity's lifecycle. The Emitter here
+          carries no influence of its own; it exists so the Fabric owns and cancels the coroutine. The
+          curves are not told what the sound is doing. They read the network's mode state directly. The
+          image is a reading of the same physical model the cursor is exciting.
+        </p>
+      </details>
+
+      <details>
+        <summary>Expansion 9: Why commit runs on a GraphicsRoutine</summary>
+        <p>
+          <code>fabric-&gt;commit()</code> reads positions, publishes the spatial snapshot, and fires every
+          wired entity, including the influence-target UBO upload, which touches GPU resources. GPU work
+          belongs on the graphics thread. So commit is driven by a <code>GraphicsRoutine</code> that
+          resumes once per frame via <code>FrameDelay{1}</code>, scheduled with
+          <code>schedule_task</code>, not by an audio-rate metro.
+        </p>
+        <p>
+          This is the same thread boundary Card 5 described from the other side. There, external events
+          on the windowing thread wrote values the audio thread read. Here, a graphics-thread coroutine
+          drives the commit so the UBO upload and any render-sink dispatch happen where the GPU work is
+          safe. The cursor Emitter's audio side, the modal excitation, runs through that same commit but
+          only touches network amplitudes, which is cheap and safe to set from there.
+        </p>
+      </details>
+
+      <details>
+        <summary>Expansion 10: Declaring against a shared target, in both halves of the card</summary>
+        <p>
+          The two systems look different but share a shape. In the looper, two flows, the pipeline and
+          the playback sampler, meet at one stream and never coordinate. In the Fabric example, three
+          flows, the audio excitation, the curve weaving, and the shader lighting, meet at one position
+          and never coordinate.
+        </p>
+        <p>
+          Neither half has a controller orchestrating the parts. You declare each flow against the shared
+          thing, a stream or a position, and the result is their superposition. This is the digital
+          counterpart to independent voices in an ensemble, except the voices here run on different
+          substrates, the buffer scheduler and the frame clock, and interact only through the value they
+          read and write in common.
+        </p>
+      </details>
+
+  </section>
+
+    </div>
+</section>
