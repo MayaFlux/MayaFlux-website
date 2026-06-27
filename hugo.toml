@@ -135,3 +135,6 @@ noClasses = false
 [markup.tableOfContents]
 startLevel = 2
 endLevel = 3
+
+[security]
+allowContent = ['text/html', 'text/markdown']
