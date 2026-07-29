@@ -182,29 +182,7 @@ These documents just make that process explicit for creative computation.
 </div>
 
 <div class="card vertical">
-<h3><a href="from_supercollider/">From SuperCollider</a></h3>
-<p>
-<strong>What you learned:</strong> SynthDefs on the server, Patterns in the language, OSC boundaries between thought and sound
-</p>
-<p>
-<strong>What changes:</strong> No server. Everything you write runs right where you write it. Complete access to every computational step.
-</p>
-<p><em>"Nodes aren't UGens. They're transformations you can reach inside and modify."</em></p>
-</div>
-
-<div class="card vertical">
-<h3><a href="from_p5js/">From p5.js</a></h3>
-<p>
-<strong>What you learned:</strong> setup() once, draw() every frame, imperative rendering loops
-</p>
-<p>
-<strong>What changes:</strong> No draw calls. Define how geometry gets generated; GPU processes it. Data pipelines, not rendering commands.
-</p>
-<p><em>"You don't draw particles. You define how particle data flows to the GPU."</em></p>
-</div>
-
-<div class="card vertical">
-<h3><a href="openframeworks/">From openFrameworks</a></h3>
+<h3><a href="openframeworks/">From openFrameworks (WIP)</a></h3>
 <p>
 <strong>What you learned:</strong> Callback lifecycle (setup/update/draw), OpenGL immediate mode, audio as separate addon
 </p>
@@ -215,7 +193,30 @@ These documents just make that process explicit for creative computation.
 </div>
 
 <div class="card vertical">
-<h3><a href="from_processing/">From Processing</a></h3>
+<h3><a href="from_supercollider/">From SuperCollider (Planned)</a></h3>
+<p>
+<strong>What you learned:</strong> SynthDefs on the server, Patterns in the language, OSC boundaries between thought and sound
+</p>
+<p>
+<strong>What changes:</strong> No server. Everything you write runs right where you write it. Complete access to every computational step.
+</p>
+<p><em>"Nodes aren't UGens. They're transformations you can reach inside and modify."</em></p>
+</div>
+
+<div class="card vertical">
+<h3><a href="from_p5js/">From p5.js (Planned)</a></h3>
+<p>
+<strong>What you learned:</strong> setup() once, draw() every frame, imperative rendering loops
+</p>
+<p>
+<strong>What changes:</strong> No draw calls. Define how geometry gets generated; GPU processes it. Data pipelines, not rendering commands.
+</p>
+<p><em>"You don't draw particles. You define how particle data flows to the GPU."</em></p>
+</div>
+
+
+<div class="card vertical">
+<h3><a href="from_processing/">From Processing (Planned)</a></h3>
 <p>
 <strong>What you learned:</strong> Creative coding as educational scaffolding, simplified APIs, "code as sketch"
 </p>

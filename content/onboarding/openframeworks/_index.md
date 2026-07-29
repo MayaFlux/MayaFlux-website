@@ -56,7 +56,7 @@ None of this is a metaphor. <code>set_view_transform_source</code> takes a <code
 <div class="card-grid">
 
 <div class="card vertical">
-<h3><a href="rendering-model/">Document 1: The Rendering Model</a></h3>
+<h3><a href="rendering-model/">Document 1: The Rendering Model (WIP)</a></h3>
 <p>
 <strong>What you learned:</strong> <code>setup/update/draw</code>, one window, <code>ofDrawX</code> primitives, meshes as a separate importer bolted onto the drawing API.
 </p>
@@ -67,7 +67,7 @@ None of this is a metaphor. <code>set_view_transform_source</code> takes a <code
 </div>
 
 <div class="card vertical">
-<h3><a href="live-gpu-dialogue/">Document 2: Constant, Live Dialogue With the GPU</a></h3>
+<h3><a href="live-gpu-dialogue/">Document 2: Constant, Live Dialogue With the GPU (Planned)</a></h3>
 <p>
 <strong>What you learned:</strong> <code>ofShader::load()</code> as a compile-and-forget black box, readback as a screenshot feature, compute shaders as an occasional escape hatch.
 </p>
@@ -78,7 +78,7 @@ None of this is a metaphor. <code>set_view_transform_source</code> takes a <code
 </div>
 
 <div class="card vertical">
-<h3><a href="time-and-the-live-loop/">Document 3: Time, Coordination, and the Live Loop</a></h3>
+<h3><a href="time-and-the-live-loop/">Document 3: Time, Coordination, and the Live Loop (planned)</a></h3>
 <p>
 <strong>What you learned:</strong> <code>ofGetElapsedTimef()</code> polled once per frame, audio as an addon library, edit-compile-relaunch as the unavoidable cost of changing anything.
 </p>
