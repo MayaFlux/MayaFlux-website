@@ -354,3 +354,182 @@ schedule_metro(1.0 / 60.0, [buf]() {
 ```
 
 The field is evaluated on the GPU. The isosurface is extracted on the GPU. The vertices are written directly into the same `VKBuffer` a `RenderProcessor` draws from. Nothing here ever exists as a `std::vector` on the CPU side, not even once, past the initial lookup table upload. CPU-generated meshes, imported meshes, Kinesis generators, and GPU-written fields all converge on the same representation: geometry already resident in GPU memory. The rendering pipeline doesn't distinguish how those vertices came into existence because, by the time they reach it, that history is no longer relevant.
+
+## One geometry, many places, and a body that keeps changing shape
+
+Two problems that look unrelated turn out to be the same problem asked twice: how do you draw the same thing many times without paying for it many times, and how do you keep drawing a thing whose actual shape won't hold still. Instancing answers the first. Mesh-as-two-spans answers the second. Neither one is a bolted-on feature with its own special type. Both are what falls out of treating geometry as data that can be multiplied or rewritten, rather than a fixed shape that has to be re-authored to change.
+
+### Instancing: no dedicated type, because none was needed
+
+There is no `Instance` class carrying its own transform, its own lifecycle, its own special-cased draw path. If you want instancing, you have geometry that describes instance positions, and a vertex shader that reads them. That's the whole idea, and everything below is just what it looks like worked out in full.
+
+A template is built once, from anything that already produces a `GeometryWriterNode`:
+
+```cpp
+auto net = std::make_shared<InstanceNetwork>();
+auto tmpl = std::make_shared<PathGeneratorNode>(mode, samples, max_control_points);
+
+for (uint32_t i = 0; i < 8; ++i) {
+    uint32_t idx = net->add_slot("spine_" + std::to_string(i), tmpl);
+    net->get_slot(idx).transform = glm::rotate(glm::mat4{1},
+        glm::radians(45.0F * i), glm::vec3(0, 1, 0));
+}
+```
+
+This is close to what `membrane` actually does with its `Spine`: a single Bézier tube, its control points taken from the three farthest vertices of an entirely different piece of geometry (the `Lattice`) on every frame, instanced eight times in a ring. What gets uploaded to the GPU once is the template's vertex data. What gets uploaded every frame anything moves is a packed array of per-slot `mat4` transforms into one SSBO, and a single instanced draw call reading `gl_InstanceIndex` to pick the right matrix per copy. Eight draw calls were never issued. The shape, recomputed from another object's own live data, was never re-authored eight times either.
+
+What varies is a field, not a loop of manually-tracked positions:
+
+```cpp
+auto op = net->create_operator<InstanceFieldOperator>();
+op->bind_position(0, Kinesis::VectorField {
+    [](glm::vec3 p) { return p + glm::vec3(0.01F, 0.0F, 0.0F); }
+});
+```
+
+`VectorField` is a `Tendency<glm::vec3, glm::vec3>`, the same construct that drives a camera in the next section. Transforms don't get looped over and nudged by hand. A function gets applied to a position, and it happens to run once per slot because slots exist, not because anyone wrote a per-slot update.
+
+The same operator can hand the whole job to the GPU instead of evaluating a CPU lambda per slot:
+
+```cpp
+auto exec = std::make_shared<Yantra::ShaderExecutionContext<>>(
+    Yantra::GpuComputeConfig { "wave_field.comp", { 256, 1, 1 }, sizeof(WaveFieldPC) });
+exec->in_out(0, initial_transforms).push(WaveFieldPC { N, GRID_W, 0.0F, amplitude, frequency, speed });
+
+auto field_op = net->create_operator<InstanceFieldOperator>();
+field_op->set_gpu_executor(std::move(exec), true);
+```
+
+`wave_field.comp` reads every slot's current transform from one SSBO and writes the displaced result back into the same buffer, in place, for however many slots exist, a grid of a hundred and forty-four in one dispatch is no different in kind from four. The operator that accepted a CPU `VectorField` a moment ago now accepts a compute shader instead, same slot semantics, same dirty propagation, same one instanced draw call at the end. Nothing about the API changed shape to allow this. The CPU and GPU paths were always the same seam.
+
+### The same pull, applied to vertices instead of copies
+
+Instancing multiplies one template. A related but distinct question: what if there isn't one template, there's a whole loaded network, dozens of named submeshes from an FBX import, and every one of them needs its own vertices pulled by its own field, at the same time, on the GPU.
+
+```cpp
+auto net = vega.read_mesh_network("res/fbx/Wolf.fbx") | Graphics;
+auto buf = vega.MeshNetworkBuffer(net) | Graphics;
+buf->setup_rendering({ .target_window = window });
+
+auto exec = std::make_shared<Yantra::ShaderExecutionContext<>>(
+    Yantra::GpuComputeConfig { "mesh_pull_field.comp", { 256, 1, 1 }, sizeof(MeshPullFieldPC) });
+exec->in_out(0, all_slots_vertices_concatenated)
+    .input(1, per_slot_vertex_offsets, Yantra::GpuBufferBinding::ElementType::UINT32)
+    .push(initial_pc);
+
+auto field_op = net->get_operator_chain()->emplace<MeshFieldOperator>();
+field_op->set_gpu_executor(std::move(exec), false);
+```
+
+Every slot's vertex data gets packed sequentially into one buffer, dispatched once, and unpacked back into each slot's own `set_mesh_vertices()` by index range. A loaded wolf, however many parts it was authored in, gets pulled by a field that operates on raw vertex bytes with no idea any of it came from an FBX file, because by the time it reaches the shader it never was one. `MeshNetworkBuffer` already concatenates every slot into one combined vertex and index buffer for a single draw call, rebasing indices across slot boundaries, so the field operator is deforming exactly the same combined buffer the renderer draws from, not a separate copy that has to be reconciled back.
+
+### Mesh: two spans, and neither one waits for the other
+
+A mesh, loaded, generated, or deformed, is a span of vertex bytes and a span of indices, described by a layout. Nothing about that representation privileges provenance:
+
+```cpp
+auto buf = std::make_shared<MeshBuffer>(mesh_data);
+buf->setup_rendering({ .target_window = window });
+```
+
+Whether `mesh_data` came from an FBX import, `Kinesis::generate_parametric_surface`, or a marching-cubes pass, `MeshBuffer` doesn't ask. What it does ask is which of the two spans changed:
+
+```cpp
+buf->set_vertex_data(new_bytes);   // marks vertices dirty only
+buf->set_index_data(new_indices);  // marks indices dirty only
+```
+
+These are two independent atomics, checked and cleared separately by the upload path. A surface can be rewritten every frame while its connectivity stays untouched for seconds at a time, then restructured once, on some threshold, without the continuous vertex rewrite ever pausing to wait for it:
+
+```cpp
+schedule_metro(1.0 / 60.0, [mesh, envelope]() {
+    auto verts = mesh->get_mesh_vertices();
+    for (size_t i = 0; i < verts.size(); ++i)
+        verts[i].position = base_verts[i].position
+            + fault_dirs[i] * displacement_from(envelope, i);
+    mesh->set_mesh_vertices(verts);
+}, "deform");
+
+schedule_metro(0.1, [mesh, envelope]() {
+    if (envelope->get_last_output() > threshold)
+        mesh->set_mesh_indices(retopologize(mesh->get_mesh_indices()));
+}, "tear");
+```
+
+This is close to `compose_drone_disintegration`: fault directions computed once, displacement driven every frame by live spectral energy, and a separate, slower check on the same energy deciding when connectivity itself gives way. When the index rewrite fires, the mesh is not deformed. It is re-triangulated. Two objects that are geometrically identical but connected differently are not the same mesh, and no amount of vertex displacement produces that difference, only a rewritten index span does. This is only possible because vertex data and index data are separate streams that can be rewritten independently, at whatever two rates the situation actually calls for, sixty times a second for one, once past a threshold for the other.
+
+Nothing about this is free of consequence, and it's worth being precise about where the boundary actually sits. `set_mesh_vertices` is not safe to call from just anywhere; it competes with the graphics processor uploading that same buffer, so it belongs in a coroutine or metro running on the correct execution context, not directly inside a high-frequency event callback like `on_mouse_move`, which can fire over a thousand times a second and has no business touching mesh data itself. The pattern that does work reliably: write a cheap atomic from the event callback, let a regularly-scheduled routine read that atomic and perform the actual mutation. The independence of vertex and index dirty flags doesn't waive the ordinary rule that GPU-bound state has one thread that's allowed to touch it.
+
+## The camera and the light are the same idea
+
+A camera positions a viewer. A light positions an effect on a surface. Two different jobs, and in almost every framework, two different object types, each with its own class, its own scene-graph slot, its own special-cased path through the renderer. Here they turn out to be the same thing twice: something that hands numbers to a shader, and nothing more, until `Nexus` optionally wraps it in a way that lets those same numbers reach several places at once.
+
+### A camera is 128 bytes and a function
+
+```cpp
+struct ViewTransform {
+    glm::mat4 view { 1.0F };
+    glm::mat4 projection { 1.0F };
+};
+static_assert(sizeof(ViewTransform) == 128, "Vulkan minimum push constant size");
+```
+
+That's the entire type. No position field with an implied "forward" vector, no scene attachment, no lifecycle. It's sized to the Vulkan minimum push constant guarantee, but the transform itself doesn't travel as a push constant: `RenderProcessor` allocates it as a small UBO, at descriptor set 0, and rewrites that buffer's contents before every draw. Nothing about it assumes a camera exists behind it, and nothing about it is fixed once uploaded.
+
+```cpp
+render_processor->set_view_transform_source([envelope]() {
+    return Kinesis::look_at_perspective(
+        glm::vec3(0.0F, 0.0F, 4.0F + envelope->get_last_output() * 3.0F),
+        glm::vec3(0.0F), glm::radians(55.0F), 16.0F / 9.0F, 0.01F, 1000.0F);
+});
+```
+
+`set_view_transform_source` takes a callable and invokes it once per draw, and whatever it returns is what gets written into the UBO that cycle. That's the entirety of "having a camera": a function, called when the renderer needs the matrices, with total freedom over where the numbers come from. Whether the function reads a fixed eye position, an orbit computed from mouse drag, or, as in `matrix_and_mesh`'s `compose_resonant_orbit`, five formant resonator outputs setting azimuth, elevation, radius, field of view, and roll from live audio every frame, the render processor doesn't know the difference and was never written to care. Anything that can produce two `glm::mat4`s, a physics step, a recorded path, a network message, a value read off another buffer entirely, can be the thing filling that UBO on any given frame.
+
+### A light is 48 bytes and a function
+
+```cpp
+struct InfluenceUBO {
+    glm::vec3 position { 0.0F };
+    float intensity { 1.0F };
+    glm::vec3 color { 1.0F, 1.0F, 1.0F };
+    float radius { 1.0F };
+    float size { 1.0F };
+};
+static_assert(sizeof(InfluenceUBO) == 48, "std140 alignment");
+```
+
+Same pattern. No `Light` class, no falloff model baked into a type, no scene attachment. Just position, intensity, color, radius, size, the plain data a shader would want regardless of what's producing it.
+
+```cpp
+auto glow = std::make_shared<Nexus::Emitter>(
+    [](const Nexus::InfluenceContext&) { /* no CPU-side effect needed */ });
+glow->set_position(strike_position);
+glow->set_intensity(strike_strength);
+glow->set_influence_target(lattice_processor);   // set=1, binding=0, wired automatically
+glow->set_influence_target(spine_processor);     // same UBO, another surface entirely
+```
+
+`set_influence_target` allocates the UBO once, registers the binding on whatever `RenderProcessor` it's given, and from that point on, every commit packs position/intensity/color/radius/size into it without further instruction. Call it again on a second, unrelated processor and both surfaces read the same influence, because it's the same number, read twice, not two lights kept in sync by hand.
+
+Calling it a "light" at all is already an assumption worth dropping. `InfluenceUBO` has no idea it's lighting anything. The same struct, the same `InfluenceContext` that fills it, is what `membrane`'s cursor uses to strike a modal resonator: `ctx.position` becomes a strike location and a strength on the audio side, in the very same `invoke()` call that uploads that position into a shader as a lit point on a surface. Nothing in the type distinguishes "this instance is a light" from "this instance is a plectrum." A different influence function bound to the same `Emitter` could just as easily read that position and spawn geometry, retune a filter bank, decide when a mesh retriangulates, or drive three of those at once. The struct is a value. Whatever reads it decides what it means.
+
+### Nexus doesn't replace this. It multiplies where the same number can go.
+
+An `Emitter` is the bare version: a position, an influence function, optionally a render target. `Nexus::Locus`, the thing that plays the role of a camera in `membrane`, is not a different kind of object built on top of some `Camera` base. It's an `Agent`, the same influence machinery `Emitter` has, just also carrying a perception side and registered in a `Fabric` for spatial queries. Nothing about being a camera required a new type. It required the same 48-byte influence pattern, plus a view transform sourced from the same position.
+
+This is exactly what `membrane` does: the Locus's position feeds three places from one commit. `get_view_transform_source` reads it to build the render processor's `ViewTransform`, so the camera looks from where the spatial agent is. `set_influence_target` reads the same position, intensity, and color into the influence UBO bound to each lit shader, so proximity becomes visible as light on the surface. And the influence callback itself reads a proximity value computed from that same position against the gyroid's bounding volume, driving warp strength and excitation. Three destinations, one number, because a camera and a light were never separate categories of object to begin with, just two different shaders reading two different small structs, and nothing stopped the same position from filling both.
+
+## What was never a type
+
+Four different questions ran through this document. What draws to the screen. What a shape is before it's a mesh. How one piece of geometry becomes many, and how a body keeps changing shape without falling apart. What a camera is, and what a light is. Four questions, and one answer kept showing up underneath all of them: none of these were ever special categories of thing. Each one turned out to be a value, sitting somewhere, read at whatever rate the situation actually called for.
+
+`draw()` was never a fact about hardware, it was a fact about who was made to carry the hardware's timing in their head. A shape was never obligated to come from a fixed catalog or a file on disk, because a shape is just what a function produces when it's evaluated, and a function can be evaluated at any resolution asked of it. An instance was never a type either, just a template and a place to put a transform, multiplied as many times as there happen to be slots. A mesh was never one atomic thing, just two spans that are conventionally drawn together but were never required to change at the same speed. A camera was 128 bytes in a buffer. A light was 48. Neither carried a scene graph, a lifecycle, or a reason to exist as a class of its own, because neither one is a noun. They're both just numbers a shader was going to read anyway.
+
+This is not four coincidences. It's one habit, applied four times: wherever a framework hands you a named object, ask what value that object is actually standing in for, and what rate it changes at. The name is almost always doing less work than it appears to. A `Camera` class earns its keep only if something about *being a camera* constrains what the numbers can be or where they can come from, and nothing does. The same is true of an `Instance`, a `Light`, a scheduled `draw()` tick, and, going back to where this document started, a `while` loop that assumes it alone owns the screen.
+
+What actually does the constraining, in every one of these cases, is something real and worth keeping straight from the naming habit: a display needs frames at a steady rate, a descriptor set has a binding budget, a push constant block has a 128-byte floor, a vertex buffer needs a consistent layout to be drawn at all. Those are the luthier's wood grain, the resonant frequency that doesn't move no matter who's asking. Everything else, the class hierarchy, the special-cased draw path, the separate API for "generated" versus "loaded" geometry, was scaffolding built around those few real constraints, mistaken over time for being made of the same material.
+
+Nexus is the clearest place to watch the difference land, because it doesn't undo any of this. `Locus` isn't a `Camera` with extra features, it's an `Agent`, the same influence machinery `Emitter` has, and it becomes a camera only because one of the things reading its position happens to be a view transform source. The same position reaches a shader as light, a resonator as a strike, a warp field as proximity, in the same commit, because it was never three separate systems that needed reconciling. It was one number, and three different readers.
+
+That's the whole shape of what changes coming from a framework built the other way. Not less code for the same result, a different question asked at every point where a type used to be assumed: not "what class do I need," but "what value is this, and who else might want to read it."
