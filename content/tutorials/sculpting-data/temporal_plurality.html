@@ -2698,3 +2698,1431 @@ void compose() {
 
     </div>
 </section>
+
+<h2>The Floor of the System</h2>
+<p>
+  <em
+    >Every scheduling primitive in the previous cards is a coroutine underneath:
+    metro, Timer, EventChain, pattern, line, Trigger, Gate, the pipeline's
+    internal loop.<br />
+    This card shows what those look like written directly.<br />
+    A routine has one advantage no callback has: its body can hold as many waits
+    as it likes. A whole phrase becomes straight-line code.</em
+  >
+</p>
+
+<!-- ======================= PARENT CARD: RAW ROUTINES ======================= -->
+
+<section class="tutorial-section">
+    <div class="tutorial-card tutorial-parent">
+
+      <h3 class="tutorial-title">Tutorial: Raw Routines</h3>
+
+      <h4>Four Routines, Four Ways of Asking "When"</h4>
+      <p>
+        MayaFlux has one coroutine model with four routine types. They differ in
+        what resumes them:
+      </p>
+      <ul>
+        <li>
+          <strong>SoundRoutine</strong>: resumed on the sample clock, on the audio
+          thread. Suspends with <code>SampleDelay</code> or
+          <code>BufferDelay</code>.
+        </li>
+        <li>
+          <strong>GraphicsRoutine</strong>: resumed on the frame clock, on the
+          graphics thread. Suspends with <code>FrameDelay</code>.
+        </li>
+        <li>
+          <strong>CrossRoutine</strong>: resumed only when every clock it armed has
+          reached its target. Suspends with <code>MultiRateDelay</code>.
+        </li>
+        <li>
+          <strong>FreeRoutine</strong>: no clock at all. Resumed when a predicate
+          you supply returns true. Suspends with <code>ConditionAwaiter</code>.
+        </li>
+      </ul>
+      <p>
+        Everything scheduled in the earlier cards is one of these with a loop
+        around it. Each card below writes one directly, and each body waits
+        many times, on different durations, in one function.
+      </p>
+
+  <!-- =================== CHILD CARD 1: SoundRoutine =================== -->
+
+  <div class="tutorial-row">
+    <div class="tutorial-card" data-target="soundroutine-detail">
+      <h3 class="tutorial-title">A Phrase in One Function (SoundRoutine)</h3>
+      <p class="hint">Click this card to reveal full explanation</p>
+
+      <p>
+        A <code>SoundRoutine</code> is a C++ coroutine function with return type
+        <code>Vruta::SoundRoutine</code>. <code>co_await GetAudioPromise{}</code>
+        gives you a reference to the promise that lives in the coroutine frame.
+        <code>co_await SampleDelay{N}</code> suspends for exactly N samples and
+        the body carries on from the next line.
+      </p>
+
+      <p>
+        The body below is a whole phrase. A steady pulse, a three-note figure with
+        uneven gaps, a fill whose gaps shrink by a fixed ratio, then a rest. Each
+        note is a wait for the gate, then a wait for the remainder. Eight bars on
+        screen jump when their note sounds.
+      </p>
+
+      <pre><code class="language-cpp">
+void set_bar(const std::shared_ptr&ltMeshNetwork&gt& net, size_t i, float h)
+{
+    const float x = -0.84f + 0.24f * static_cast&ltfloat&gt(i);
+    auto& slot = net-&gtslots()[i];
+    slot.local_transform = glm::translate(glm::mat4(1.f), glm::vec3(x, -1.f + h, 0.f)) 
+                                         * glm::scale(glm::mat4(1.f), 
+                                         glm::vec3(1.f, h, 1.f));
+    slot.dirty = true;
+}
+
+Vruta::SoundRoutine phrase(
+    std::shared_ptr&ltMeshNetwork&gt bars,
+    std::function&ltvoid()&gt play_kick,
+    std::function&ltvoid()&gt play_hat)
+{
+    auto& promise = co_await GetAudioPromise {};
+    promise.set_state("tempo", 1.0f);
+    promise.set_state("bar", uint32_t { 0 });
+
+    auto wait = [&](double beats) {
+        const float tempo = *promise.get_state&ltfloat&gt("tempo");
+        return SampleDelay { seconds_to_samples(0.5 * beats / tempo) };
+    };
+    auto on = [&](size_t i, const std::function&ltvoid()&gt& play) {
+        play();
+        set_bar(bars, i, 0.5f);
+    };
+    auto off = [&](size_t i) { set_bar(bars, i, 0.05f); };
+
+    const double figure[] = { 0.75, 0.75, 0.5 };
+
+    while (true) {
+        if (promise.should_terminate)
+            break;
+
+        for (size_t i = 0; i &lt 4; ++i) {
+            on(i, play_kick);
+            co_await wait(0.15);
+            off(i);
+            co_await wait(0.85);
+        }
+
+        for (size_t i = 0; i &lt 3; ++i) {
+            on(4 + i, play_hat);
+            co_await wait(0.1);
+            off(4 + i);
+            co_await wait(figure[i] - 0.1);
+        }
+
+        double gap = 0.5;
+        for (size_t i = 0; i &lt 8; ++i) {
+            if (i % 2 == 0)
+                on(i, play_kick);
+            else
+                on(i, play_hat);
+            co_await wait(gap * 0.4);
+            off(i);
+            co_await wait(gap * 0.6);
+            gap *= 0.78;
+        }
+
+        co_await wait(2.0);
+
+        *promise.get_state&ltuint32_t&gt("bar") += 1;
+    }
+}
+
+void compose()
+{
+    auto window = create_window({ "Phrase", 1200, 800 });
+
+    auto bars = vega.MeshNetwork() | Graphics;
+
+    const std::vector&ltuint32_t&gt quad = { 0, 1, 2, 2, 3, 0 };
+    for (size_t i = 0; i &lt 8; ++i) {
+        const glm::vec3 c = glm::mix(
+            glm::vec3(.2f, .5f, .9f), glm::vec3(.9f, .4f, .2f),
+            static_cast&ltfloat&gt(i) / 7.f);
+        const float w = 0.08f;
+        std::vector&ltMeshVertex&gt v = {
+            { { -w, -1.f, 0.f }, c, 1.f, {}, { 0, 0, 1 }, { 1, 0, 0 } },
+            { { w, -1.f, 0.f }, c, 1.f, {}, { 0, 0, 1 }, { 1, 0, 0 } },
+            { { w, 1.f, 0.f }, c, 1.f, {}, { 0, 0, 1 }, { 1, 0, 0 } },
+            { { -w, 1.f, 0.f }, c, 1.f, {}, { 0, 0, 1 }, { 1, 0, 0 } },
+        };
+        auto node = std::make_shared&ltMeshWriterNode&gt(4);
+        node-&gtset_mesh(v, quad);
+        bars-&gtadd_slot("bar" + std::to_string(i), node);
+    }
+    for (size_t i = 0; i &lt 8; ++i) {
+        set_bar(bars, i, 0.05f);
+    }
+
+    auto buf = vega.MeshNetworkBuffer(bars) | Graphics;
+    buf-&gtsetup_rendering({ .target_window = window });
+    window-&gtshow();
+
+    auto kick = create_sampler("path/to/kick.wav");
+    kick-&gtload(0, kick-&gtslice_from_stream());
+    auto hat = create_sampler("path/to/hat.wav");
+    hat-&gtload(0, hat-&gtslice_from_stream());
+
+    schedule_task("phrase",
+        phrase(bars, [kick] { kick-&gtplay(0); }, [hat] { hat-&gtplay(0); }));
+
+    on_key_pressed(window, IO::Keys::Space, []() {
+        if (auto task = get_scheduler()-&gtget_task("phrase")) {
+            if (auto* t = task-&gtget_state&ltfloat&gt("tempo")) {
+                *t = std::min(3.0f, *t + 0.1f);
+            }
+        }
+    });
+
+    on_key_pressed(window, IO::Keys::S, []() {
+        if (auto task = get_scheduler()-&gtget_task("phrase")) {
+            if (auto* t = task-&gtget_state&ltfloat&gt("tempo")) {
+                *t = std::max(0.3f, *t - 0.1f);
+            }
+        }
+    });
+}
+      </code></pre>
+
+      <p>
+        Run this. Four even kicks, one bar lighting per kick. Three hats on bars
+        five to seven with a long-long-short spacing. Eight alternating hits that
+        tighten until they blur. Two beats of silence, and the phrase starts over.
+        Press Space and the whole phrase speeds up, mid-section. Press S and it
+        slows.
+      </p>
+
+      <p>
+        Change <code>0.78</code> to <code>0.9</code> and the fill tightens slowly
+        instead of collapsing. Change the figure array to
+        <code>{ 0.5, 0.5, 0.5 }</code> and the uneven spacing goes even. Add a
+        fifth section by pasting another loop above the rest: nothing else needs
+        to change.
+      </p>
+
+      <p>
+        <strong>The body is the score.</strong> It reads top to bottom in the
+        order the sound happens. There is no step counter and no branching on
+        "which section am I in". The position in the function is that information.
+      </p>
+    </div>
+  </div>
+
+  <section id="soundroutine-detail" class="tutorial-expanded">
+    <h2>Expansion 1: Many Waits, One Body</h2>
+
+    <details>
+      <summary>Click to expand: What a callback cannot do</summary>
+
+      <p>
+        The phrase above contains about two dozen <code>co_await</code>
+        expressions across nine different durations. Every one is a line of
+        source, and the source reads in the order things happen.
+      </p>
+
+      <p>
+        A <code>schedule_metro</code> callback fires at one fixed interval. To
+        play this phrase from one you would hold a step counter, decide on every
+        tick which section it belongs to, track how much of the current gap has
+        elapsed, and branch. That is a state machine written by hand. A
+        <code>sequence</code> is a flat list of delays built before it starts, so
+        it cannot compute the next gap from a value that only exists when the
+        previous note has finished. The fill does exactly that:
+        <code>gap *= 0.78</code>.
+      </p>
+
+      <p>A routine keeps that state for free:</p>
+
+      <ul>
+        <li>
+          Loop counters, the running <code>gap</code>, and the current section are
+          locals in the coroutine frame.
+        </li>
+        <li>
+          The program counter is the state machine. Being on line 40 means
+          "in the fill".
+        </li>
+        <li>
+          <code>for</code>, <code>if</code> and nested loops wrap waits like any
+          other statement. The delay is evaluated when the wait is reached, so it
+          can read anything, including the tempo that a key press changed a moment
+          ago.
+        </li>
+      </ul>
+
+      <p>
+        A wait is not a sleep. Nothing blocks. The audio thread carries on with
+        everything else, and the scheduler resumes the body on the sample where
+        the delay ends.
+      </p>
+    </details>
+
+    <h2>Expansion 2: What schedule_task Does</h2>
+
+    <details>
+      <summary>Click to expand: From coroutine call to first resume</summary>
+
+      <p>
+        Calling <code>phrase(...)</code> does not schedule anything by itself.
+        The coroutine starts running immediately on the calling thread, up to its
+        first suspension. That first suspension is
+        <code>co_await GetAudioPromise{}</code>, which marks the routine as
+        waiting for initialisation and hands you the promise reference.
+      </p>
+
+      <p>
+        <code>schedule_task(name, std::move(routine))</code> takes the routine by
+        rvalue reference and registers it with the scheduler under that name. The
+        coroutine moves into the scheduler, so you do not keep a handle. Its third
+        parameter, <code>initialize</code>, defaults to <code>false</code>. New
+        tasks wait in a pending queue that the scheduler drains at the start of
+        its next processing call. On that pass the routine sees its
+        initialisation marker, stamps <code>next_sample</code> with the current
+        clock position and resumes the body for the first time. From there the
+        routine is resumed whenever the sample clock reaches
+        <code>next_sample</code>.
+      </p>
+
+      <p>
+        Every <code>co_await SampleDelay{N}</code> adds N to
+        <code>next_sample</code> and suspends. The scheduler compares the clock
+        against that number once per sample. The routine resumes on the sample
+        where the clock reaches the target.
+      </p>
+
+      <p>
+        The same call has overloads for <code>GraphicsRoutine</code> and
+        <code>FreeRoutine</code>, so Cards 8b and 8d use it too.
+        <code>CrossRoutine</code> has no overload yet and goes through the
+        scheduler directly, as Card 8c shows.
+      </p>
+    </details>
+
+    <h2>Expansion 3: Inputs Are Parameters, Not Captures</h2>
+
+    <details>
+      <summary>Click to expand: Why the coroutine is a function and not a lambda</summary>
+
+      <p>
+        <code>compose()</code> returns as soon as it has registered everything,
+        and its locals are gone. The coroutine frame is heap-allocated and outlives
+        it. That difference decides where the routine's inputs may live.
+      </p>
+
+      <p>
+        Function <em>parameters</em> are copied into the frame. A pointer, a
+        <code>shared_ptr</code> or a reference stays valid because the frame owns
+        the copy. Lambda <em>captures</em> are different: they live in the closure
+        object, the frame only keeps a pointer to that object, and the closure sat
+        on the stack of <code>compose()</code>. A capturing lambda coroutine that
+        is still suspended after <code>compose()</code> returns reads freed memory
+        on its next resume.
+      </p>
+
+      <p>
+        So each routine in this card is a function whose inputs arrive as
+        parameters. The small lambdas inside <code>phrase</code>
+        (<code>wait</code>, <code>on</code>, <code>off</code>) are fine because
+        they are locals of the frame. They are not coroutines and they do not
+        outlive it.
+      </p>
+
+      <p>
+        The samplers arrive as <code>std::function&lt;void()&gt;</code>. The
+        function parameter is copied into the frame together with the captured
+        <code>shared_ptr</code> inside it, so the sampler lives as long as the
+        routine does. A parameter declared <code>auto</code> would also work, but
+        it turns the routine into a template, and inside a template a call such as
+        <code>promise.get_state&lt;float&gt;("tempo")</code> has to be written
+        <code>promise.template get_state&lt;float&gt;("tempo")</code>. Card 8d has
+        one <code>auto</code> parameter in a routine that never calls
+        <code>get_state</code>, which is why it compiles as written.
+      </p>
+    </details>
+
+    <h2>Expansion 4: Promise State Is a Map in the Frame</h2>
+
+    <details>
+      <summary>Click to expand: set_state, get_state, and what is safe from outside</summary>
+
+      <p>
+        <code>set_state&lt;T&gt;(key, value)</code> stores a value in an
+        <code>unordered_map&lt;std::string, std::any&gt;</code> inside the
+        coroutine frame. <code>get_state&lt;T&gt;(key)</code> returns
+        <code>T*</code>, or <code>nullptr</code> if the key is missing or the type
+        does not match.
+      </p>
+
+      <p>
+        The phrase keeps <code>"tempo"</code> there so the outside world can reach
+        it, and <code>"bar"</code> as a counter the outside world can read. The
+        frame stays put for the coroutine's lifetime, so a pointer from
+        <code>get_state</code> stays valid across suspensions. The key handlers
+        reach the routine with
+        <code>get_scheduler()-&gt;get_task("phrase")</code>, which returns it by
+        name. Before the scheduler has drained its pending queue that lookup
+        returns <code>nullptr</code>, which is why the handlers test it.
+      </p>
+
+      <p><strong>What is safe and what is not:</strong></p>
+
+      <ul>
+        <li>
+          Writing through a pointer to an <em>existing</em> key from another
+          thread is a plain float write. Both key handlers do this. The worst
+          outcome is that the coroutine sees the old or the new value on its next
+          <code>wait</code>.
+        </li>
+        <li>
+          Calling <code>set_state</code> with a <em>new</em> key from another
+          thread is a race. It can rehash the map while the coroutine holds
+          pointers into it. Create every key you intend to share inside the
+          coroutine before the first delay, as the phrase does.
+        </li>
+        <li>
+          <code>get_task</code> walks the scheduler's task list without a lock,
+          and the audio thread changes that list when it drains additions and
+          removals. Looking a task up from a key handler is fine in a program that
+          registers its tasks once at start and reads them later. For anything
+          that adds and removes tasks while it runs, share a
+          <code>shared_ptr</code>-owned struct with atomic fields instead. Card 8d
+          does this.
+        </li>
+      </ul>
+
+      <p>
+        State the routine alone touches does not belong in the map at all.
+        <code>gap</code> is an ordinary local.
+      </p>
+    </details>
+
+    <h2>Expansion 5: Stopping, Cancelling, Restarting</h2>
+
+    <details>
+      <summary>Click to expand: Three ways to end or rewind a routine</summary>
+
+      <ul>
+        <li>
+          <code>task-&gt;set_should_terminate(true)</code>: the loop checks the
+          flag at the top and breaks. Cooperative. Nothing is interrupted
+          mid-phrase.
+        </li>
+        <li>
+          <code>MayaFlux::cancel_task("phrase")</code>: removes the task from the
+          scheduler and sets the terminate flag. The frame is released when the
+          last reference drops.
+        </li>
+        <li>
+          <code>restart_task("phrase")</code>: sets a <code>"restart"</code> state
+          flag to true and resumes the routine. It does not rewind the coroutine.
+          The body has to read that flag and reset its own state, which is what
+          <code>Kriya::line</code> does when built restartable.
+        </li>
+      </ul>
+
+      <p>
+        The flag is only checked at the top of the loop, so a terminate request
+        lets the current phrase finish. Move the check inside the sections to make
+        it leave sooner.
+      </p>
+    </details>
+
+    <h2>Expansion 6: Everything Before This Card Is a Routine Like This</h2>
+
+    <details>
+      <summary>Click to expand: The abstraction stack is transparent</summary>
+
+      <ul>
+        <li>
+          <strong>metro</strong>: one loop with a fixed delay and a callback.
+        </li>
+        <li>
+          <strong>Timer</strong>: one delay, one callback, return.
+        </li>
+        <li>
+          <strong>sequence / EventChain</strong>: a loop over a vector of
+          <code>(delay, callback)</code> pairs.
+        </li>
+        <li>
+          <strong>Trigger, Gate, Toggle</strong>: a loop calling
+          <code>process_sample</code> on a Logic node every sample and letting the
+          node's own callbacks decide.
+        </li>
+        <li>
+          <strong>line</strong>: a loop writing a running value into promise
+          state under <code>"current_value"</code>, read from outside through the
+          handle.
+        </li>
+      </ul>
+
+      <p>
+        Each of them fixes one shape of waiting. A routine is the layer where the
+        shape is yours.
+      </p>
+    </details>
+
+    <h2>Expansion 7: Mesh Transforms From the Audio Thread</h2>
+
+    <details>
+      <summary>Click to expand: An honest note about set_bar</summary>
+
+      <p>
+        <code>set_bar</code> runs on the audio thread and writes a 4x4 matrix that
+        the graphics thread reads later. A read that lands in the middle of a
+        write can draw one frame with a mixed transform. For a bar chart that is
+        invisible, and it does not block the audio callback, which is the
+        constraint that matters.
+      </p>
+
+      <p>
+        If a value must arrive whole, publish it through an atomic and apply it
+        from a <code>GraphicsRoutine</code>. Card 8d shows the pattern.
+      </p>
+    </details>
+  </section>
+
+
+  <hr />
+
+  <!-- =================== CHILD CARD 2: GraphicsRoutine =================== -->
+
+  <div class="tutorial-row">
+    <div class="tutorial-card" data-target="graphicsroutine-detail">
+      <h3 class="tutorial-title">Drawing a Wavetable (GraphicsRoutine)</h3>
+      <p class="hint">Click this card to reveal full explanation</p>
+
+      <p>
+        A <code>GraphicsRoutine</code> is structurally identical to a
+        <code>SoundRoutine</code>. The differences are the clock and the thread.
+        <code>co_await FrameDelay{N}</code> suspends for N frames of the frame
+        clock, and the routine resumes on the graphics thread.
+      </p>
+
+      <p>
+        This one crosses into sound. The routine computes one cycle of a waveform
+        as 480 numbers. Every frame it writes them into a stream that a sampler
+        loops, and draws them as a curve. The picture is the sound. Its body is a
+        script on the frame clock: glide to a shape, hold it, flutter, rest, move
+        to the next.
+      </p>
+
+      <pre><code class="language-cpp">
+constexpr size_t kTable = 480;
+constexpr double kTau = 6.283185307179586;
+
+double shape_sine(double x)   { return std::sin(kTau * x); }
+double shape_saw(double x)    { return 2.0 * x - 1.0; }
+double shape_square(double x) { return x &lt; 0.5 ? 0.8 : -0.8; }
+double shape_hollow(double x) {
+    return 0.6 * std::sin(kTau * 3.0 * x) + 0.4 * std::sin(kTau * 5.0 * x);
+}
+
+GraphicsRoutine scribe(
+    std::shared_ptr&lt;Kakshya::DynamicSoundStream&gt; stream,
+    std::shared_ptr&lt;::PathGeneratorNode&gt; path)
+{
+    auto&amp; promise = co_await GetGraphicsPromise{};
+
+    using Shape = double (*)(double);
+    const Shape shapes[] = { shape_sine, shape_saw, shape_square, shape_hollow };
+
+    std::vector&lt;double&gt; table(kTable, 0.0);
+    std::vector&lt;double&gt; out(kTable, 0.0);
+
+    auto publish = [&amp;](double gain) {
+        for (size_t i = 0; i &lt; kTable; ++i) {
+            out[i] = table[i] * gain * 0.4;
+        }
+        stream-&gt;write_frames(std::span&lt;const double&gt;(out));
+
+        path-&gt;clear_path();
+        for (size_t i = 0; i &lt; kTable; i += 5) {
+            const float x = -0.9f + 1.8f * static_cast&lt;float&gt;(i) / static_cast&lt;float&gt;(kTable);
+            const float y = static_cast&lt;float&gt;(table[i] * gain) * 0.6f;
+            path-&gt;add_control_point({ glm::vec3(x, y, 0.f), glm::vec3(.4f, .8f, 1.f), 3.f });
+        }
+    };
+
+    while (true) {
+        for (const Shape shape : shapes) {
+            if (promise.should_terminate) co_return;
+
+            for (int frame = 0; frame &lt; 90; ++frame) {
+                for (size_t i = 0; i &lt; kTable; ++i) {
+                    const double target = shape(static_cast&lt;double&gt;(i) / kTable);
+                    table[i] += (target - table[i]) * 0.06;
+                }
+                publish(1.0);
+                co_await FrameDelay{ 1 };
+            }
+
+            co_await FrameDelay{ 150 };
+
+            for (int k = 0; k &lt; 6; ++k) {
+                publish(k % 2 == 0 ? 0.25 : 1.0);
+                co_await FrameDelay{ 4 };
+            }
+
+            publish(1.0);
+            co_await FrameDelay{ 60 };
+        }
+    }
+}
+
+void compose() {
+    auto window = create_window({ "Wavetable", 1200, 800 });
+
+    auto path = vega.PathGeneratorNode(
+        Kinesis::InterpolationMode::CATMULL_ROM, 4, 128) | Graphics;
+    auto buffer = vega.GeometryBuffer(path) | Graphics;
+    buffer-&gt;setup_rendering({
+        .target_window = window,
+        .topology = Portal::Graphics::PrimitiveTopology::LINE_STRIP });
+    window-&gt;show();
+
+    auto stream = std::make_shared&lt;Kakshya::DynamicSoundStream&gt;(48000, 1);
+    std::vector&lt;double&gt; seed(kTable);
+    for (size_t i = 0; i &lt; kTable; ++i) {
+        seed[i] = 0.4 * shape_sine(static_cast&lt;double&gt;(i) / kTable);
+    }
+    stream-&gt;write_frames(std::span&lt;const double&gt;(seed));
+
+    auto layer = create_sampler_from_stream(stream, 0);
+    layer-&gt;play_continuous(0, layer-&gt;slice_from_stream());
+    store(layer);
+
+    schedule_task("scribe", scribe(stream, path));
+}
+      </code></pre>
+
+      <p>
+        Run this. A low hum starts. On screen a curve rises out of a flat line and
+        settles into one sine cycle. Then it slides toward a saw and the hum
+        brightens as the corner sharpens. It holds, flutters in level four times,
+        rests, and moves on to a square, then a hollow two-harmonic shape, then
+        back to the sine.
+      </p>
+
+      <p>
+        Change <code>0.06</code> to <code>0.01</code> and the glide takes seconds:
+        the timbre slowly opens instead of stepping. Change
+        <code>FrameDelay{ 1 }</code> in the glide to <code>FrameDelay{ 8 }</code>
+        and you hear the table update as a zipper, because you have set the update
+        rate. Change <code>kTable</code> to <code>240</code> and the pitch doubles.
+      </p>
+
+      <p>
+        <strong>The frame clock is writing audio.</strong> Nothing in this routine
+        touches the audio thread. It writes numbers into a container, and the
+        audio thread reads that container on its own schedule.
+      </p>
+    </div>
+  </div>
+
+  <section id="graphicsroutine-detail" class="tutorial-expanded">
+    <h2>Expansion 1: The Picture Is the Sound</h2>
+
+    <details>
+      <summary>Click to expand: One table, two readers</summary>
+
+      <p>
+        <code>table</code> holds one cycle of the waveform. <code>publish</code>
+        reads it twice. Once to fill <code>out</code> for the audio side, with a
+        gain and a safety scale of 0.4. Once to place 96 control points for the
+        curve, taking every fifth of the 480 values.
+      </p>
+
+      <p>
+        The sampler loops the stream, so the stream's length is the wave's
+        period. 480 samples at 48 kHz is 100 Hz. The curve you see is exactly the
+        shape of that one period, which is why the timbre follows the picture.
+      </p>
+
+      <p>
+        The seed write in <code>compose()</code> comes before the sampler is
+        created. The sampler slices the stream as it stands when you ask, and an
+        empty stream slices to nothing.
+      </p>
+    </details>
+
+    <h2>Expansion 2: A Graphics Thread Writing What the Audio Thread Reads</h2>
+
+    <details>
+      <summary>Click to expand: How the container makes this safe</summary>
+
+      <p>
+        <code>DynamicSoundStream</code> guards its data with a sequence lock. A
+        write takes the write side. A read that overlaps a write notices and
+        retries. So the audio thread never takes a mutex, and a half-written table
+        is not what it plays.
+      </p>
+
+      <p>
+        "Graphics" in <code>GraphicsRoutine</code> names a clock and a thread. It
+        does not name a GPU boundary. Writing samples from it is ordinary
+        programming, and the one constraint in the whole design is that nothing
+        blocks the audio callback.
+      </p>
+
+      <p>
+        The write is 480 doubles. It lands once per frame, so a table that changes
+        smoothly is heard as a smooth change. A table that jumps is heard as a
+        step, which is the zipper from the <code>FrameDelay{ 8 }</code> experiment.
+      </p>
+    </details>
+
+    <h2>Expansion 3: Waits Compose Like Code</h2>
+
+    <details>
+      <summary>Click to expand: Four different delays in one loop</summary>
+
+      <p>The body waits in four different ways per shape:</p>
+
+      <ul>
+        <li><code>FrameDelay{ 1 }</code> ninety times: the glide, one step per frame.</li>
+        <li><code>FrameDelay{ 150 }</code> once: the hold, two and a half seconds.</li>
+        <li><code>FrameDelay{ 4 }</code> six times: the flutter, fifteen updates a second.</li>
+        <li><code>FrameDelay{ 60 }</code> once: the rest before the next shape.</li>
+      </ul>
+
+      <p>
+        Nothing schedules these against each other. Each wait is a line, and the
+        next line runs when it ends. A gate over a sample loop, a hold, a fast
+        gating figure and a rest would each be a separate object in a
+        callback-based design. Here they are consecutive statements, and the loop
+        around them makes the whole thing repeat.
+      </p>
+    </details>
+
+    <h2>Expansion 4: Locals Are State</h2>
+
+    <details>
+      <summary>Click to expand: What does not need the promise map</summary>
+
+      <p>
+        <code>table</code>, <code>out</code> and the shape list are locals of the
+        coroutine. They live in the frame, and only this routine touches them, so
+        there is no reason to route them through <code>set_state</code>. The
+        promise map is for values that outside code needs to reach. Everything
+        else can be a variable.
+      </p>
+
+      <p>
+        The only object shared with another thread is the stream, and the
+        container owns its own synchronisation.
+      </p>
+    </details>
+
+    <h2>Expansion 5: FrameDelay Counts Frames, Not Seconds</h2>
+
+    <details>
+      <summary>Click to expand: Converting between domains</summary>
+
+      <p>
+        <code>FrameDelay{N}</code> is a count of frame-clock ticks. If you want
+        seconds, convert with the frame rate:
+        <code>sched.seconds_to_units(0.25, Vruta::ProcessingToken::FRAME_ACCURATE)</code>.
+        <code>seconds_to_samples</code> converts against the audio rate, so it
+        gives the wrong number here.
+      </p>
+
+      <p>
+        Time in the scheduler is domain integers with seconds as the bridge
+        between them. Sample counts and frame counts never mix directly. Card 8c
+        is the case where one suspension needs both.
+      </p>
+    </details>
+  </section>
+
+  <!-- =================== CHILD CARD 3: CrossRoutine =================== -->
+
+
+  <hr />
+
+  <div class="tutorial-row">
+    <div class="tutorial-card" data-target="crossroutine-detail">
+      <h3 class="tutorial-title">A Score Across Two Clocks (CrossRoutine)</h3>
+      <p class="hint">Click this card to reveal full explanation</p>
+
+      <p>
+        A <code>SoundRoutine</code> answers to the sample clock and a
+        <code>GraphicsRoutine</code> answers to the frame clock. A
+        <code>CrossRoutine</code> answers to both.
+        <code>co_await MultiRateDelay{ samples, frames }</code> arms the clocks
+        you give a nonzero count, and the routine resumes only after every armed
+        clock has reached its target. A zero on one axis disarms that clock for
+        the suspension.
+      </p>
+
+      <p>
+        That gives one body three kinds of wait. Frames only: the code after it
+        runs on the graphics thread. Samples only: it runs on the audio thread.
+        Both: it runs when the slower clock arrives. The score below uses all
+        three. A spiral is drawn one point per frame. A half-second barrier holds
+        until both clocks have passed it. Then a roll of kicks accelerates on the
+        sample clock. <code>CrossRoutine</code> has no <code>schedule_task</code>
+        overload yet, so it is wrapped in a <code>shared_ptr</code> and handed to
+        the scheduler directly.
+      </p>
+
+      <pre><code class="language-cpp">
+void align(cross_promise&amp; promise, TaskScheduler&amp; sched) {
+    promise.next_sample.store(
+        sched.current_units(ProcessingToken::SAMPLE_ACCURATE),
+        std::memory_order_release);
+    promise.next_frame.store(
+        sched.current_units(ProcessingToken::FRAME_ACCURATE),
+        std::memory_order_release);
+}
+
+CrossRoutine score(
+    TaskScheduler&amp; sched,
+    std::shared_ptr&lt;::PathGeneratorNode&gt; path,
+    std::function&lt;void()&gt; play_kick)
+{
+    auto&amp; promise = co_await GetCrossPromise{};
+
+    const double gaps[] = { 0.30, 0.22, 0.16, 0.11, 0.08, 0.06 };
+
+    while (true) {
+        if (promise.should_terminate) break;
+
+        align(promise, sched);
+        co_await MultiRateDelay{ 0, 1 };
+
+        path-&gt;clear_path();
+        for (int i = 0; i &lt; 90; ++i) {
+            const float t = static_cast&lt;float&gt;(i) / 89.f;
+            const float angle = 0.21f * static_cast&lt;float&gt;(i);
+            const float radius = 0.06f + 0.009f * static_cast&lt;float&gt;(i);
+            path-&gt;add_control_point({
+                glm::vec3(std::cos(angle) * radius, std::sin(angle) * radius, 0.f),
+                glm::mix(glm::vec3(.2f, .6f, 1.f), glm::vec3(1.f, .4f, .3f), t),
+                2.f + 3.f * t });
+            co_await MultiRateDelay{ 0, 1 };
+        }
+
+        align(promise, sched);
+        co_await MultiRateDelay{ seconds_to_samples(0.5), 30 };
+
+        align(promise, sched);
+        co_await MultiRateDelay{ 1, 0 };
+
+        for (const double gap : gaps) {
+            play_kick();
+            co_await MultiRateDelay{ seconds_to_samples(gap), 0 };
+        }
+    }
+}
+
+void compose() {
+    auto window = create_window({ "Score", 1200, 800 });
+
+    auto path = vega.PathGeneratorNode(
+        Kinesis::InterpolationMode::CATMULL_ROM, 6, 60) | Graphics;
+    auto buffer = vega.GeometryBuffer(path) | Graphics;
+    buffer-&gt;setup_rendering({
+        .target_window = window,
+        .topology = Portal::Graphics::PrimitiveTopology::LINE_STRIP });
+    window-&gt;show();
+
+    auto kick = create_sampler("path/to/kick.wav");
+    kick-&gt;load(0, kick-&gt;slice_from_stream());
+
+    auto routine = std::make_shared&lt;CrossRoutine&gt;(
+        score(*get_scheduler(), path, [kick] { kick-&gt;play(0); }));
+    get_scheduler()-&gt;add_task(routine, "score");
+}
+      </code></pre>
+
+      <p>
+        Run this. A spiral unwinds from the centre, one point per frame, blue
+        shifting to orange. Only the newest sixty points survive, so the curve is
+        a comet that chases its own tail. When the last point lands there is half
+        a second of nothing. Then six kicks arrive with shrinking gaps, 300 ms
+        down to 60 ms, and the spiral starts over.
+      </p>
+
+      <p>
+        Change the <code>30</code> in the barrier to <code>60</code> and the rest
+        doubles: the frame clock is now the slower of the two. Change
+        <code>seconds_to_samples(0.5)</code> to <code>seconds_to_samples(2.0)</code>
+        and the sample clock governs instead. Delete the two
+        <code>align</code> calls before the roll and the kicks bunch together into
+        one burst.
+      </p>
+
+      <p>
+        <strong>This routine hops threads by choosing its waits.</strong> The
+        spiral points are added on the graphics thread and the kicks are fired on
+        the audio thread, from one function, with no queue between them.
+      </p>
+    </div>
+  </div>
+
+  <section id="crossroutine-detail" class="tutorial-expanded">
+    <h2>Expansion 1: Arming Decides the Thread</h2>
+
+    <details>
+      <summary>Click to expand: Who resumes you</summary>
+
+      <p>
+        A cross routine lives in one task list. Both the sample-clock pump on the
+        audio thread and the frame-clock pump on the graphics thread scan it, and
+        each offers the routine a resume with its own context. What each pump can
+        do with that offer depends on which clocks the current wait armed:
+      </p>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Suspension</th>
+            <th>Armed clocks</th>
+            <th>Body resumes on</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>MultiRateDelay{ 0, 1 }</code></td>
+            <td>frame only</td>
+            <td>the graphics thread</td>
+          </tr>
+          <tr>
+            <td><code>MultiRateDelay{ 24000, 0 }</code></td>
+            <td>sample only</td>
+            <td>the audio thread</td>
+          </tr>
+          <tr>
+            <td><code>MultiRateDelay{ 24000, 30 }</code></td>
+            <td>sample and frame</td>
+            <td>whichever clock arrives last</td>
+          </tr>
+          <tr>
+            <td><code>MultiRateDelay{ 0, 0 }</code></td>
+            <td>none</td>
+            <td>does not suspend</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p>
+        A pump that has nothing armed on its clock cannot satisfy the wait, so it
+        cannot be the thread that resumes. That is why the spiral, which waits on
+        frames only, runs entirely on the graphics thread, and the roll, which
+        waits on samples only, runs entirely on the audio thread.
+      </p>
+
+      <p>
+        Two spots have no guaranteed thread. The code before the first wait runs
+        on whichever pump initialised the routine, so the score does nothing
+        thread-sensitive there. And the code right after the barrier runs on
+        whichever clock was slower, so the score spends the barrier's landing on a
+        one-sample wait to get back onto the audio thread before firing a kick.
+      </p>
+    </details>
+
+    <h2>Expansion 2: All Armed Clocks, Then One Resume</h2>
+
+    <details>
+      <summary>Click to expand: What the gate does</summary>
+
+      <p>On each offer the routine:</p>
+
+      <ol>
+        <li>
+          Marks the offering clock satisfied if the position has reached the
+          target and that clock was armed.
+        </li>
+        <li>
+          Returns without resuming if any armed clock is still unsatisfied.
+        </li>
+        <li>
+          Otherwise performs a compare-exchange from
+          <code>MULTIPLE</code> to <code>NONE</code> on its delay context. Only
+          the thread whose exchange succeeds resumes the handle. If both pumps
+          arrive at the same moment, one wins and the other backs off.
+        </li>
+        <li>
+          Clears both satisfaction flags before resuming, so the next suspension
+          starts clean.
+        </li>
+      </ol>
+    </details>
+
+    <h2>Expansion 3: Unarmed Clocks Fall Behind</h2>
+
+    <details>
+      <summary>Click to expand: Why the score calls align</summary>
+
+      <p>
+        Each wait adds its counts to two stored targets, <code>next_sample</code>
+        and <code>next_frame</code>. Nothing pulls a target up to the present
+        time. A clock that a wait leaves unarmed keeps its old target while real
+        time moves on.
+      </p>
+
+      <p>
+        In the score, the spiral arms only frames, so for a second and a half
+        <code>next_sample</code> stands still. When the roll then waits
+        <code>{ 14400, 0 }</code>, its target is the stale value plus 14400, which
+        is already in the past. Every wait is satisfied on the spot and the kicks
+        fire back to back. The same thing happens the other way round when the
+        roll hands back to the spiral.
+      </p>
+
+      <p>
+        The fix is the <code>align</code> helper. It stores the current position of
+        each clock into the two targets. Call it before any phase that leaves the
+        axis it last used. The promise fields are public atomics, so it is safe to
+        write them while the routine is running: no pump reads them until the next
+        suspension.
+      </p>
+
+      <p>
+        The same mistake shows up at registration. A cross routine is initialised
+        by whichever pump sees it first, and that pump seeds both targets from its
+        own clock. The sample clock counts far faster than the frame clock, so a
+        routine that an audio pump initialises late in a session can start with a
+        frame target thousands of frames ahead and wait effectively forever. The
+        first <code>align</code> in the score overwrites that seed.
+      </p>
+    </details>
+
+    <h2>Expansion 4: What the Barrier Is For</h2>
+
+    <details>
+      <summary>Click to expand: A wait neither clock can shorten</summary>
+
+      <p>
+        <code>MultiRateDelay{ seconds_to_samples(0.5), 30 }</code> is half a
+        second on both clocks. While both run at their normal rates the two
+        targets arrive together and the wait behaves like any half-second rest.
+      </p>
+
+      <p>
+        The difference appears when one clock is late. If the graphics thread
+        stalls for a moment, the routine holds until the frame clock has actually
+        reached its target, and the roll starts after the picture has caught up.
+        If audio dropouts hold back the sample clock, the roll waits for those
+        too. Neither domain runs ahead of the other across a barrier. A
+        <code>SoundRoutine</code> cannot make that promise about frames, and a
+        <code>GraphicsRoutine</code> cannot make it about samples.
+      </p>
+    </details>
+
+    <h2>Expansion 5: Fabric Handles This for You</h2>
+
+    <details>
+      <summary>Click to expand: The .use(CrossFactory) path</summary>
+
+      <p>
+        When a cross routine needs to be owned and cancelled with a Nexus entity,
+        pass a factory that returns a <code>Vruta::CrossRoutine</code> to
+        <code>Fabric</code>'s wiring <code>.use(...)</code>. Fabric registers it
+        with the scheduler and cancels it when the entity is released, so you do
+        not call <code>add_task</code> or <code>cancel_task</code> yourself. This
+        is the same mechanism Card 7 used for graphics routines, extended to the
+        third type.
+      </p>
+    </details>
+  </section>
+
+  <hr />
+
+  <!-- =================== CHILD CARD 4: FreeRoutine =================== -->
+
+  <div class="tutorial-row">
+    <div class="tutorial-card" data-target="freeroutine-detail">
+      <h3 class="tutorial-title">Life Off the Clocks (FreeRoutine)</h3>
+      <p class="hint">Click this card to reveal full explanation</p>
+
+      <p>
+        A <code>FreeRoutine</code> has no clock. It suspends on
+        <code>co_await ConditionAwaiter{ predicate }</code> and a dedicated
+        scheduler thread evaluates the predicate over and over. The moment it
+        returns true, the routine resumes on that thread.
+      </p>
+
+      <p>
+        That makes it the place for computation whose pace comes from something
+        other than time. Here it steps Conway's Game of Life on a 48 by 48 grid.
+        Its body waits three times, on three different conditions: not paused,
+        asked for a step, and, if the world has died, told to reseed. A graphics
+        routine draws each generation and asks for the next.
+      </p>
+
+      <pre><code class="language-cpp">
+constexpr int kSide = 48;
+using Grid = std::array&lt;uint8_t, kSide * kSide&gt;;
+
+struct Life {
+    std::array&lt;Grid, 2&gt;   grid {};
+    std::atomic&lt;int&gt;      front { 0 };
+    std::atomic&lt;bool&gt;     want { false };
+    std::atomic&lt;bool&gt;     paused { false };
+    std::atomic&lt;bool&gt;     reseed { false };
+    std::atomic&lt;uint64_t&gt; generation { 0 };
+};
+
+uint32_t randomize(Grid&amp; g, std::mt19937&amp; rng) {
+    uint32_t alive = 0;
+    for (auto&amp; c : g) {
+        c = (rng() % 4) == 0;
+        alive += c;
+    }
+    return alive;
+}
+
+uint32_t step(const Grid&amp; in, Grid&amp; out) {
+    uint32_t alive = 0;
+    for (int y = 0; y &lt; kSide; ++y) {
+        for (int x = 0; x &lt; kSide; ++x) {
+            int n = 0;
+            for (int dy = -1; dy &lt;= 1; ++dy) {
+                for (int dx = -1; dx &lt;= 1; ++dx) {
+                    if (dx != 0 || dy != 0) {
+                        n += in[((y + dy + kSide) % kSide) * kSide + (x + dx + kSide) % kSide];
+                    }
+                }
+            }
+            const uint8_t next = in[y * kSide + x] ? (n == 2 || n == 3) : (n == 3);
+            out[y * kSide + x] = next;
+            alive += next;
+        }
+    }
+    return alive;
+}
+
+FreeRoutine evolve(std::shared_ptr&lt;Life&gt; life) {
+    std::mt19937 rng(7);
+
+    while (true) {
+        co_await ConditionAwaiter{ [life] {
+            return !life-&gt;paused.load(std::memory_order_acquire);
+        } };
+
+        co_await ConditionAwaiter{ [life] {
+            return life-&gt;want.load(std::memory_order_acquire);
+        } };
+
+        const int f = life-&gt;front.load(std::memory_order_relaxed);
+        uint32_t alive = step(life-&gt;grid[f], life-&gt;grid[1 - f]);
+
+        if (alive == 0) {
+            co_await ConditionAwaiter{ [life] {
+                return life-&gt;reseed.load(std::memory_order_acquire);
+            } };
+        }
+        if (life-&gt;reseed.exchange(false, std::memory_order_acq_rel)) {
+            alive = randomize(life-&gt;grid[1 - f], rng);
+        }
+
+        life-&gt;front.store(1 - f, std::memory_order_release);
+        life-&gt;generation.fetch_add(1, std::memory_order_release);
+        life-&gt;want.store(false, std::memory_order_release);
+    }
+}
+
+GraphicsRoutine show(std::shared_ptr&lt;Life&gt; life, auto points) {
+    auto&amp; promise = co_await GetGraphicsPromise{};
+    uint64_t seen = ~uint64_t { 0 };
+
+    while (true) {
+        if (promise.should_terminate) break;
+
+        const uint64_t g = life-&gt;generation.load(std::memory_order_acquire);
+        if (g != seen) {
+            seen = g;
+            const Grid&amp; cells = life-&gt;grid[life-&gt;front.load(std::memory_order_acquire)];
+
+            points-&gt;clear_points();
+            for (int y = 0; y &lt; kSide; ++y) {
+                for (int x = 0; x &lt; kSide; ++x) {
+                    if (!cells[y * kSide + x]) continue;
+                    points-&gt;add_point({
+                        glm::vec3(-0.95f + 1.9f * static_cast&lt;float&gt;(x) / (kSide - 1),
+                                  -0.95f + 1.9f * static_cast&lt;float&gt;(y) / (kSide - 1), 0.f),
+                        glm::vec3(.4f, 1.f, .6f),
+                        6.f });
+                }
+            }
+
+            life-&gt;want.store(true, std::memory_order_release);
+        }
+
+        co_await FrameDelay{ 3 };
+    }
+}
+
+void compose() {
+    auto window = create_window({ "Life", 1000, 1000 });
+
+    auto points = vega.PointCollectionNode() | Graphics;
+    auto buffer = vega.GeometryBuffer(points) | Graphics;
+    buffer-&gt;setup_rendering({ .target_window = window });
+    window-&gt;show();
+
+    auto life = std::make_shared&lt;Life&gt;();
+    std::mt19937 seed(1);
+    randomize(life-&gt;grid[0], seed);
+
+    schedule_task("life", evolve(life));
+    schedule_task("life_view", show(life, points));
+
+    on_key_pressed(window, IO::Keys::Space, [life]() {
+        life-&gt;paused.store(!life-&gt;paused.load());
+    });
+
+    on_key_pressed(window, IO::Keys::R, [life]() {
+        life-&gt;reseed.store(true);
+    });
+}
+      </code></pre>
+
+      <p>
+        Run this. A field of green cells churns and settles into blinkers, blocks
+        and gliders, about twenty generations a second. Space freezes it and
+        releases it. R scatters a new random world over the current one.
+      </p>
+
+      <p>
+        Change <code>FrameDelay{ 3 }</code> to <code>FrameDelay{ 1 }</code> and it
+        runs at frame rate. Change <code>rng() % 4</code> to <code>rng() % 2</code>
+        and the world starts crowded and dies back. Change <code>kSide</code> to
+        <code>128</code> and the routine does sixteen thousand cells per step on a
+        thread that neither clock owns.
+      </p>
+
+      <p>
+        <strong>The step ran on a third thread.</strong> The graphics routine asked
+        and read. The audio thread never knew.
+      </p>
+    </div>
+  </div>
+
+  <section id="freeroutine-detail" class="tutorial-expanded">
+    <h2>Expansion 1: Three Waits, Three Predicates</h2>
+
+    <details>
+      <summary>Click to expand: A body that waits on different things in turn</summary>
+
+      <p>Each iteration of <code>evolve</code> passes through up to three waits:</p>
+
+      <ol>
+        <li>
+          <code>!paused</code>: block here while the world is frozen.
+        </li>
+        <li>
+          <code>want</code>: block until the viewer asks for the next generation.
+        </li>
+        <li>
+          <code>reseed</code>: only if the step produced an empty grid, block until
+          someone says what to do about it.
+        </li>
+      </ol>
+
+      <p>
+        The predicates share nothing except that each returns a bool. A
+        <code>SoundRoutine</code> waits on time and a <code>GraphicsRoutine</code>
+        waits on frames. A <code>FreeRoutine</code> waits on whatever you can
+        write as a function, and it can wait on something different every line.
+      </p>
+
+      <p>
+        When the grid dies, the routine has already computed the empty
+        generation into the back buffer but has not published it. The screen keeps
+        showing the last living generation until R is pressed, then the reseeded
+        grid replaces the empty one. The R key also works on a living world, since
+        the reseed flag is consumed after the extinction check.
+      </p>
+    </details>
+
+    <h2>Expansion 2: The Handshake Keeps Two Threads Off One Grid</h2>
+
+    <details>
+      <summary>Click to expand: Double buffering with one request per response</summary>
+
+      <p>
+        The grid exists twice. <code>front</code> names the generation the viewer
+        may read. The free routine only ever writes the other one, and flips
+        <code>front</code> as its last act.
+      </p>
+
+      <p>
+        The viewer reads only in a frame where <code>generation</code> has
+        changed, and it sets <code>want</code> only after it has finished reading.
+        So a request always follows a completed read, and a response always
+        follows a completed write. The reader is never looking at a buffer the
+        writer is filling, and there is no lock. The release store on
+        <code>generation</code> and the acquire load in the viewer are what carry
+        the finished grid across.
+      </p>
+
+      <p>
+        The initial seed in <code>compose()</code> is written before either
+        routine is scheduled, so it needs no synchronisation.
+      </p>
+    </details>
+
+    <h2>Expansion 3: The Condition Thread Spins</h2>
+
+    <details>
+      <summary>Click to expand: What the cost is and what pays for it</summary>
+
+      <p>
+        The scheduler starts one dedicated thread the first time a
+        <code>FreeRoutine</code> is added. That thread loops without sleeping: it
+        drains pending operations, then for every routine in the list it checks
+        whether the routine is armed and, if so, evaluates the predicate. With
+        nothing to do it yields, but it does not block.
+      </p>
+
+      <p>
+        In practice that is one core running near full occupancy for as long as
+        any free routine exists. It is a design choice: resume latency is the time
+        to the next pass, not a timer period or a wake-up.
+      </p>
+
+      <p>Two things follow from that.</p>
+
+      <ul>
+        <li>
+          <strong>The predicate is the throttle.</strong> A cheap
+          <code>atomic&lt;bool&gt;</code> load is nearly free. A predicate that
+          allocates or takes a lock is paid for millions of times a second.
+        </li>
+        <li>
+          <strong>The routine body is the hot path.</strong> Whatever you do after
+          the <code>co_await</code> runs on that thread while every other free
+          routine waits. Long work delays the others.
+        </li>
+      </ul>
+    </details>
+
+    <h2>Expansion 4: The First Predicate Can Be True at Start</h2>
+
+    <details>
+      <summary>Click to expand: A start-up detail specific to free routines</summary>
+
+      <p>
+        Like every routine, calling the coroutine function runs its body
+        immediately up to the first suspension. For sound, graphics and cross
+        routines the first suspension is the promise request, which always
+        suspends. A <code>FreeRoutine</code> has no promise request. Its first
+        suspension is whatever your first <code>co_await ConditionAwaiter</code>
+        is.
+      </p>
+
+      <p>
+        If that predicate is already true, <code>await_ready</code> returns true,
+        the coroutine does not suspend, and the body carries on
+        <em>on the thread that called the function</em>, which is your
+        <code>compose()</code>. In <code>evolve</code> the first predicate,
+        <code>!paused</code>, is true at start, so the body runs through it on the
+        composing thread and arms on the second wait, <code>want</code>. Nothing
+        between them has a side effect, so it is harmless. Anything with side
+        effects before the first false predicate would run on the wrong thread.
+      </p>
+    </details>
+
+    <h2>Expansion 5: What Belongs Here</h2>
+
+    <details>
+      <summary>Click to expand: Work with no clock of its own</summary>
+
+      <p>
+        A free routine suits any iterative process whose pace comes from
+        something other than time. Cellular automata that step when a request
+        arrives. A physics integrator that runs as fast as it can and publishes
+        snapshots. A model that infers when input is ready. A search that
+        continues until a target is met.
+      </p>
+
+      <p>
+        What does not belong here is anything that has a natural clock. If it
+        should happen every 500 ms, it is a <code>SoundRoutine</code>. If it
+        should happen every frame, it is a <code>GraphicsRoutine</code>. The free
+        routine is for what those two cannot express.
+      </p>
+    </details>
+
+    <h2>Expansion 6: Cancelling and Ending</h2>
+
+    <details>
+      <summary>Click to expand: Same verbs, one difference</summary>
+
+      <p>
+        <code>cancel_task("life")</code> and
+        <code>set_should_terminate(true)</code> work as with the other routines.
+        The pump thread checks <code>should_terminate</code> before every resume,
+        so a cancelled routine never resumes again.
+      </p>
+
+      <p>
+        Because the body only runs after a predicate is true, a routine parked on
+        <code>want</code> never reaches a <code>should_terminate</code> check
+        inside your loop. That is fine here, since the scheduler stops resuming
+        it. If you need to run cleanup on exit, add the flag to the predicate:
+        <code>return want.load() || promise.should_terminate;</code>, then check
+        it after the <code>co_await</code>.
+      </p>
+    </details>
+  </section>
+
+  <!-- =================== WHAT YOU'VE LEARNED =================== -->
+
+  <hr />
+
+  <h2>What You've Learned</h2>
+
+  <ul>
+    <li>
+      <strong>Many waits, one body</strong>: a routine holds as many waits as it
+      likes, and loops, branches and locals carry the state a callback would need
+      a state machine for.
+    </li>
+    <li>
+      <strong>SoundRoutine</strong>: sample clock, audio thread.
+      <code>SampleDelay</code>, <code>BufferDelay</code>. State in the promise map.
+    </li>
+    <li>
+      <strong>GraphicsRoutine</strong>: frame clock, graphics thread.
+      <code>FrameDelay</code>. It can write data the audio thread reads, through a
+      container that owns its synchronisation.
+    </li>
+    <li>
+      <strong>CrossRoutine</strong>: both clocks, all armed clocks satisfied, one
+      thread resumes. Arming frames only lands you on the graphics thread, samples
+      only on the audio thread. Re-align the clocks when you switch axes.
+    </li>
+    <li>
+      <strong>FreeRoutine</strong>: no clock, a predicate,
+      <code>ConditionAwaiter</code>, a dedicated spinning thread. Different
+      predicates in sequence.
+    </li>
+    <li>
+      <strong>schedule_task</strong>: registers a Sound, Graphics or Free routine
+      by name. Cross routines go through the scheduler directly for now.
+    </li>
+    <li>
+      <strong>Inputs are parameters</strong>: coroutine frames copy parameters and
+      do not own lambda captures.
+    </li>
+    <li>
+      <strong>Everything earlier is built from these.</strong> Metro, Timer,
+      sequence, Trigger, line, and Fabric's wiring are loops over the delays above.
+    </li>
+  </ul>
+
+    </div>
+</section>
