@@ -7,9 +7,11 @@
 {{- $page := .Get "page" -}}
 <details class="tutorial-lesson"{{ if $open }} open{{ end }}>
   <summary class="tutorial-lesson__summary">
-    <span class="tutorial-lesson__eyebrow">
-      {{- if $step }}{{ $step }} · {{ end -}}Tutorial
-    </span>
+    {{- if $step -}}
+      <span class="tutorial-lesson__progress" aria-hidden="true"></span>
+    {{- else -}}
+      <span class="tutorial-lesson__eyebrow">Tutorial</span>
+    {{- end -}}
     <span class="tutorial-lesson__title">{{ $title }}</span>
     {{- with $summary }}<span class="tutorial-lesson__description">{{ . }}</span>{{ end -}}
     {{- with $outcome }}<span class="tutorial-lesson__outcome"><strong>Outcome:</strong> {{ . }}</span>{{ end -}}

@@ -189,6 +189,12 @@
     opacity: 0.6;
 }
 
+.tutorial-lesson__progress {
+    display: flex;
+    align-items: center;
+    min-height: 0.72rem;
+}
+
 .tp-dots {
     display: flex;
     gap: 0.3rem;
@@ -320,6 +326,5 @@ pre code {
 pre:hover .copy-btn {
     opacity: 1;
 }
-
 
 
