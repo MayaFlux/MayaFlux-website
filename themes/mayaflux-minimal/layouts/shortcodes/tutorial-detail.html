@@ -1,0 +1,6 @@
+<details class="tutorial-detail">
+  <summary>{{ .Get "title" }}</summary>
+  <div class="tutorial-detail__body">
+    {{ .Inner | markdownify }}
+  </div>
+</details>

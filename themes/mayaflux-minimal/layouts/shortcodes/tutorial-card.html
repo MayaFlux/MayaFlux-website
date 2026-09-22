@@ -1,0 +1,29 @@
+{{- $title := .Get "title" -}}
+{{- $summary := .Get "summary" -}}
+{{- $outcome := .Get "outcome" -}}
+{{- $step := .Get "step" -}}
+{{- $open := eq (.Get "open") "true" -}}
+{{- $source := .Get "source" -}}
+{{- $page := .Get "page" -}}
+<details class="tutorial-lesson"{{ if $open }} open{{ end }}>
+  <summary class="tutorial-lesson__summary">
+    <span class="tutorial-lesson__eyebrow">
+      {{- if $step }}{{ $step }} · {{ end -}}Tutorial
+    </span>
+    <span class="tutorial-lesson__title">{{ $title }}</span>
+    {{- with $summary }}<span class="tutorial-lesson__description">{{ . }}</span>{{ end -}}
+    {{- with $outcome }}<span class="tutorial-lesson__outcome"><strong>Outcome:</strong> {{ . }}</span>{{ end -}}
+    <span class="tutorial-lesson__toggle" aria-hidden="true">Read lesson</span>
+  </summary>
+  <div class="tutorial-lesson__body">
+    {{- if $page -}}
+      {{- with site.GetPage $page -}}
+        {{ .Content }}
+      {{- end -}}
+    {{- else if $source -}}
+      {{ readFile $source | markdownify }}
+    {{- else -}}
+      {{ .Inner | markdownify }}
+    {{- end -}}
+  </div>
+</details>

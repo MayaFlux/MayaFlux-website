@@ -522,10 +522,113 @@ h4 {
     margin: 2rem 0;
 }
 
+/* Author-facing tutorial shortcode. Native disclosure keeps each lesson in
+   source order and makes it usable without the card-cloning script. */
+.tutorial-lesson {
+    margin: 2rem 0;
+    background: var(--paper-2, rgba(255, 255, 255, 0.03));
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+    overflow: hidden;
+}
+
+.tutorial-lesson__summary {
+    display: grid;
+    gap: 0.45rem;
+    padding: 1.2rem;
+    cursor: pointer;
+    list-style: none;
+}
+
+.tutorial-lesson__summary::-webkit-details-marker {
+    display: none;
+}
+
+.tutorial-lesson__summary:focus-visible {
+    outline: 2px solid var(--accent-primary, var(--primary));
+    outline-offset: -4px;
+}
+
+.tutorial-lesson__eyebrow,
+.tutorial-lesson__toggle {
+    color: var(--primary);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.tutorial-lesson__title {
+    color: var(--heading);
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+.tutorial-lesson__description,
+.tutorial-lesson__outcome {
+    color: var(--text);
+    line-height: 1.6;
+}
+
+.tutorial-lesson__outcome {
+    color: var(--text-muted, var(--text));
+}
+
+.tutorial-lesson__toggle::before {
+    content: "▸ ";
+}
+
+.tutorial-lesson[open] .tutorial-lesson__toggle::before {
+    content: "▾ ";
+}
+
+.tutorial-lesson[open] .tutorial-lesson__toggle {
+    font-size: 0;
+}
+
+.tutorial-lesson[open] .tutorial-lesson__toggle::after {
+    content: "Close lesson";
+    font-size: 0.75rem;
+}
+
+.tutorial-lesson__body {
+    padding: 0 1.2rem 1.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.tutorial-lesson__body > :first-child {
+    margin-top: 1.5rem;
+}
+
+.tutorial-detail {
+    margin: 1.25rem 0;
+}
+
+.tutorial-detail__body {
+    padding-top: 0.5rem;
+}
+
+.tutorial-subcard {
+    margin: 1rem 0;
+    padding: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+}
+
+.tutorial-subcard summary {
+    color: var(--heading);
+    font-weight: 700;
+}
+
 .tutorial-row {
     display: flex;
     flex-wrap: wrap;
     gap: 1rem;
+}
+
+.tutorial-row > .tutorial-lesson {
+    flex: 1 1 300px;
 }
 
 .tutorial-card {
