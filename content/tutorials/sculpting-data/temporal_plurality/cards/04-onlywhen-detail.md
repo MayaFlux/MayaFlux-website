@@ -1,6 +1,5 @@
 ---
 build:
-  render: never
   list: never
 ---
 
@@ -196,7 +195,6 @@ Change the Phasor frequency to `0.04f` for a slower rotation (25 second cycles, 
 
 {{< /tutorial-detail >}}
 {{< /tutorial-detail >}}
-
 
 
 

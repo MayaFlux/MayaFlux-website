@@ -1,6 +1,5 @@
 ---
 build:
-  render: never
   list: never
 ---
 
@@ -438,7 +437,6 @@ Increasing the rate to `1.0 / 24.0` doubles the point density without changing t
 
 {{< /tutorial-detail >}}
 {{< /tutorial-detail >}}
-
 
 
 

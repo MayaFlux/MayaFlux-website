@@ -1,6 +1,5 @@
 ---
 build:
-  render: never
   list: never
 ---
 
@@ -251,7 +250,6 @@ This composes with `EventChain`: the chain handles large structural transitions 
 
 {{< /tutorial-detail >}}
 {{< /tutorial-detail >}}
-
 
 
 

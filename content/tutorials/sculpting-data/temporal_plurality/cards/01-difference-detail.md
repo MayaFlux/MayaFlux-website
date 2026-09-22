@@ -1,6 +1,5 @@
 ---
 build:
-  render: never
   list: never
 ---
 
@@ -234,7 +233,6 @@ Metro lays down small points at a fixed 16ms grid. The Impulse fires at 20 Hz, m
 
 {{< /tutorial-detail >}}
 {{< /tutorial-detail >}}
-
 
 
 

@@ -1,6 +1,5 @@
 ---
 build:
-  render: never
   list: never
 ---
 
@@ -379,7 +378,6 @@ v.position.y = y_hill + y_crater;
 
 {{< /tutorial-detail >}}
 {{< /tutorial-detail >}}
-
 
 
 

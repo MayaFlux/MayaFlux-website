@@ -1,6 +1,5 @@
 ---
 build:
-  render: never
   list: never
 ---
 
@@ -377,4 +376,3 @@ Neither half has a controller orchestrating the parts. You declare each flow aga
 {{< /tutorial-detail >}}
 
 {{< /tutorial-subcard >}}
-

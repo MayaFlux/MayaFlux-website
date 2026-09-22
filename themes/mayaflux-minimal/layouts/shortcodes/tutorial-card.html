@@ -19,6 +19,8 @@
     {{- if $page -}}
       {{- with site.GetPage $page -}}
         {{ .Content }}
+      {{- else -}}
+        {{ errorf "tutorial-card: page %q was not found from %q" $page $.Page.Path }}
       {{- end -}}
     {{- else if $source -}}
       {{ readFile $source | markdownify }}

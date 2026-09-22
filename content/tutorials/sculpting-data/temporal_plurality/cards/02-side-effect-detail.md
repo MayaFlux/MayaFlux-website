@@ -1,6 +1,5 @@
 ---
 build:
-  render: never
   list: never
 ---
 
@@ -251,7 +250,6 @@ The temporal Logic tutorial uses both: `on_change_to(false, ...)` recolors at th
 
 {{< /tutorial-detail >}}
 {{< /tutorial-detail >}}
-
 
 
 
