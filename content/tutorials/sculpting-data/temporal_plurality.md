@@ -29,7 +29,7 @@ The eight cards that follow move from the simplest attachment (a callback on an 
 <section class="tutorial-section">
   <div class="tutorial-row">
     
-{{< tutorial-card step="1 of 8" title="Card 1: Declare Once vs. Control" page="/tutorials/sculpting-data/temporal_plurality_cards/01-difference-detail" open="true" >}}
+{{< tutorial-card step="1 of 8" title="Card 1: Declare Once vs. Control" page="/tutorials/sculpting-data/temporal_plurality/01-difference-detail" open="true" >}}
 {{< /tutorial-card >}}
 
 
@@ -43,7 +43,7 @@ The eight cards that follow move from the simplest attachment (a callback on an 
 <section class="tutorial-section">
   <div class="tutorial-row">
     
-{{< tutorial-card step="2 of 8" title="Card 2: Control as Side Effect" page="/tutorials/sculpting-data/temporal_plurality_cards/02-side-effect-detail" open="true" >}}
+{{< tutorial-card step="2 of 8" title="Card 2: Control as Side Effect" page="/tutorials/sculpting-data/temporal_plurality/02-side-effect-detail" open="true" >}}
 {{< /tutorial-card >}}
 
 
@@ -59,7 +59,7 @@ The eight cards that follow move from the simplest attachment (a callback on an 
 <section class="tutorial-section">
   <div class="tutorial-row">
     
-{{< tutorial-card step="3 of 8" title="Card 3: Tiered Control" page="/tutorials/sculpting-data/temporal_plurality_cards/03-tiered-control-detail" open="true" >}}
+{{< tutorial-card step="3 of 8" title="Card 3: Tiered Control" page="/tutorials/sculpting-data/temporal_plurality/03-tiered-control-detail" open="true" >}}
 {{< /tutorial-card >}}
 
 
@@ -81,7 +81,7 @@ The eight cards that follow move from the simplest attachment (a callback on an 
 <section class="tutorial-section">
   <div class="tutorial-row">
     
-{{< tutorial-card step="4 of 8" title="Card 4: ONLYWHENs" page="/tutorials/sculpting-data/temporal_plurality_cards/04-onlywhen-detail" open="true" >}}
+{{< tutorial-card step="4 of 8" title="Card 4: ONLYWHENs" page="/tutorials/sculpting-data/temporal_plurality/04-onlywhen-detail" open="true" >}}
 {{< /tutorial-card >}}
 
 
@@ -97,7 +97,7 @@ The eight cards that follow move from the simplest attachment (a callback on an 
 <section class="tutorial-section">
   <div class="tutorial-row">
     
-{{< tutorial-card step="5 of 8" title="Card 5: External Time" page="/tutorials/sculpting-data/temporal_plurality_cards/05-external-time-detail" open="true" >}}
+{{< tutorial-card step="5 of 8" title="Card 5: External Time" page="/tutorials/sculpting-data/temporal_plurality/05-external-time-detail" open="true" >}}
 {{< /tutorial-card >}}
 
 
@@ -119,7 +119,7 @@ The eight cards that follow move from the simplest attachment (a callback on an 
 <section class="tutorial-section">
   <div class="tutorial-row">
     
-{{< tutorial-card step="6 of 8" title="Card 6: Creative Variations" page="/tutorials/sculpting-data/temporal_plurality_cards/06-creative-variations-detail" open="true" >}}
+{{< tutorial-card step="6 of 8" title="Card 6: Creative Variations" page="/tutorials/sculpting-data/temporal_plurality/06-creative-variations-detail" open="true" >}}
 {{< /tutorial-card >}}
 
 
@@ -133,11 +133,11 @@ The eight cards that follow move from the simplest attachment (a callback on an 
   <header class="tutorial-group">
   </header>
   <div class="tutorial-row">
-{{< tutorial-card step="7 of 8" title="Card 7: Declarative Compositions" page="/tutorials/sculpting-data/temporal_plurality_cards/07-declarative-compositions" open="true" >}}
+{{< tutorial-card step="7 of 8" title="Card 7: Declarative Compositions" page="/tutorials/sculpting-data/temporal_plurality/07-declarative-compositions" open="true" >}}
 {{< /tutorial-card >}}
   </div>
   <div class="tutorial-row">
-{{< tutorial-card step="8 of 8" title="Card 8: Raw Routines" page="/tutorials/sculpting-data/temporal_plurality_cards/08-raw-routines" open="true" >}}
+{{< tutorial-card step="8 of 8" title="Card 8: Raw Routines" page="/tutorials/sculpting-data/temporal_plurality/08-raw-routines" open="true" >}}
 {{< /tutorial-card >}}
   </div>
 </section>
