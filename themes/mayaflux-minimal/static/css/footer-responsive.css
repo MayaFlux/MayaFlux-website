@@ -1,0 +1,36 @@
+/* =========================================================
+   12. FOOTER
+========================================================= */
+
+footer {
+    background: var(--bg-alt);
+    border-top: 1px solid var(--border);
+    padding: 2rem 0;
+    margin-top: 4rem;
+    text-align: center;
+    color: var(--text-light);
+}
+
+/* =========================================================
+   13. RESPONSIVE OVERRIDES
+========================================================= */
+
+@media (max-width: 768px) {
+    .hero h1 {
+        font-size: 2rem;
+    }
+
+    .tagline {
+        font-size: 1rem;
+    }
+
+    .nav-links {
+        gap: 1rem;
+    }
+
+    .container {
+        padding: 0 1rem;
+    }
+}
+
+

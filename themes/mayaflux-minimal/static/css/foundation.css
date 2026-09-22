@@ -1,0 +1,82 @@
+/* =========================================================
+   1. RESET & GLOBAL TOKENS
+========================================================= 
+*/
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    /* Paper & Ink Theme (Always Dark) */
+    --bg: #111111;
+    --bg-alt: #181818;
+
+    --text: #f4f2ef;
+    --text-light: #a7a7a7;
+
+    --border: #2a2a2a;
+
+    --primary: #66b3ff;
+    --primary-dark: #3380cc;
+
+    --accent-primary: #66b3ff;
+
+    --code-bg: #1a1a1a;
+
+    --heading: rgba(160, 200, 170, 0.9);
+    /* main heading ink */
+    --heading-soft: rgba(160, 200, 170, 0.7);
+    --heading-faint: rgba(160, 200, 170, 0.5);
+
+    --font-body: 'Inter', 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+    --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+/* =========================================================
+   2. BASE ELEMENTS
+========================================================= */
+
+body {
+    font-family:
+        "JetBrains Mono", "Fira Code", "Iosevka", "SF Mono", "Ubuntu Mono",
+        monospace;
+    /* font-family: var(--font-body); */
+
+    line-height: 1.65;
+    color: var(--text);
+    background: var(--bg);
+    background-image: url("/textures/dark_paper.png");
+    background-size: 600px;
+}
+
+hr {
+    border: none;
+    height: 1px;
+    background: linear-gradient(to right,
+            transparent,
+            rgba(255, 255, 255, 0.35),
+            transparent);
+    margin: 3rem 0;
+}
+
+ul,
+ol {
+    padding-left: 1.5rem;
+}
+
+ul li::marker,
+ol li::marker {
+    color: var(--accent-primary);
+    font-weight: 500;
+}
+
+.hint {
+    opacity: 0.5;
+    font-size: 0.85rem;
+}
+
+
+

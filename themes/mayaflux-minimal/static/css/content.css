@@ -1,0 +1,72 @@
+   8. CONTENT FLOW
+========================================================= */
+
+.content {
+    padding: 4rem 0;
+}
+
+.content h1 {
+    font-size: 2.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.content h2 {
+    font-size: 2rem;
+    margin: 2rem 0 1rem;
+}
+
+.content h3 {
+    font-size: 1.5rem;
+    margin: 1.5rem 0 0.75rem;
+}
+
+.content p {
+    margin-bottom: 1rem;
+}
+
+.content a {
+    color: var(--primary);
+    text-decoration: none;
+}
+
+.content a:hover {
+    text-decoration: underline;
+}
+
+.content ul,
+.content ol {
+    margin-left: 2rem;
+    margin-bottom: 1rem;
+}
+
+.content ul li::marker,
+.content ol li::marker {
+    color: var(--primary);
+    font-weight: 500;
+}
+
+.content code {
+    background: var(--code-bg);
+    padding: 0.25rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.95em;
+    border: 1px solid #222;
+    font-family: var(--font-mono);
+}
+
+.content pre {
+    background: var(--code-bg);
+    border: 1px solid #2a2a2a;
+    box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.4);
+    font-family: var(--font-mono);
+}
+
+.content pre code {
+    background: none;
+    padding: 0;
+    font-family: var(--font-mono);
+}
+
+/* =========================================================
+
+

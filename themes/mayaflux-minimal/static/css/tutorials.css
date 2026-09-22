@@ -1,0 +1,325 @@
+/* =========================================================
+   10. TUTORIAL SYSTEM
+========================================================= */
+
+.tutorial-section {
+    margin: 2rem 0;
+}
+
+/* Author-facing tutorial shortcode. Native disclosure keeps each lesson in
+   source order and makes it usable without the card-cloning script. */
+.tutorial-lesson {
+    margin: 2rem 0;
+    background: var(--paper-2, rgba(255, 255, 255, 0.03));
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+    overflow: hidden;
+}
+
+.tutorial-lesson__summary {
+    display: grid;
+    gap: 0.45rem;
+    padding: 1.2rem;
+    cursor: pointer;
+    list-style: none;
+}
+
+.tutorial-lesson__summary::-webkit-details-marker {
+    display: none;
+}
+
+.tutorial-lesson__summary:focus-visible {
+    outline: 2px solid var(--accent-primary, var(--primary));
+    outline-offset: -4px;
+}
+
+.tutorial-lesson__eyebrow,
+.tutorial-lesson__toggle {
+    color: var(--primary);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.tutorial-lesson__title {
+    color: var(--heading);
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+
+.tutorial-lesson__description,
+.tutorial-lesson__outcome {
+    color: var(--text);
+    line-height: 1.6;
+}
+
+.tutorial-lesson__outcome {
+    color: var(--text-muted, var(--text));
+}
+
+.tutorial-lesson__toggle::before {
+    content: "▸ ";
+}
+
+.tutorial-lesson[open] .tutorial-lesson__toggle::before {
+    content: "▾ ";
+}
+
+.tutorial-lesson[open] .tutorial-lesson__toggle {
+    font-size: 0;
+}
+
+.tutorial-lesson[open] .tutorial-lesson__toggle::after {
+    content: "Close lesson";
+    font-size: 0.75rem;
+}
+
+.tutorial-lesson__body {
+    padding: 0 1.2rem 1.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.tutorial-lesson__body > :first-child {
+    margin-top: 1.5rem;
+}
+
+.tutorial-detail {
+    margin: 1.25rem 0;
+}
+
+.tutorial-detail__body {
+    padding-top: 0.5rem;
+}
+
+.tutorial-subcard {
+    margin: 1rem 0;
+    padding: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+}
+
+.tutorial-subcard summary {
+    color: var(--heading);
+    font-weight: 700;
+}
+
+.tutorial-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.tutorial-row > .tutorial-lesson {
+    flex: 1 1 300px;
+}
+
+.tutorial-card {
+    flex: 1 1 300px;
+    background: var(--paper-2, rgba(255, 255, 255, 0.03));
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    padding: 1rem 1.2rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+    cursor: pointer;
+    transition: 0.25s ease;
+    color: var(--text) !important;
+}
+
+.tutorial-card pre code {
+    color: #f8f8f2 !important;
+}
+
+.tutorial-card ul li::marker,
+.tutorial-expanded ul li::marker {
+    color: var(--primary) !important;
+}
+
+.tutorial-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+}
+
+.tutorial-title {
+    color: var(--heading);
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+}
+
+.tutorial-expanded {
+    display: none;
+    padding: 1rem;
+    border-radius: 12px;
+    margin-top: 0.5rem;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+}
+
+.tutorial-expanded p,
+.tutorial-expanded li,
+.tutorial-expanded ol {
+    color: var(--text);
+    line-height: 1.6;
+}
+
+.tutorial-expanded summary {
+    color: var(--primary);
+    line-height: 1.6;
+}
+
+/* make bullets subtle but elegant */
+.tutorial-expanded ul li ol {
+    margin: 0.25rem 0;
+    padding-left: 0.4rem;
+    border-left: 3px solid rgba(255, 255, 255, 0.08);
+}
+
+/* darker text for code explanations */
+.tutorial-expanded code {
+    color: #ffddb3;
+}
+
+.tutorial-progress {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 1rem;
+    opacity: 0.6;
+}
+
+.tp-dots {
+    display: flex;
+    gap: 0.3rem;
+    align-items: center;
+}
+
+.tp-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--text-light);
+    opacity: 0.25;
+    display: inline-block;
+}
+
+.tp-dot.tp-done {
+    background: var(--primary);
+    opacity: 0.45;
+}
+
+.tp-dot.tp-current {
+    background: var(--primary);
+    opacity: 1;
+}
+
+.tp-pct {
+    font-size: 0.72rem;
+    font-family: var(--font-mono);
+    color: var(--primary);
+    opacity: 0.8;
+    letter-spacing: 0.02em;
+}
+
+.tutorial-progress .current {
+    color: var(--primary);
+    font-weight: 600;
+}
+
+.tutorial-progress .done {
+    opacity: 0.5;
+}
+
+/* DETAILS TAG STYLING */
+details summary {
+    cursor: pointer;
+    font-weight: 600;
+    margin: 0.5rem 0;
+    opacity: 0.6;
+    color: var(--primary);
+}
+
+details[open] summary {
+    opacity: 0.9;
+    color: var(--primary);
+}
+
+details {
+    background: rgba(255, 255, 255, 0.03);
+    padding: 0.6rem 1rem;
+    border-radius: 8px;
+    margin: 1rem 0;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* CODE BLOCK DARK THEME BOOST */
+pre code {
+    font-size: 0.9rem;
+    background: transparent !important;
+    color: inherit;
+}
+
+/* MAKE THE CARD TEXT NOT BLACK */
+.tutorial-card p {
+    /* color: #ddd !important; */
+    color: #ddd;
+}
+
+.tutorial-card .hint {
+    font-size: 1rem;
+    color: lightblue;
+}
+
+.tutorial-card .hint::before {
+    content: " ▸ ";
+    color: var(--heading);
+    font-weight: 600;
+}
+
+/* BULLET POP COLOR */
+.tutorial-expanded ul li::marker {
+    color: var(--accent-primary);
+}
+
+/* More comfortable spacing inside expanded panel */
+.tutorial-expanded {
+    padding: 1.5rem !important;
+    color: #ddd;
+}
+
+.try-it {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.04);
+    border-left: 3px solid var(--accent-primary);
+    border-radius: 8px;
+}
+
+.try-note {
+    opacity: 0.6;
+    font-size: 0.9rem;
+}
+
+.copy-btn {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: var(--text-light);
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+pre:hover .copy-btn {
+    opacity: 1;
+}
+
+
+
