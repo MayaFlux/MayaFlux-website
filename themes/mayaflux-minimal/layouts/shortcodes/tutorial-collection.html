@@ -1,0 +1,6 @@
+{{- $page := .Get "page" -}}
+{{- with site.GetPage $page -}}
+  {{ .Content }}
+{{- else -}}
+  {{ errorf "tutorial-collection: page %q was not found from %q" $page $.Page.Path }}
+{{- end -}}
