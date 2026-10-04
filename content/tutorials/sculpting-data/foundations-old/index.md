@@ -7,249 +7,583 @@ layout: "tutorial"
 
 ### How to Use This
 
-Each section begins with `Tutorial:` -> run the snippet first.\
-Deep-dive panels are optional.\
+Each section begins with a snippet -> run it first.\
+Deep-dive panels are optional, and closed until you open them.\
 End with **Try It → Recap** to consolidate.
 
 ### What You'll Learn
 
-- How data behaves as material
-- Containers → Buffers → Streams
-- Cycle-based timing & deterministic flow
-- How structure produces form in MayaFlux
+- How data from outside behaves as material
+- Containers → Buffers
+- Routing data by domain, quickly and by hand
+- How a file becomes sound, picture and form
 
 {{< /framing-card >}}
 
-{{< tutorial-card step="1 of 5" title="The Simplest First Step" open="true" >}}
+{{< tutorial-card step="1 of 9" title="Bring It In" open="true" >}}
 
-Run this code. The file is loaded into memory.
+### The Simplest First Step
+
+Data comes from outside: a recording, a picture, a 3D model, a film. MayaFlux does not care where it came from. Bring it in, give it somewhere to go, and it plays or appears as it is.
+
+Each block below is a complete `compose()` for your `src/user_project.hpp`. Pick one and run it. A file dialog opens: choose a file of the matching kind.
+
+### Sound
 ```cpp
-// In your src/user_project.hpp compose() function:
-
 void compose() {
-    auto sound_container = vega.read_audio("path/to/your/file.wav");
+    vega.read_audio() | Audio;
 }
 ```
-Replace "path/to/your/file.wav" with an actual path to a .wav file.
+Run this code. The file plays through your speakers.
 
-Run the program. You'll see console output showing what loaded:
-```text
-✓ Loaded: path/to/your/file.wav
-  Channels: 2
-  Frames: 2304000
-  Sample Rate: 48000 Hz
+To skip the dialog, give it a path: `vega.read_audio("path/to/file.wav")`.
+
+{{< tutorial-detail title="Also: Sound from a Microphone" >}}
+
+Live sound is data from outside too. First tell the engine to open your sound card's input, in `settings()`. Then listen to it in `compose()`:
+```cpp
+void settings() {
+    Config::get_global_stream_info().input.enabled = true;
+    Config::get_global_stream_info().input.channels = 1;
+}
+
+void compose() {
+    create_input_listener_buffer(0, true);
+}
 ```
-Nothing plays yet. That's intentional, and important. The rest of this section shows you what just happened.
-
-You have:
-
-- All audio data in memory
-- Organized as a Container with metadata
-- A processor attached, ready to chunk and feed data
-- Full control over what happens next
-
-The file is loaded. Ready. Waiting.
-
-{{< tutorial-detail title="Expansion 1: What Is a Container?" >}}
-
-When you call `vega.read_audio()`, you're not just reading bytes from disk and forgetting them. You're creating a **Container**: a structure that holds:
-
-- **The audio data itself** (all samples as numbers, deinterleaved and ready to process)
-- **Metadata about the data** (sample rate, channels, duration, number of frames)
-- **A processor** (machinery that knows how to access this data efficiently)
-- **Organizational structure** (dimensions: time, channels, memory layout)
-
-The difference: A file is **inert**. A Container is **active creative material**. It knows its own shape. It can tell you about regions within itself. It can be queried, transformed, integrated with other Containers.
-
-When `vega.read_audio("file.wav")` runs, MayaFlux:
-
-1.  Creates a `SoundFileReader` and initializes FFmpeg
-2.  Checks if the file is readable
-3.  Resamples to your project's sample rate (configurable)
-4.  Converts to 64-bit depth (high precision)
-5.  **Deinterleaves** the audio (separates channels into independent arrays which are more efficient for processing)
-6.  Creates a `SoundFileContainer` object
-7.  Loads all the audio data into memory
-8.  Configures a `ContiguousAccessProcessor` (the Container's default processor, which knows how to feed data to buffers chunk-by-chunk)
-9.  Returns the Container to you
-
-The Container is now your interface to that audio data. It's ready to be routed, processed, analyzed, transformed.
+What the microphone hears comes out of your speakers on the same channel. Use headphones, or the speakers will feed back into the microphone.
 
 {{< /tutorial-detail >}}
 
-{{< tutorial-detail title="Expansion 2: Memory, Ownership, and Smart Pointers" >}}
+{{< tutorial-detail title="Also: Turning the Input On Without Recompiling" >}}
 
-As you know, raw audio data can be large. MayaFlux allocates and manages it safely through smart pointers.
-
-At a lower, machine-level (in programming parlance), the user is expected to manage memory manually: instantiate objects, bind them, handle transfers, and delete when done. Any misalignment among these steps can cause crashes or undefined behavior. MayaFlux doesn't expect you to handle these manually, unless you choose to.
-
-MayaFlux uses **smart pointers**: a C++11 feature that automatically tracks how many parts of your program are using a Container. When the last reference disappears, the memory is freed automatically.
-
-When you write:
-```cpp
-auto sound_container = vega.read_audio("file.wav");
+`settings()` is compiled into your program, so changing it means a rebuild. The same settings can live in a JSON file that is read every time the program starts. Create `mayaflux.json` in your project's source folder:
+```json
+{
+  "stream": {
+    "input": { "enabled": true, "channels": 1 }
+  }
+}
 ```
-What's actually happening is:
-```cpp
-std::shared_ptr<MayaFlux::Kakshya::SoundFileContainer> sound_container =
-    /* vega.read_audio() internally creates and returns a shared_ptr */;
-```
-You don't see `std::shared_ptr`. You see `auto`. But MayaFlux is using it. This means:
+Run the program as before. The launcher picks the file up by itself, so `settings()` can stay empty and the microphone block above needs only its `compose()`.
 
-- **You never manually `delete` the Container.** It handles itself.
-- **Multiple parts of your code can reference the same Container** without worrying about who's responsible for cleanup.
-- **When the last reference is gone**, memory is automatically released.
+Only the fields you write are changed. Everything else keeps its default. The keys are the names of the config structs, so any setting described in `docs/Settings.md` can go in the file. Do not confuse `"stream"` with its `"input"` inside, which is your sound card's input, with the top level `"input"` section, which is for MIDI, OSC and other devices.
 
-This is why `vega.read_audio()` is safe. The complexity of memory management exists. It's just not your problem.
+To use a file from somewhere else, start the program with `--config path/to/file.json`.
+
+If the file and `settings()` set the same value, `settings()` wins, because the file is read first. Start the program with `--config-override` to turn that around: the file is then read after `settings()`, and it replaces all of it. Anything the file does not mention goes back to its default.
 
 {{< /tutorial-detail >}}
 
-{{< tutorial-detail title="Expansion 3: What is `vega`?" >}}
+### Image
+```cpp
+void compose() {
+    auto window = create_window({ .title = "Image", .width = 1280, .height = 720 });
+
+    auto image = vega.read_image() | Graphics;
+    image->setup_rendering({ .target_window = window });
+
+    window->show();
+}
+```
+Run this code. The image appears in a window.
+
+Change `width` and `height` and run again: the same picture, a different window.
+
+### Model
+```cpp
+void compose() {
+    auto window = create_window({ .title = "Model", .width = 1280, .height = 720 });
+
+    auto meshes = vega.read_mesh() | Graphics;
+    for (auto& mesh : meshes) {
+        mesh->setup_rendering({ .target_window = window });
+    }
+
+    window->show();
+}
+```
+Run this code. The model is drawn into the window.
+
+A model file can hold several meshes, so the loader gives you a group and you set up each one.
+
+{{< tutorial-detail title="Also: Model as a Network of Parts" >}}
+
+The same file, read so that its parts stay together as one network:
+```cpp
+void compose() {
+    auto window = create_window({ .title = "Model parts", .width = 1280, .height = 720 });
+
+    auto network = vega.read_mesh_network() | Graphics;
+    auto form = vega.mint(StructureConfig::Model { .network = network, .render = { .target_window = window } });
+
+    window->show();
+}
+```
+It looks like the block above. The difference is underneath: each part of the model is a slot in one network, and each slot keeps its own transform, so parts can later be moved independently.
+
+{{< /tutorial-detail >}}
+
+### Video, with Sound
+```cpp
+void compose() {
+    auto window = create_window({ .title = "Video", .width = 1280, .height = 720 });
+
+    auto [video, audio] = choose_video({ .video_options = IO::VideoReadOptions::EXTRACT_AUDIO });
+
+    auto picture = get_io_manager()->hook_video_container_to_buffer(video);
+    picture->setup_rendering({ .target_window = window });
+    audio | Audio;
+
+    window->show();
+}
+```
+Run this code. The picture plays in the window and the sound plays through your speakers.
+
+### Video, Picture Only
+```cpp
+void compose() {
+    auto window = create_window({ .title = "Video", .width = 1280, .height = 720 });
+
+    auto [video, audio] = choose_video({});
+
+    auto picture = get_io_manager()->hook_video_container_to_buffer(video);
+    picture->setup_rendering({ .target_window = window });
+
+    window->show();
+}
+```
+The only difference from the block above is the empty `{}`. Without `EXTRACT_AUDIO` the sound is never decoded, so `audio` is empty and there is nothing to route.
+
+{{< tutorial-detail title="Also: Picture from a Camera" >}}
+
+A camera is a live video source. It has no file to browse to, so you name the device:
+```cpp
+void compose() {
+    auto window = create_window({ .title = "Camera", .width = 1280, .height = 720 });
+
+    auto camera = vega.read_camera({ .device_name = "/dev/video0" });
+    camera->setup_rendering({ .target_window = window });
+
+    window->show();
+}
+```
+Your live picture appears in the window. `/dev/video0` is the first camera on Linux. On macOS use `"0"`, and on Windows use `"video=Integrated Camera"` or the name your camera reports.
+
+{{< /tutorial-detail >}}
+
+Each example assumes you pick a file. If you cancel the dialog, nothing loads and the lines that follow have nothing to work on.
+
+You have, in each case:
+
+- Data from outside, held in memory
+- A domain it was routed to: audio for the sound, graphics for the picture
+- A result you can hear or see after one run
+
+{{< tutorial-detail title="Explanations" >}}
+
+{{< tutorial-detail title="Expansion 1: What Is `vega`?" >}}
 
 `vega` is a **fluent interface**: a convenience layer that takes MayaFlux's power and hides the verbosity without hiding the machinery.
 
-Grappling with complexity generally yields expressive, and often well-reasoned, implementations. However, many find it hard to parse the wall of code that results from such grappling, partly because machine-level languages tend to prioritize other aspects of coding over user experience (UX).
+Making complex logic less verbose is a good way to encourage more people to explore. But complexity that is presented well is not an obstacle. It is what gives you something to choose between, and choices are where agency and creativity come from. So `vega` shortens the path to the first result and leaves every door on that path open.
 
-Making complex logic less verbose can be a good way to encourage more people to explore.
-
-If you didn't have `vega`, loading a file would look like this:
+If you didn't have `vega`, loading a sound file would look like this:
 ```cpp
-// Without vega - explicit, showing every step
-auto reader = std::make_unique<MayaFlux::IO::SoundFileReader>();
-MayaFlux::IO::SoundFileReader::initialize_ffmpeg();
+auto reader = std::make_shared<IO::SoundFileReader>();
 
-if (!reader->can_read("file.wav")) {
-    std::cerr << "Cannot read file\n";
+if (!reader->can_read("path/to/file.wav")) {
     return;
 }
 
-reader->set_target_sample_rate(MayaFlux::Config::get_sample_rate());
-reader->set_target_bit_depth(64);
-reader->set_audio_options(MayaFlux::IO::AudioReadOptions::DEINTERLEAVE);
+reader->set_target_sample_rate(Config::get_sample_rate());
+reader->set_audio_options(IO::AudioReadOptions::DEINTERLEAVE);
 
-MayaFlux::IO::FileReadOptions options = MayaFlux::IO::FileReadOptions::EXTRACT_METADATA;
-if (!reader->open("file.wav", options)) {
-        MF_ERROR(Journal::Component::API, 
-                    Journal::Context::FileIO, 
-                    "Failed to open file: {}", 
-                    reader->get_last_error()
-                );
+auto options = IO::FileReadOptions::EXTRACT_METADATA | IO::FileReadOptions::EXTRACT_REGIONS;
+if (!reader->open("path/to/file.wav", options)) {
     return;
 }
 
-auto container = reader->create_container();
-auto sound_container = std::dynamic_pointer_cast<Kakshya::SoundFileContainer>(container);
+auto container = std::dynamic_pointer_cast<Kakshya::SoundFileContainer>(reader->create_container());
 
-if (!reader->load_into_container(sound_container)) {
-        MF_ERROR(Journal::Component::API, 
-                    Journal::Context::Runtime,
-                    "Failed to load audio data: {}",
-                    reader->get_last_error()
-                );
+if (!reader->load_into_container(container)) {
     return;
 }
 
-auto processor = std::dynamic_pointer_cast<Kakshya::ContiguousAccessProcessor>(
-    sound_container->get_default_processor());
-if (processor) {
-    std::vector<uint64_t> output_shape = {
-        MayaFlux::Config::get_buffer_size(),
-        sound_container->get_num_channels()
-    };
-    processor->set_output_size(output_shape);
-    processor->set_auto_advance(true);
-}
+container->set_memory_layout(Kakshya::MemoryLayout::ROW_MAJOR);
 
-// Now you have sound_container
+auto processor = std::dynamic_pointer_cast<Kakshya::ContiguousAccessProcessor>(container->get_default_processor());
+if (!processor) {
+    processor = std::make_shared<Kakshya::ContiguousAccessProcessor>();
+    container->set_default_processor(processor);
+}
+processor->set_output_size({ Config::get_buffer_size(), container->get_num_channels() });
+processor->set_auto_advance(true);
 ```
-Depending on your exposure to programming, this can either feel complex or liberating. Lacking the facilities to be explicit about memory management or allocation can be limiting:
-
-- Not knowing when memory is created, bound, or cleared
-- Realizing too late that your memory usage is exceeding the budget
-- Slowing the system for the false simplicity of "available without effort"
-
-These often lead to confinement and confusion.
-
-However, the above code snippet is verbose for something so simple.
+Depending on your exposure to programming, this can feel complex or liberating. Being explicit means you decide what is created, when, and with which settings.
 
 `vega` says: "You just want to load a file? Say so."
 ```cpp
-auto sound_container = vega.read_audio("file.wav");
+auto container = vega.read_audio("path/to/file.wav");
 ```
-Same machinery underneath. Same FFmpeg integration. Same resampling. Same deinterleaving. Same processor setup. Same safety.
+Same machinery underneath: the same reader, the same resampling to your project's sample rate, the same processor setup.
 
 **What `vega` does:**
 
-- Infers format from filename extension
-- Initializes the reader with sensible defaults
-- Handles error checking internally
-- Constructs the Container correctly
-- Configures the processor
-- Returns the result
+- Picks the reader from the file
+- Applies sensible defaults
+- Checks for errors
+- Builds and configures the container
+- Returns the real object
 
 **What `vega` doesn't do:**
 
-- Hide the complexity. It subsumes the *verbosity*, not the *idea*.
-- Make the Container less capable. It's the full Container with all features.
-- Remove your ability to do this explicitly. You can always write the long version if you need control.
+- Hide the idea. It removes the *verbosity*, not the *machinery*.
+- Make the object less capable. What you get back is the full container.
+- Remove your ability to do it explicitly. You can always write the long version when you need control.
 
 The short syntax is convenience. The long syntax is control. MayaFlux gives you both.
 
-**Use `vega` because you value fluency, not because you fear the machinery.**
+{{< /tutorial-detail >}}
+
+{{< tutorial-detail title="Expansion 2: Containers and Buffers" >}}
+
+A **container** is a large collection of data held as a whole: every sample of a recording, every frame of a film. It knows its own shape and size, and it has a processor that knows how to hand out pieces of it.
+
+A **buffer** holds one step of that, and the information needed to use it:
+
+- For sound, a buffer holds one block of samples.
+- For a picture, a buffer holds the data for one frame, plus the rendering information that goes with it: which shaders draw it, which window it goes to, and the fields those need, whether they apply to one frame or to all of them.
+
+Containers are where material rests. Buffers are where it gets used.
+
+This is why every example above has two parts: a loader that makes a container (or, for an image, a buffer that already holds its pixels), and a registration that gives a buffer somewhere to go.
 
 {{< /tutorial-detail >}}
 
-{{< tutorial-detail title="Expansion 4: The Container's Processor" >}}
+{{< tutorial-detail title="Expansion 3: What Does `| Audio` or `| Graphics` Do?" >}}
 
-The Container you just created isn't just a data holder. It has a **default processor**: a piece of machinery attached to it that knows how to feed data to buffers.
+The `|` operator is **quick registration**. It hands the object to a domain and gives you the same object back, so the line keeps working as a value:
+```cpp
+auto image = vega.read_image() | Graphics;
+```
+`Audio` and `Graphics` are domains. A domain tells the engine when and where to process the object: audio at the sound card's pace, graphics once per frame.
 
-This processor (`ContiguousAccessProcessor`) does crucial work:
+Registration is the part that is the same every time, so `|` does it for you. Written by hand:
 
-1.  **Understands the memory layout** - how the Container's audio data is organized
-2.  **Knows the buffer size** - how many samples to chunk at a time (typically 512 or 4096)
-3.  **Tracks position** - where in the file you are (auto-advance means it moves forward each time data is requested)
-4.  **Deinterleaves access** - gives channels separately (crucial for processing, as you can transform each channel independently)
+- `container | Audio` is `get_io_manager()->hook_audio_container_to_buffers(container)`
+- `buffer | Graphics` is `register_graphics_buffer(buffer)`
+- `network | Graphics` is `register_node_network(network, Nodes::ProcessingToken::VISUAL_RATE)`, after switching the network to graphics output if it is not already
 
-When you later connect this Container to buffers (in the next section), the processor is what actually feeds the data. It's the active mechanism.
-
-`vega.read_audio()` configures this processor automatically:
-
-- Sets output size to your project's buffer size
-- Enables auto-advance (keeps moving through the file)
-- Registers it with the Container
-
-This is why `StreamContainers` (that `SoundFileContainer` inherits from) are more than data, they're *active*, with built-in logic for how they should be consumed.
+Whenever the choice is load bearing, you do it by hand. That is why the image and the model need a second line to choose a window, and why the video is wired by hand: one file can feed more than one domain, and only you know where each part should go.
 
 {{< /tutorial-detail >}}
 
-{{< tutorial-detail title="Expansion 5: What `.read_audio()` Does NOT Do" >}}
+{{< tutorial-detail title="Expansion 4: Loading Is Separate from Routing" >}}
 
-This is important:
+`vega.read_audio()` on its own does this:
 
-**`.read_audio()` does NOT:**
+- Opens the file and decodes it
+- Resamples to your project's sample rate
+- Builds a container with a processor attached
+- Returns the container
 
-- Start playback
-- Create buffers
-- Connect to your audio hardware
-- Route data anywhere
+It does **not** start playback, create buffers, or connect to your audio hardware. Try it:
+```cpp
+void compose() {
+    auto container = vega.read_audio();
+}
+```
+The file loads and nothing plays. The container sits in memory, and you decide what happens next: route it to your speakers with `| Audio`, or analyse it, or send its numbers somewhere else.
 
-**`.read_audio()` DOES:**
+Loading is separate from routing. You can load a file and send it to hardware immediately, or spend the next twenty lines building something before it ever plays.
 
-- Read file from disk
-- Decode audio (handle any format: WAV, MP3, FLAC, etc. via FFmpeg)
-- Resample to your project's sample rate
-- Convert precision
-- Deinterleave channels
-- Allocate memory for all samples
-- Attach a processor that knows how to access this data
-- Return you a Container
+{{< /tutorial-detail >}}
 
-The Container sits in memory, ready to be used. But "ready to be used" means **you** decide what happens next: process it, analyze it, route it to output or visual processing, feed it into a machine-learning pipeline, anything.
+{{< tutorial-detail title="Expansion 5: Sound, the Container and Its Processor" >}}
 
-**That's the power of this design**: loading is separate from routing. You can load a file and immediately send it to hardware, or spend the next 20 lines building a complex processing pipeline before ever playing it.
+`vega.read_audio()` opened the dialog, then decoded the whole file into memory:
+
+1.  Created a reader and checked that the file is readable
+2.  Resampled to the engine's sample rate
+3.  **Deinterleaved** the samples, so each channel is its own array
+4.  Created a `SoundFileContainer` and loaded every sample into it
+5.  Set the memory layout to row major
+6.  Configured a `ContiguousAccessProcessor`: the container's default processor, which knows how to hand out the samples block by block
+
+That processor does the work of access. It:
+
+- Sets its output size to one buffer's worth of samples, for every channel
+- Tracks where in the file you are
+- Auto-advances: each time it is asked, it moves forward
+- Gives channels separately, so each can be processed on its own
+
+The processor is why a container is more than a data holder. It has built in logic for how it should be consumed.
+
+{{< /tutorial-detail >}}
+
+{{< tutorial-detail title="Expansion 6: Sound, Per-Channel Buffers" >}}
+
+`| Audio` hooked the container to buffers. By hand:
+```cpp
+auto container = vega.read_audio();
+auto buffers = get_io_manager()->hook_audio_container_to_buffers(container);
+```
+That call creates **one buffer per channel**, and the buffer manager owns them. Inside it is this loop:
+```cpp
+auto buffer_manager = get_buffer_manager();
+
+for (uint32_t channel = 0; channel < container->get_num_channels(); ++channel) {
+    auto buffer = buffer_manager->create_audio_buffer<Buffers::SoundContainerBuffer>(
+        Buffers::ProcessingToken::AUDIO_BACKEND, channel, container, channel);
+    buffer->initialize();
+}
+```
+Step by step, for each channel:
+
+1.  Create a `SoundContainerBuffer`, a buffer that reads from a container
+2.  Tag it with `AUDIO_BACKEND`: it feeds the sound card at the audio pace
+3.  Put it on the output channel with that number
+4.  Tell it which channel of the container to read
+5.  Initialize it
+
+A stereo file's left channel feeds output 0 and its right channel feeds output 1. Channels stay separate so that each can later have its own processing.
+
+Every audio cycle, each buffer asks the container's processor for the next block of samples and passes it on. Get the buffers back later with `get_io_manager()->get_audio_buffers(container)`.
+
+{{< /tutorial-detail >}}
+
+{{< tutorial-detail title="Expansion 7: Sound, the Microphone" >}}
+
+`input.enabled` and `input.channels` ask the engine to open the sound card's input before anything runs. The engine then keeps one input buffer per hardware channel and fills it every audio cycle with the samples that arrived.
+
+`create_input_listener_buffer(0, true)` does this by hand:
+```cpp
+auto buffer = std::make_shared<Buffers::AudioBuffer>(0);
+register_audio_buffer(buffer, 0);
+read_from_audio_input(buffer, 0);
+```
+1.  Make an audio buffer for channel 0
+2.  Register it on output channel 0, which is the `true`: it is why you hear it
+3.  Register it as a listener of input channel 0
+
+Each cycle the input buffer copies its samples into every listener. With `false` the listener exists and receives sound, but nothing sends it to the speakers.
+
+If you leave input disabled there is no input channel to listen to, and the call logs an error that the channel is out of range.
+
+This is the one sound example with no container. Live sound has no whole to hold: it exists one block at a time, and the buffer is all there is.
+
+{{< /tutorial-detail >}}
+
+{{< tutorial-detail title="Expansion 8: Image, Pixels in a TextureBuffer" >}}
+
+`vega.read_image()` decoded the file into pixels with four channels: red, green, blue and alpha. Common formats are eight bits per channel. An `.exr` file stays floating point. The pixels went into a `TextureBuffer`, which also holds a flat rectangle for the picture to be drawn on.
+
+An image never becomes a container. It goes straight to a buffer, because a picture is one frame. By hand:
+```cpp
+IO::ImageReader reader;
+reader.open("path/to/image.png");
+auto image = reader.create_texture_buffer();
+```
+`| Graphics` is then `register_graphics_buffer(image)`. It initializes the buffer on the GPU and adds it to the buffers the engine processes each frame.
+
+At that point the buffer exists and is processed, but nothing draws it, because nothing says where.
+
+{{< /tutorial-detail >}}
+
+{{< tutorial-detail title="Expansion 9: What `setup_rendering` Does" >}}
+
+`setup_rendering` says where. It is the line that turns a buffer holding a picture into a picture on screen. With the defaults written out:
+```cpp
+image->setup_rendering({
+    .target_window = window,
+    .fragment_shader = "texture.frag.spv",
+});
+```
+The `TextureBuffer` already carries its defaults: the vertex shader `texture.vert.spv`, the fragment shader `texture.frag.spv`, and a texture binding named `texSampler`. What `setup_rendering` does with them:
+
+1.  Keeps the shaders, using yours where you give them
+2.  Records the window the buffer draws to
+3.  Declares the texture binding on the render pipeline
+4.  Binds the buffer's picture to that binding
+5.  Adds a render processor to the buffer's processing chain, aimed at the window
+
+A `TextureBuffer` draws as a triangle strip and ignores any other topology. There is no default window: you choose one, and that is the second line.
+
+The same call, with the same meaning, appears on every buffer that draws. `MeshBuffer` and `MeshNetworkBuffer` have their own, and the video buffer uses the `TextureBuffer` one.
+
+{{< /tutorial-detail >}}
+
+{{< tutorial-detail title="Expansion 10: Model, One Buffer per Mesh" >}}
+
+`vega.read_mesh()` read every mesh in the file. By hand:
+```cpp
+const auto folder = std::filesystem::path("path/to/model.glb").parent_path();
+auto resolver = [folder](const std::string& name) {
+    return IO::ImageReader::load_texture((folder / name).generic_string());
+};
+
+IO::ModelReader reader;
+reader.open("path/to/model.glb");
+auto meshes = reader.create_mesh_buffers(resolver);
+reader.close();
+
+for (auto& mesh : meshes) {
+    register_graphics_buffer(mesh);
+}
+```
+1.  The reader imports the file, triangulating faces and generating normals when the file has none
+2.  Each mesh becomes a `MeshBuffer` holding its vertices, with position, normal, tangent, texture coordinates and color, and its triangle indices
+3.  The resolver finds each mesh's diffuse texture next to the model, and the texture is bound to that buffer when it is found
+4.  Registering each buffer is what `| Graphics` does on the group
+
+`setup_rendering` then adds the render processor, with depth testing on so nearer surfaces hide farther ones. It picks the textured shader when the mesh has a texture and the plain one when it does not.
+
+{{< /tutorial-detail >}}
+
+{{< tutorial-detail title="Expansion 11: Model as a Network" >}}
+
+`vega.read_mesh_network()` read the same file, but kept its parts together. Each mesh became a slot in a `MeshNetwork`: a name, a node holding that mesh's geometry, a transform of its own, and the diffuse texture when one was found.
+
+`| Graphics` registered the network as a visual network, one the engine advances every frame. A network has no way to draw itself, because drawing needs a buffer, so something still has to make one. By hand:
+```cpp
+register_node_network(network, Nodes::ProcessingToken::VISUAL_RATE);
+
+auto form = std::make_shared<Buffers::MeshNetworkBuffer>(network);
+register_graphics_buffer(form);
+form->setup_rendering({ .target_window = window });
+```
+`vega.mint` does that whole sequence: it registers the network if it is not registered, wraps it in a `MeshNetworkBuffer`, and sets up rendering aimed at the window you give it. Then it returns the real buffer. That is why the window goes inside the `StructureConfig::Model` and not in a separate line.
+
+The network buffer draws every slot with its own transform, and uses each slot's texture when it has one.
+
+{{< /tutorial-detail >}}
+
+{{< tutorial-detail title="Expansion 12: Video, a Pair of Containers" >}}
+
+`choose_video` returns a pair: the video container first, the audio second. Destructuring it with `auto [video, audio]` gives each half a name. With a path instead of the dialog:
+```cpp
+auto [video, audio] = get_io_manager()->load_video(
+    "path/to/film.mp4", { .video_options = IO::VideoReadOptions::EXTRACT_AUDIO });
+```
+What that load does:
+
+1.  Checks the file is readable
+2.  Applies the options: video options, audio options, and the size to decode at
+3.  When `EXTRACT_AUDIO` is set, asks for audio at the engine's sample rate
+4.  Opens the file and registers the reader with the IO manager, which gives it an id the decode machinery uses to find it
+5.  Creates a `VideoFileContainer` and loads it
+6.  Configures its processor: a `FrameAccessProcessor` that auto-advances at your project's frame rate
+7.  When audio was asked for, takes the audio track, configures it as for any sound file, and returns it as the second half
+
+The video container holds the film's frames and information about them. The processor advances through the frames, a little each graphics cycle, scaled by the file's own frame rate against the engine's, so the picture moves at the speed the file was made for.
+
+The audio is also kept by the IO manager, keyed by its video: `get_io_manager()->get_extracted_audio(video)` finds it later.
+
+{{< /tutorial-detail >}}
+
+{{< tutorial-detail title="Expansion 13: Video, the Buffer and the Hook" >}}
+
+The picture and the sound are routed separately. By hand, for each:
+```cpp
+auto picture = get_io_manager()->hook_video_container_to_buffer(video);
+picture->setup_rendering({ .target_window = window });
+
+auto buffers = get_io_manager()->hook_audio_container_to_buffers(audio);
+```
+The last line is `audio | Audio`. When the file has no sound, or you did not ask for it, `audio` is empty and `| Audio` does nothing.
+
+`hook_video_container_to_buffer` made a `VideoContainerBuffer`, which is a `TextureBuffer` that copies the current frame into its texture each cycle. That is why `setup_rendering` is the same line as for an image. When the container reaches its end the buffer removes itself, so the video plays once.
+
+Picture and sound are two objects registered separately. Nothing in this card ties their clocks together.
+
+{{< /tutorial-detail >}}
+
+{{< tutorial-detail title="Expansion 14: Why the Video Is Wired by Hand" >}}
+
+A recording only belongs to audio, and a picture only belongs to graphics, so one `|` is enough for each. A video file belongs to both. A shortcut would have to guess where the picture and the sound should go, and a wrong guess is invisible until it sounds or looks wrong.
+
+So here you write both lines. Wiring by hand is not the hard way. It is the way that shows what the machinery is doing, and it is the way you keep when you want to send the sound somewhere else.
+
+{{< /tutorial-detail >}}
+
+{{< tutorial-detail title="Expansion 15: Camera, the Same Hook for a Live Source" >}}
+
+`vega.read_camera` is the camera version of the video steps. By hand:
+```cpp
+auto camera = get_io_manager()->open_camera({ .device_name = "/dev/video0" });
+auto buffer = get_io_manager()->hook_camera_to_buffer(camera);
+```
+It opens the device, then hooks it to a buffer. That is the same kind of hook as `hook_video_container_to_buffer`, so what you get back is the same kind of buffer and the same `setup_rendering` line applies.
+
+The camera is opened through FFmpeg. A camera has no file and no end: frames arrive as the device makes them, and a separate thread decodes one when the graphics cycle asks for it, so the device never holds up drawing. The size and frame rate you ask for are requests, 1920 by 1080 at 30 frames per second by default. The device may give something else. Frames arrive as four channels: red, green, blue and alpha.
+
+There is no dialog because a camera is a device and not a file, so you pass a `CameraConfig` with its name. If the device cannot be opened, the call logs an error and returns nothing.
+
+A camera gives picture only. Its sound counterpart is the microphone.
+
+{{< /tutorial-detail >}}
+
+{{< tutorial-detail title="Expansion 16: Every Choice the Dialog Was Making for You" >}}
+
+`vega.read_audio()`, `read_image()` and `read_mesh()` with no argument open the dialog and load what you choose. With a path they skip it.
+
+`choose_video` is the dialog form for video. It takes the options for loading: an empty `{}` is the defaults, and `EXTRACT_AUDIO` asks for the sound as well. Its path form is `get_io_manager()->load_video(path, options)`, shown above.
+
+If you cancel, nothing is loaded and the call returns an empty result. The examples in this card assume you chose a file.
+
+{{< /tutorial-detail >}}
+
+{{< tutorial-detail title="The Fluent vs. Explicit Comparison" >}}
+
+### Fluent (What happens behind the scenes)
+```cpp
+vega.read_audio() | Audio;
+```
+This single line loads the file into a container, creates a buffer for every channel, and registers them with the sound card. Nothing plays until the `| Audio`, which is when the connection happens.
+
+### Explicit (What's actually happening)
+```cpp
+auto container = vega.read_audio();
+auto buffers = get_io_manager()->hook_audio_container_to_buffers(container);
+```
+**Understanding the difference:**
+
+- The fluent version loads *and* hooks in one line
+- The explicit version separates the two, so you can inspect or change the container before it is hooked
+- Both do the same thing: one is convenience, one is control
 
 ---
-In the next section, we'll connect this Container to buffers and route it to your speakers. And you'll see why this two-step design -> load, then connect. Is more powerful than one-step automatic playback.
+
+{{< /tutorial-detail >}}
+
+{{< /tutorial-detail >}}
+
+{{< tutorial-detail title="Try It → Recap" >}}
+
+Start from the sound:
+```cpp
+void compose() {
+    vega.read_audio("path/to/your/file.wav") | Audio;
+}
+```
+Replace `"path/to/your/file.wav"` with an actual path and run it. Then change one thing at a time:
+
+- **Image:** change `width` and `height`. The window changes size.
+- **Video:** delete `EXTRACT_AUDIO` and replace it with `{}`. The picture still plays, and the sound is gone.
+- **Sound:** delete `| Audio`. The file still loads, and nothing plays.
+
+### What You Achieved
+
+You have:
+
+- Brought in a sound, an image, a model and a video as they are
+- Seen that loading and routing are separate steps, and why the video is wired by hand
+- A container for large data and a buffer for one step of it
+- A domain for each result: audio at the sound card's pace, graphics once per frame
+- `setup_rendering`, the line that gives a buffer a window
+
+Everything here ran the data as it is. In the next section the sound stops being a whole file. You will pick a region of it, play it faster or backwards, and let several readings of the same recording sound at once.
 
 {{< /tutorial-detail >}}
 
