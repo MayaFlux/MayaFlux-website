@@ -42,13 +42,15 @@ void compose() {
         .taper = [](std::span<double> grain) { Kinesis::Discrete::apply_hann(grain); }
     };
 
-    auto measure = Granular::AttributeExecutor([](std::span<const double> grain, const ExecutionContext&) -> double {
+    auto analyzer = make_persistent_shared<StandardEnergyAnalyzer>(
+        EnergyAnalyzerConfig { .window_size = 512, .hop_size = 256, .method = EnergyMethod::SPECTRAL });
+
+    auto measure = Granular::AttributeExecutor([analyzer](std::span<const double> grain, const ExecutionContext&) -> double {
         if (grain.empty()) {
             return 0.0;
         }
-        StandardEnergyAnalyzer analyzer({ .window_size = 512, .hop_size = 256, .method = EnergyMethod::SPECTRAL });
         std::vector<Kakshya::DataVariant> input { Kakshya::DataVariant(std::vector<double>(grain.begin(), grain.end())) };
-        return extract_scalar_energy(analyzer.analyze_energy(input), "mean_energy");
+        return extract_scalar_energy(analyzer->analyze_energy(input), "mean_energy");
     });
 
     auto dawn = Granular::process_to_container(
@@ -127,9 +129,10 @@ There are two ways to measure.
 
 **A named measurement.** Pass an `AnalysisType` and a name. `AnalysisType::FEATURE` with `"rms"` is the loudness of each grain. `AnalysisType::STATISTICAL` with `"variance"` is how much its samples vary. The number is written on each grain under `feature_key`, and the sort reads that same name.
 
-**Your own measurement.** Pass an `AttributeExecutor`: a function that receives one grain's samples and returns one number. The second block above measures spectral energy. The analyzer is made and configured in one line, with its settings named. Change the method and the order changes:
+**Your own measurement.** Pass an `AttributeExecutor`: a function that receives one grain's samples and returns one number. The second block above measures spectral energy. The analyzer is made once, before the grains are measured, with its settings named, and the function reuses it for every grain. Change the method and the order changes:
 ```cpp
-StandardEnergyAnalyzer analyzer({ .window_size = 512, .hop_size = 256, .method = EnergyMethod::ZERO_CROSSING });
+auto analyzer = make_persistent_shared<StandardEnergyAnalyzer>(
+    EnergyAnalyzerConfig { .window_size = 512, .hop_size = 256, .method = EnergyMethod::ZERO_CROSSING });
 ```
 `window_size` and `hop_size` are how the analyzer walks along the grain. `extract_scalar_energy(analysis, "mean_energy")` then takes the average over those windows as the single number written on the grain. Other names it understands are `"max_energy"`, `"min_energy"`, `"variance"` and `"dynamic_range"`.
 Zero crossings count how often the signal changes sign, a rough measure of how noisy a grain is. `EnergyMethod::RMS` is loudness. Any function you can write over a span of samples will do.
@@ -197,7 +200,7 @@ Every field of `GranularConfig`, with its default:
 
 Fields you leave out keep their defaults. Fields you do name have to be written in the order above.
 
-Granular is a workflow, so it is switched on by a line at the top of your `src/user_project.hpp`: `#define MAYAFLUX_WORKFLOW_GRANULAR`. Without it `Granular::` does not exist. The project file already has it.
+Granular is a workflow, so it is switched on by a line at the top of your `src/user_project.hpp`, above the `#include` of `MayaFlux.hpp`: `#define MAYAFLUX_WORKFLOW_GRANULAR`. Without it `Granular::` does not exist, and a define placed after the include does nothing. The project file already has it.
 
 {{< /tutorial-detail >}}
 
