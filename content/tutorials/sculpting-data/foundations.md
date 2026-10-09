@@ -5,7 +5,7 @@ layout: "tutorial"
 
 {{< framing-card >}}
 
-Data comes from outside: a recording, a picture, a 3D model, a film, a microphone, a camera. MayaFlux does not care where it came from. It can be played or shown as it is, or taken apart, measured and rebuilt into something its maker never heard or saw.
+Data comes from outside: a recording, a picture, a model, a film, a microphone, a camera. MayaFlux can play it as it is, or take it apart and rebuild it into something its maker never heard or saw.
 
 How to use these cards:
 
@@ -17,11 +17,13 @@ How to use these cards:
 - Finish a card with **Try It → Recap**, for wilder examples and exercises
 - Then pick another kind of data and repeat
 
-Do not get stuck on one detail. If a word or a call does not make sense yet, run the code anyway and carry on. The later cards often explain an earlier one better, so come back to it once you have gone further.
+Some things take one line. Playing a recording does, and card 1 shows it. Other things don't, and we won't pretend otherwise: a fire you can feed with your hand, that answers a sound, is a piece of work a single line cannot hold. One line would show you a fire. It could not let you play with one.
 
-Not every kind of data is as short to write or as smooth to use as the others. Playing a recording takes a line. Setting a fluid going takes a page. That is the nature of the material, and some domains simply ask more of the code and more of your patience.
+So the longer blocks are not hiding the difficulty. They are the shortest working version of the thing, with the interaction already in it. Copy one and run it. Change a number and watch what moves. You can use all of it without understanding any of it, and read the code when you want to know why.
 
-So work in this order. First, run it and watch and listen, until you have a feel for what is happening on the screen and in the speakers. Then change a number and see what moves, and let that sharpen the feel. Only after that, read the code and work out how it does it. The code is the last thing to understand, not the first.
+If you are going to paste something you don't yet follow, paste this, and not a handful of triangles. A shape with nothing to answer to teaches you where the edge is. A fire you can reach into teaches you what is possible.
+
+If a word or a call does not make sense yet, run the code and carry on. A later card often explains an earlier one better.
 
 *Form is data. It can come from anywhere, and it can go anywhere.*
 

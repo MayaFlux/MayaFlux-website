@@ -11,11 +11,11 @@ Smoke is a grid with a density in every cell. Heat is a second grid. The rules s
 
 The two blocks below show it. The first loads a fire that someone else made in another program, sets it burning again, and lets a drone decide when it flares. The second builds a fire from nothing, and puts your hands on it.
 
-The simulation classes are switched on by one line at the top of your `src/user_project.hpp`, above the `#include` of `MayaFlux.hpp`: `#define MAYAFLUX_ALL_SIMULATIONS`.
-
 ### Fire From a File
 
 ```cpp
+#include "MayaFlux/SimulationIncludes.hpp"
+
 void compose() {
     auto window = create_window({ "Fire From a File", 1600, 900 });
     window->show();
@@ -280,6 +280,8 @@ Ember make_ember() {
 ```
 Now the part that matters. It measures the fire, relates the measure to your hand, and turns the result into the fire's rates and into sound:
 ```cpp
+#include "MayaFlux/SimulationIncludes.hpp"
+
 void compose() {
     using namespace Nodes::Network;
 
@@ -635,6 +637,8 @@ To record a stretch of the fire as a sequence of files, one for each frame it is
 
 Nothing is loaded. A function says where the smoke is, a second function says how the air is moving, and the rules stir one into the other:
 ```cpp
+#include "MayaFlux/SimulationIncludes.hpp"
+
 void compose() {
     auto window = create_window({ "A Start You Author", 1600, 900 });
     window->show();

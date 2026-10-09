@@ -95,14 +95,14 @@ void compose() {
 
     auto [video, audio] = choose_video({ .video_options = IO::VideoReadOptions::EXTRACT_AUDIO });
 
-    auto picture = get_io_manager()->hook_video_container_to_buffer(video);
+    video | Graphics;
+    auto picture = get_associated_buffer(video);
     picture->setup_rendering({ .target_window = window });
-    audio | Audio;
 
     window->show();
 }
 ```
-Run this code. The picture plays in the window and the sound plays through your speakers.
+Run this code. The picture plays in the window and the sound plays through your speakers. `video | Graphics` hooks the picture, and the sound too when it was asked for.
 
 ### Video, Picture Only
 ```cpp
@@ -111,28 +111,30 @@ void compose() {
 
     auto [video, audio] = choose_video({});
 
-    auto picture = get_io_manager()->hook_video_container_to_buffer(video);
+    video | Graphics;
+    auto picture = get_associated_buffer(video);
     picture->setup_rendering({ .target_window = window });
 
     window->show();
 }
 ```
-The only difference from the block above is the empty `{}`. Without `EXTRACT_AUDIO` the sound is never decoded, so `audio` is empty and there is nothing to route.
+The only difference from the block above is the empty `{}`. Without `EXTRACT_AUDIO` the sound is never decoded, so `audio` is empty and there is nothing to hook.
 
 {{< tutorial-detail title="Also: Picture from a Camera" >}}
 
-A camera is a live video source. It has no file to browse to, so you name the device:
+A camera is a live video source. It has no file to browse to, so two small windows open instead: one to choose the camera, and one to choose a size and frame rate.
 ```cpp
 void compose() {
     auto window = create_window({ .title = "Camera", .width = 1280, .height = 720 });
 
-    auto camera = vega.read_camera({ .device_name = "/dev/video0" });
-    camera->setup_rendering({ .target_window = window });
+    auto camera = vega.read_camera() | Graphics;
+    auto picture = get_associated_buffer(camera);
+    picture->setup_rendering({ .target_window = window });
 
     window->show();
 }
 ```
-Your live picture appears in the window. `/dev/video0` is the first camera on Linux. On macOS use `"0"`, and on Windows use `"video=Integrated Camera"` or the name your camera reports.
+Your live picture appears in the window.
 
 {{< /tutorial-detail >}}
 
@@ -236,6 +238,7 @@ auto image = vega.read_image() | Graphics;
 Registration is the part that is the same every time, so `|` does it for you. Written by hand:
 
 - `container | Audio` is `get_io_manager()->hook_audio_container_to_buffers(container)`
+- `video | Graphics` is `get_io_manager()->hook_video_container_to_buffer(video)`, and the same for the sound that came with it. A camera takes `hook_camera_to_buffer(camera)`
 - `buffer | Graphics` is `register_graphics_buffer(buffer)`
 - `network | Graphics` is `register_node_network(network, Nodes::ProcessingToken::VISUAL_RATE)`, after switching the network to graphics output if it is not already
 
@@ -507,18 +510,18 @@ The audio is also kept by the IO manager, keyed by its video: `get_io_manager()-
 
 {{< tutorial-detail title="Expansion 14: Video, the Buffer and the Hook" >}}
 
-The picture and the sound are routed separately. By hand, for each:
+`video | Graphics` hooks the picture and, when the file has sound you asked for, the sound. By hand, for each:
 ```cpp
 auto picture = get_io_manager()->hook_video_container_to_buffer(video);
 picture->setup_rendering({ .target_window = window });
 
 auto buffers = get_io_manager()->hook_audio_container_to_buffers(audio);
 ```
-The last line is `audio | Audio`. When the file has no sound, or you did not ask for it, `audio` is empty and `| Audio` does nothing.
+The last line is `audio | Audio`. When the file has no sound, or you did not ask for it, `audio` is empty and there is nothing to hook. Afterwards `get_associated_buffer(video)` finds the picture's buffer, and `get_associated_buffers(video)` finds the sound's, one per channel.
 
 `hook_video_container_to_buffer` made a `VideoContainerBuffer`, which is a `TextureBuffer` that copies the current frame into its texture each cycle. That is why `setup_rendering` is the same line as for an image. When the container reaches its end the buffer removes itself, so the video plays once.
 
-Picture and sound are two objects registered separately. Nothing in this card ties their clocks together.
+One pipe registers both, but they are still two objects. Nothing in this card ties their clocks together.
 
 {{< /tutorial-detail >}}
 
@@ -532,16 +535,16 @@ So here you write both lines. Wiring by hand is not the hard way. It is the way 
 
 {{< tutorial-detail title="Expansion 16: Camera, the Same Hook for a Live Source" >}}
 
-`vega.read_camera` is the camera version of the video steps. By hand:
+`vega.read_camera` is the camera version of `vega.read_audio` and the video steps:
 ```cpp
-auto camera = get_io_manager()->open_camera({ .device_name = "/dev/video0" });
+auto camera = vega.read_camera();
 auto buffer = get_io_manager()->hook_camera_to_buffer(camera);
 ```
-It opens the device, then hooks it to a buffer. That is the same kind of hook as `hook_video_container_to_buffer`, so what you get back is the same kind of buffer and the same `setup_rendering` line applies.
+The first line asks which camera and which mode, and opens it. It gives back the camera itself, the way `vega.read_audio` gives back the sound, and nothing is shown yet. The second hooks it to a buffer, and `camera | Graphics` does the same, after which `get_associated_buffer(camera)` finds the buffer. That is the same kind of hook as `hook_video_container_to_buffer`, so what you get back is the same kind of buffer and the same `setup_rendering` line applies. The buffer is already registered, so there is no `| Graphics`.
 
-The camera is opened through FFmpeg. A camera has no file and no end: frames arrive as the device makes them, and a separate thread decodes one when the graphics cycle asks for it, so the device never holds up drawing. The size and frame rate you ask for are requests, 1920 by 1080 at 30 frames per second by default. The device may give something else. Frames arrive as four channels: red, green, blue and alpha.
+The camera is opened through FFmpeg. A camera has no file and no end: frames arrive as the device makes them, and a separate thread decodes one when the graphics cycle asks for it, so the device never holds up drawing. The mode you choose is a request, and the device falls back to the nearest one it accepts, so it may give something else. Frames arrive as four channels: red, green, blue and alpha.
 
-There is no dialog because a camera is a device and not a file, so you pass a `CameraConfig` with its name. If the device cannot be opened, the call logs an error and returns nothing.
+To skip the windows, pass a `CameraConfig` with the device name: `vega.read_camera({ .device_name = "/dev/video0" })`. `/dev/video0` is the first camera on Linux. On macOS use `"0"`, and on Windows use `"video=Integrated Camera"` or the name your camera reports. `choose_camera(false)` skips only the mode window. If you close a window or the device cannot be opened, the call returns nothing.
 
 A camera gives picture only. Its sound counterpart is the microphone.
 

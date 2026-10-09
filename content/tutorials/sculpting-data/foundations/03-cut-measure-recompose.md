@@ -13,6 +13,8 @@ Each block below is a complete `compose()`. A file dialog opens when you run it.
 
 ### Quiet to Loud
 ```cpp
+#include "MayaFlux/WorkflowIncludes.hpp"
+
 void compose() {
     auto sound = vega.read_audio();
     const auto grain = Config::get_sample_rate() / 10;
@@ -31,6 +33,8 @@ Add `.ascending = false` after `.feature_key = "rms"` and the arc runs from the 
 
 ### Dull to Bright
 ```cpp
+#include "MayaFlux/WorkflowIncludes.hpp"
+
 void compose() {
     auto sound = vega.read_audio();
 
@@ -63,6 +67,8 @@ Run this code. This time you wrote the measurement yourself: the spectral energy
 
 ### Turbulence
 ```cpp
+#include "MayaFlux/WorkflowIncludes.hpp"
+
 void compose() {
     auto sound = vega.read_audio();
 
@@ -96,6 +102,8 @@ A granular call does four things in a row:
 
 `process_to_container` runs all four. `Granular::process` runs the first three and gives you the ordered list, so you can look at it:
 ```cpp
+#include "MayaFlux/WorkflowIncludes.hpp"
+
 void compose() {
     auto sound = vega.read_audio();
     auto config = Granular::GranularConfig { .grain_size = 4800, .hop_size = 4800, .feature_key = "rms" };
@@ -200,15 +208,13 @@ Every field of `GranularConfig`, with its default:
 
 Fields you leave out keep their defaults. Fields you do name have to be written in the order above.
 
-Granular is a workflow, so it is switched on by a line at the top of your `src/user_project.hpp`, above the `#include` of `MayaFlux.hpp`: `#define MAYAFLUX_WORKFLOW_GRANULAR`. Without it `Granular::` does not exist, and a define placed after the include does nothing. The project file already has it.
-
 {{< /tutorial-detail >}}
 
 {{< tutorial-detail title="Expansion 8: Changing the Rules" >}}
 
 The three first steps are rules in a grammar, not fixed code, and each can be replaced on its own while the others carry on. A rule that cuts at every rising zero crossing, instead of at fixed hops, gives grains that begin where the waveform crosses zero. A second measurement rule can add a roughness number to every grain alongside the first, to use later or to order by.
 
-This is how the pieces in the `examples` folder, such as the zero crossing segmentation and the dual feature sort, are made. It is also where the workflow stops being a function call and becomes a place to compose: the segmentation, the measure and the order are the three decisions of a piece, and each can be anything.
+It is where the workflow stops being a function call and becomes a place to compose: the segmentation, the measure and the order are the three decisions of a piece, and each can be anything.
 
 {{< /tutorial-detail >}}
 
@@ -216,6 +222,8 @@ This is how the pieces in the `examples` folder, such as the zero crossing segme
 
 Segmenting and measuring a long recording takes time, and a call that returns a recording makes you wait for it. The asynchronous forms run in the background and hand you the result when it is ready, so something else can play meanwhile:
 ```cpp
+#include "MayaFlux/WorkflowIncludes.hpp"
+
 void compose() {
     auto sound = vega.read_audio();
     auto window = create_window({ "Granular", 800, 600 });
@@ -255,6 +263,8 @@ The original plays at once. When the rearranged version is ready the callback bu
 
 One ordering, read in both directions at once, so the sound brightens on one side as it dulls on the other:
 ```cpp
+#include "MayaFlux/WorkflowIncludes.hpp"
+
 void compose() {
     auto sound = vega.read_audio();
     const auto grain = Config::get_sample_rate() / 10;
@@ -284,6 +294,8 @@ Then change one thing at a time:
 
 One crescendo, built three times with grains of different sizes, all sounding together:
 ```cpp
+#include "MayaFlux/WorkflowIncludes.hpp"
+
 void compose() {
     auto sound = vega.read_audio();
     const auto rate = Config::get_sample_rate();

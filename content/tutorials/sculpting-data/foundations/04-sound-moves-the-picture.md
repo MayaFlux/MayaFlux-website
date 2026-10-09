@@ -9,10 +9,10 @@ A picture is a grid of numbers, and a shader is the small program that decides, 
 
 A sound is also a list of numbers. Hand that list to the shader and the sound decides where each pixel looks. The picture is a still, and the sound is what moves it.
 
-Each block below is a complete `compose()`, with the shader that goes with it. Save each shader in a folder called `shaders` next to where you run the program, under the name written above it. A file dialog opens for the picture. The sound is a path you fill in.
+Each block below is a complete `compose()`, with the shader that goes with it. Save each shader in the `data/shaders` folder of your project, under the name written above it. The code asks for it by that file name alone. The program looks for `data/shaders` in the folder you run it from, and one folder up, so run it from the project folder or its build folder. If the window stays blank or never appears, the shader was not found: look in the terminal for an error about failing to read the shader, and check the folder and the name. A file dialog opens for the picture, and another for the sound.
 
 ### Rows of Sound
-`shaders/audio_rows.frag`
+`data/shaders/audio_rows.frag`
 ```glsl
 #version 460
 
@@ -49,7 +49,7 @@ void compose() {
     auto picture = vega.read_image() | Graphics;
     picture->setup_rendering({ .target_window = window, .fragment_shader = "audio_rows.frag" });
 
-    auto sampler = store(create_sampler("path/to/your/file.wav"));
+    auto sampler = store(create_sampler());
     sampler->play_continuous(0, sampler->slice_from_stream().with_looping(true));
 
     Buffers::ShaderConfig config { "audio_rows.frag" };
@@ -74,24 +74,23 @@ Speak and the picture bends as you speak. Input has to be switched on before the
 
 {{< tutorial-detail title="Also: A Film or a Camera as the Picture" >}}
 
-The picture can move as well. Replace the first two picture lines with a film or a camera. Both are already registered, so there is no `| Graphics`:
+The picture can move as well. Replace the first two picture lines with a film or a camera. `| Graphics` hooks each one to a buffer:
 ```cpp
-auto manager = get_io_manager();
-auto picture = manager->hook_video_container_to_buffer(manager->load_video("path/to/film.mkv"));
+auto film = get_io_manager()->load_video("path/to/film.mkv") | Graphics;
+auto picture = get_associated_buffer(film);
 picture->setup_rendering({ .target_window = window, .fragment_shader = "audio_rows.frag" });
 ```
 ```cpp
-auto manager = get_io_manager();
-auto camera = manager->open_camera({ .device_name = "/dev/video0", .target_width = 1920, .target_height = 1080, .target_fps = 30 });
-auto picture = manager->hook_camera_to_buffer(camera);
+auto camera = vega.read_camera() | Graphics;
+auto picture = get_associated_buffer(camera);
 picture->setup_rendering({ .target_window = window, .fragment_shader = "audio_rows.frag" });
 ```
-The film plays once. The camera runs for as long as the program does. The camera name is the Linux one, and the first section lists the others.
+The film plays once. The camera asks which camera and which mode when it starts, and runs for as long as the program does.
 
 {{< /tutorial-detail >}}
 
 ### Loudness as Weather
-`shaders/ripple.frag`
+`data/shaders/ripple.frag`
 ```glsl
 #version 460
 
@@ -138,7 +137,7 @@ void compose() {
     auto picture = vega.read_image() | Graphics;
     picture->setup_rendering({ .target_window = window, .fragment_shader = "ripple.frag" });
 
-    auto sampler = store(create_sampler("path/to/your/file.wav"));
+    auto sampler = store(create_sampler());
     sampler->play_continuous(0, sampler->slice_from_stream().with_looping(true));
 
     auto block = sampler->get_buffer();
@@ -172,7 +171,7 @@ outColor = texture(texSampler, uv);
 ```
 `texture` reads the picture at `uv`. If `uv` is `fragTexCoord`, you get the picture as it is. Add something to `uv` before the read and each pixel borrows its colour from a different place.
 
-The file name in `.fragment_shader` is looked up when the program starts. A name ending in `.frag` is compiled from source then, with no extra build step, and a name ending in `.spv` is loaded as already compiled. The search looks beside where you run the program in `shaders`, `data/shaders`, and the same two names one folder up.
+The file name in `.fragment_shader` is looked up when the program starts. A name ending in `.frag` is compiled from source then, with no extra build step, and a name ending in `.spv` is loaded as already compiled. The search looks beside where you run the program in `shaders` and `data/shaders`, and the same two names one folder up. A project made from the Weave template keeps its shaders in `data/shaders`. A name that is found nowhere is logged as an error and the shader is not built, which is how a blank window usually starts.
 
 {{< /tutorial-detail >}}
 
@@ -219,8 +218,6 @@ reader->bind_network("bell", bell, "audio_data", 1, Portal::Graphics::Descriptor
 ```
 A network that produces neither sound nor geometry cannot be bound, and `bind_network` says so in the log.
 
-A recursive node's whole history can also be sent. The `history_field` example in the examples folder reads 400 past samples of a delay network as one long list.
-
 {{< /tutorial-detail >}}
 
 {{< tutorial-detail title="Expansion 5: One Number per Frame" >}}
@@ -250,7 +247,7 @@ Anything that can be a number works as the source: the level of a block, a value
 
 {{< tutorial-detail title="Expansion 6: Three Ways to Read the Sound" >}}
 
-The C++ is the same in every case, and the shader decides what the sound means. Three readings from the examples folder:
+The C++ is the same in every case, and the shader decides what the sound means. Three readings:
 
 **By position.** The picture's height is the block's time. This is the first block:
 ```glsl
@@ -273,7 +270,7 @@ vec2 cell = floor(uv * grid_n);
 vec2 cell_rand = hash22(cell) * 2.0 - 1.0;
 uv += cell_rand * (0.02 + abs(cell_energy) * 0.12);
 ```
-`hash22` is a small function that turns a cell's position into two numbers that look random. The whole shader is `pen_distort.frag` in the examples folder, and it also tears some cells off to random places when a strike arrives.
+`hash22` is a small function that turns a cell's position into two numbers that look random. A fuller version of this shader also tears some cells off to random places when a strike arrives.
 
 {{< /tutorial-detail >}}
 
@@ -338,7 +335,7 @@ void compose() {
 ```
 The three pictures must have the same size. The shader reads one weight per layer from a list of floats and divides by their total, so the weights are proportions and not fixed amounts. Here the first picture is strongest, the third is at about half of it, and the second is faint. Change the numbers and run again to see a different blend.
 
-The weights are just a list of numbers. They could as easily be the energy of a few bands of a sound as three constants. The `texture_works` example in the examples folder has the same pattern for warping one picture by another and for blending two.
+The weights are just a list of numbers. They could as easily be the energy of a few bands of a sound as three constants.
 
 {{< /tutorial-detail >}}
 
@@ -347,7 +344,7 @@ The weights are just a list of numbers. They could as easily be the energy of a 
 {{< tutorial-detail title="Try It → Recap" >}}
 
 ### Throw the Paint
-`shaders/splash.frag`
+`data/shaders/splash.frag`
 ```glsl
 #version 460
 
@@ -446,7 +443,7 @@ Then change one thing at a time:
 - **`* 6.0` to `* 2.0`:** a smaller reach for the same sound
 
 ### The Red Room
-`shaders/red_room.frag`
+`data/shaders/red_room.frag`
 ```glsl
 #version 460
 
@@ -485,7 +482,7 @@ Run it. In the quiet the picture is drained to a dull grey and darkened, and it 
 Change `4.0` to `10.0` and a soft sound is enough to flood it. Change `10.0` in `uv.y * 10.0` to `3.0` for broad, slow chevrons, or `40.0` for a tight, nervous flicker.
 
 ### Left Ear, Right Ear
-`shaders/two_axes.frag`
+`data/shaders/two_axes.frag`
 ```glsl
 #version 460
 
@@ -526,7 +523,7 @@ void compose() {
     auto picture = vega.read_image() | Graphics;
     picture->setup_rendering({ .target_window = window, .fragment_shader = "two_axes.frag" });
 
-    auto samplers = create_samplers("path/to/stereo.wav", 48000 * 10);
+    auto samplers = create_samplers(48000 * 10);
     store(samplers);
     if (samplers.size() < 2) {
         return;

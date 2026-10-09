@@ -9,14 +9,14 @@ In the last section a recording played from start to end. Here the same recordin
 
 A tape machine has one head and a motor. The head sits at one position, the motor moves the tape at one speed, and turning around means stopping the spool. A recording in memory has no head and no motor. It is a list of numbers, and every voice that reads it can have a position that is any function of time. That is what separates the first half of this section, which a patient person with enough machines could do, from the second half, which they could not.
 
-Each block below is a complete `compose()`. Replace `"path/to/your/file.wav"` with an actual path to a sound file at least three seconds long.
+Each block below is a complete `compose()`. A file dialog opens: choose a sound file at least three seconds long. To skip the dialog, give the first argument a path, for example `create_sampler()`.
 
 ### A Region of a Sound
 ```cpp
 void compose() {
     const auto rate = Config::get_sample_rate();
 
-    auto sampler = store(create_sampler("path/to/your/file.wav"));
+    auto sampler = store(create_sampler());
 
     sampler->play_continuous(0, sampler->slice_from_range(0, rate - 1));
     sampler->play_continuous(1, sampler->slice_from_range(rate, rate * 5 / 2 - 1, 1));
@@ -27,7 +27,7 @@ Run this code. Two loops of the same recording play together: the first second, 
 ### Taps on a Sound
 ```cpp
 void compose() {
-    auto taps = create_tap_set("path/to/your/file.wav")
+    auto taps = create_tap_set()
         .tap().speed(1.0).on_channel(0)
         .tap().enters_after(2.0).speed(1.5).level(0.8).on_channel(1)
         .tap().enters_after(4.0).speed(2.0).level(0.6).on_channels({ 0, 1 })
@@ -78,11 +78,11 @@ That is why the card can play two loops of one recording together, and why the t
 
 A sampler and a tap set can even share one stream:
 ```cpp
-auto sampler = store(create_sampler("path/to/your/file.wav"));
+auto sampler = store(create_sampler());
 auto taps = create_tap_set_from_stream(sampler->get_stream()).tap().speed(2.0).start();
 store(taps);
 ```
-`create_sampler_from_stream` and `create_tap_set_from_stream` take a stream you already have. The path forms take a path because they have to load first, which is why this card uses a path where the last card used a dialog.
+`create_sampler_from_stream` and `create_tap_set_from_stream` take a stream you already have. The forms that load a file open a dialog, or take a path as their first argument, because they have to load first.
 
 {{< /tutorial-detail >}}
 
@@ -134,7 +134,7 @@ A voice at half speed, looping a two second region:
 void compose() {
     const auto rate = Config::get_sample_rate();
 
-    auto sampler = store(create_sampler("path/to/your/file.wav"));
+    auto sampler = store(create_sampler());
     sampler->play_continuous(0, sampler->slice_from_range(0, rate * 2 - 1)
         .with_time_map(Kinesis::TimeMaps::quadratic(0.0, rate * 0.5, 0.0)));
 }
@@ -160,7 +160,7 @@ A tap is a voice with a time map that moves at a speed you can change while it p
 void compose() {
     const auto rate = static_cast<double>(Config::get_sample_rate());
 
-    auto sampler = store(create_sampler("path/to/your/file.wav"));
+    auto sampler = store(create_sampler());
     auto velocity = std::make_shared<double>(1.5 * rate);
 
     sampler->play_continuous(0, sampler->slice_from_range(0, static_cast<uint64_t>(rate * 4.0) - 1)
@@ -259,7 +259,7 @@ A recording that bounces, speeds up, and turns to a buzz, with a second reading 
 void compose() {
     const auto rate = Config::get_sample_rate();
 
-    auto taps = create_tap_set("path/to/your/file.wav")
+    auto taps = create_tap_set()
         .region(rate / 2, rate * 3 / 2)
         .tap().speed(1.0).on_channel(0)
             .repeat_every(Kinesis::TimeMaps::exponential(0.5, 0.03, 8.0))
@@ -292,7 +292,7 @@ void compose() {
     const double centre = rate * 2.0;
     const double reach = rate * 1.5;
 
-    auto taps = create_tap_set("path/to/your/file.wav", Config::get_sample_rate() * 10)
+    auto taps = create_tap_set(Config::get_sample_rate() * 10)
         .tap().on_channel(0)
         .tap().on_channel(1)
         .start();
@@ -327,7 +327,7 @@ void compose() {
         path.push_back(std::clamp(path.back() + get_uniform_random(-0.2, 0.2) * rate, rate * 0.5, rate * 3.5));
     }
 
-    auto taps = create_tap_set("path/to/your/file.wav", Config::get_sample_rate() * 10).tap().start();
+    auto taps = create_tap_set(Config::get_sample_rate() * 10).tap().start();
     taps.slice(0).with_time_map(Kinesis::TimeMaps::piecewise_linear(path, 120.0));
 
     store(taps);

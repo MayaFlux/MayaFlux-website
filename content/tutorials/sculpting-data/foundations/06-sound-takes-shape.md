@@ -13,10 +13,10 @@ A sound has many sides at once. It is loud or soft, high or low, bassy, sharp, s
 
 The first block needs nothing from you. A clock of nodes plucks a string and moves the figure, so the sound and the dance keep the same time. The next two listen to the microphone, because a shape that follows a voice or a clap in the room is the quickest way to see what each measurement means. Input has to be switched on before the program starts, which Expansion 8 of the first section shows how to do. The last one plays a whole recording instead, and listens to it as it plays.
 
-Save each shader in a folder called `shaders` next to where you run the program, under the name written above it.
+Save each shader in the `data/shaders` folder of your project, under the name written above it. The code asks for it by that file name alone. The program looks for `data/shaders` in the folder you run it from, and one folder up, so run it from the project folder or its build folder. If the window stays blank or never appears, the shader was not found: look in the terminal for an error about failing to read the shader, and check the folder and the name.
 
 ### A Figure That Dances
-`shaders/figure.frag`
+`data/shaders/figure.frag`
 ```glsl
 #version 460
 
@@ -58,7 +58,7 @@ void compose() {
     harp->set_loss_factor(0.985);
     harp->set_exciter_type(WaveguideNetwork::ExciterType::NOISE_BURST);
     harp->set_exciter_duration(0.004);
-    route_network(harp, { 0, 1 }, 3.0);
+    harp->set_output_scale(3.0);
 
     auto octave = std::make_shared<double>(1.0);
     auto raised = vega.Logic(0.2) | Audio[0];
@@ -143,6 +143,7 @@ Change one thing at a time:
 - **`0.12F` to `0.5F`:** the arms rise and fall in two seconds, and the register jumps often
 - **`18.0` to `6.0` in `whip`:** a slower, lazier swing. `40.0` is a shiver
 - **`0.985` to `0.9995`:** the strings ring on and the notes blur together
+- **`3.0` in `set_output_scale`:** how loud the strings are. `1.0` is the network's own level
 - **The numbers in `scale`:** your own five notes. Put in `110.0, 220.0, 110.0, 220.0, 330.0` for a bounce
 - **`0.2` to `0.1` in `vega.Logic`:** the melody spends most of its time an octave up
 
@@ -162,7 +163,7 @@ The first line goes before the `schedule_metro` and the rest replace the `arms` 
 {{< /tutorial-detail >}}
 
 ### The Potter's Wheel Remembers
-`shaders/glaze.frag`
+`data/shaders/glaze.frag`
 ```glsl
 #version 460
 
@@ -330,7 +331,7 @@ You rarely write a mesh out by hand. The generators in `Kinesis` build one from 
 - `StructureConfig::Model`, a set of parts, each with its own transform, optionally in a hierarchy
 - `StructureConfig::Instances`, one shape repeated many times, each repeat with its own transform
 - `StructureConfig::Assembly`, several different sources drawn together
-- `StructureConfig::Isosurface`, a surface pulled out of a field by a compute shader. The `membrane` example in the examples folder uses it
+- `StructureConfig::Isosurface`, a surface pulled out of a field by a compute shader.
 
 Every form needs `.render.target_window`. There is no default window, and a missing one is logged as an error.
 
@@ -420,7 +421,7 @@ Both take a config for a shape of another size. The figure stands about two unit
 ```cpp
 bind_orbit_preset(window, { .focal_point = { 0.0F, 0.9F, 0.0F }, .initial_distance = 4.5F });
 ```
-Models are usually far larger than a unit, and the `Wolf` of the examples folder is about three hundred high:
+Models are usually far larger than a unit. A model about three hundred high needs this:
 ```cpp
 bind_orbit_preset(window, {
     .focal_point = { 0.0F, 80.0F, 0.0F },
@@ -648,7 +649,7 @@ net->get_slot(i).dirty = true;
 ```
 A ring of copies then shows the character of the sound as a ring, where each position turns to a different aspect of it. The same list works on the slots of a loaded model.
 
-When the copies should not all be the same shape, use a Model. When you want many and want them to move by a rule, the instance field operator in the examples folder (`test_10`) binds a function to each copy.
+When the copies should not all be the same shape, use a Model. When you want many and want them to move by a rule, an `InstanceFieldOperator` binds a function to each copy with `bind_transform`.
 
 {{< /tutorial-detail >}}
 
@@ -676,7 +677,7 @@ Sound made it, and a file keeps it.
 
 ### A Membrane That Keeps Ringing
 
-`shaders/skin.frag`
+`data/shaders/skin.frag`
 ```glsl
 #version 460
 
@@ -790,7 +791,7 @@ Change one thing at a time:
 
 ### A Spine of Time
 
-`shaders/ember.frag`
+`data/shaders/ember.frag`
 ```glsl
 #version 460
 

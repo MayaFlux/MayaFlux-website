@@ -27,7 +27,7 @@ inline std::vector<std::string> pictures(const std::string& folder, size_t limit
     return found;
 }
 ```
-Save each shader in a folder called `shaders` next to where you run the program, under the name written above it. The stills are any folder of photographs you like, written as `path/to/stills`.
+Save each shader in the `data/shaders` folder of your project, under the name written above it. The code asks for it by that file name alone. The program looks for `data/shaders` in the folder you run it from, and one folder up, so run it from the project folder or its build folder. If the window stays blank or never appears, the shader was not found: look in the terminal for an error about failing to read the shader, and check the folder and the name. The stills are any folder of photographs you like, written as `path/to/stills`.
 
 ### A Pile of Pictures
 
@@ -66,7 +66,7 @@ Run this code. All eight pictures are in the window at once, as layers of one te
 The default shader does the mixing. It takes a mean of all the layers, weighted by each layer's `level`. Nothing else is happening: eight pictures, and eight numbers that change sixty times a second. The next blocks replace the shader, so that the pile means something other than a mix.
 
 ### Stones in a Ring
-`shaders/stones.frag`
+`data/shaders/stones.frag`
 ```glsl
 #version 460
 
@@ -254,17 +254,16 @@ builder.record(Kriya::BufferOperation::capture_to_stream(
 ```
 ```cpp
 builder.record(Kriya::BufferOperation::capture_to_stream(
-    get_io_manager(),
-    IO::CameraConfig { .device_name = "/dev/video0", .target_width = 640, .target_height = 360, .target_fps = 30 },
-    600));
+    get_io_manager(), vega.read_camera(), 600));
 ```
-The last number is the ring length in frames. The ring is filled once for every frame the window draws, 60 a second, whatever the film's own rate, so 600 frames is ten seconds. Each frame is read back from the GPU, and each ring layer is copied up to the GPU again every frame.
+The camera asks which camera and which mode, and the ring is sized from the mode you choose. The last number is the ring length in frames. The ring is filled once for every frame the window draws, 60 a second, whatever the film's own rate, so 600 frames is ten seconds. Each frame is read back from the GPU, and each ring layer is copied up to the GPU again every frame.
 
 **What it costs.** A frame is its width times its height times four bytes, and the ring keeps all of them in memory:
 
 | Size | One frame | A 600 frame ring (10 s) |
 |------|-----------|-------------------------|
 | 640 by 360 | 0.9 MB | 550 MB |
+| 640 by 480 | 1.2 MB | 740 MB |
 | 1280 by 720 | 3.7 MB | 2.2 GB |
 | 1920 by 1080 | 8.3 MB | 5 GB |
 
@@ -383,18 +382,18 @@ A continuous number works the same way. The Paint Time block measures the loudne
 
 Put many pictures of the same kind of thing on top of each other and the thing they have in common is what holds still. Mixing, as the first block does, lets every picture leave a trace, and the traces cloud each other. Choosing does better. At every pixel the shader collects the layers' values, sorts them, and picks one by its rank: the lowest is the darkest of all the pictures at that pixel, the middle is the typical one, the highest is the brightest.
 
-Two shaders in the examples folder do this. `texture_array_order.frag` picks the median, the lowest or the highest by its `mode`, and `emerge.frag` below picks any rank with a dial, and can scatter the rank from grain to grain.
+A shader of your own does this. `emerge.frag` below picks any rank with a dial, and can scatter the rank from grain to grain.
 
-The shipped shader's mode is set when the array is made, with `create_texture_array`, and then handed to a Chimera:
+The default shader has modes too, chosen when the array is made with `create_texture_array`, and then handed to a Chimera:
 ```cpp
 auto array = create_texture_array(
     { .width = 512, .height = 512, .ring_frames = paths.size() },
-    { .target_window = window, .fragment_shader = "texture_array_order.frag" },
-    Portal::Graphics::FitMode::COVER, 0);
+    { .target_window = window },
+    Portal::Graphics::FitMode::COVER, 2);
 
 auto builder = create_chimera(array);
 ```
-The last number is the mode: 0 median, 1 lowest, 2 highest. `create_chimera(array)` takes an array that is already drawing, so you do not give it a render config again.
+The last number is the mode: 0 the mean weighted by each layer's `level`, 1 the sum, 2 the highest value at each pixel, 3 the layers laid over each other in order. `create_chimera(array)` takes an array that is already drawing, so you do not give it a render config again.
 
 The sort is done for every pixel, every frame, so a lot of layers cost a lot. Thirty is the most the shipped weights cover.
 
@@ -410,27 +409,12 @@ The picture the morph wrote is copied into that layer every second frame. A laye
 
 {{< /tutorial-detail >}}
 
-{{< tutorial-detail title="Expansion 10: The Array Shaders That Ship" >}}
-
-The examples folder has several array shaders. Each reads the same three declarations, and each shows a different meaning for a pile:
-
-- `texture_array_tile.frag` draws the layers as a grid, and its mode is the number of columns
-- `texture_array_ghost.frag` averages the layers, fading each by how far behind the newest frame it reads. It needs `layer_data()`
-- `texture_array_parts.frag` places each layer by its params, centre, scale and rotation, and lays them over each other in order. The stones shader above grew from it
-- `texture_array_diff.frag` shows only what differs between neighbouring layers, so a still scene is black and movement glows
-- `texture_array_order.frag` is the median, lowest or highest, as above
-- `texture_array_delay.frag` reads a second picture, a map, and lets its brightness choose the layer at each pixel. It has not been run yet
-
-The default shader, used when you name none, takes a mean weighted by each layer's `level`. Its other modes sum the layers, take the highest, or lay them over each other in order, and are reached through `create_texture_array`.
-
-{{< /tutorial-detail >}}
-
 {{< /tutorial-detail >}}
 
 {{< tutorial-detail title="Try It → Recap" >}}
 
 ### Emergence
-`shaders/emerge.frag`
+`data/shaders/emerge.frag`
 ```glsl
 #version 460
 
@@ -599,7 +583,7 @@ Point it at a film of a street, a crowd or a room. The median of nine seconds is
 {{< /tutorial-detail >}}
 
 ### Time Is Not One Place
-`shaders/uncanny.frag`
+`data/shaders/uncanny.frag`
 ```glsl
 #version 460
 
@@ -726,11 +710,10 @@ This holds a ten second ring of 640 by 360 frames, about 550 MB, and uploads the
 A film plays once, and then every layer keeps the moment it was on. A camera does not end. Replace the recording line with:
 ```cpp
 builder.record(Kriya::BufferOperation::capture_to_stream(
-    get_io_manager(),
-    IO::CameraConfig { .device_name = "/dev/video0", .target_width = 640, .target_height = 360, .target_fps = 30 },
-    600));
+    get_io_manager(), vega.read_camera(), 600));
 ```
-Walk in front of it. You are in six places at six times, and every few seconds one of them is somewhere else. The camera name is the Linux one, and the first section lists the others.
+Choose the 640 x 480 mode when asked, to keep the ring modest. The Chimera stretches the picture to its own size.
+Walk in front of it. You are in six places at six times, and every few seconds one of them is somewhere else. To skip the pickers, give `vega.read_camera` a `CameraConfig` with the device name, which Expansion 16 of the first section explains.
 
 {{< /tutorial-detail >}}
 
@@ -742,7 +725,7 @@ Change one thing at a time:
 - **`speed(0.0)` to `speed(0.05)`:** the held layer creeps, and does not stay still
 
 ### Paint Time
-`shaders/paint_time.frag`
+`data/shaders/paint_time.frag`
 ```glsl
 #version 460
 
@@ -801,7 +784,7 @@ void compose() {
         builder.layer().from_pipeline().lag(0.25 * i).every_n_frames(2);
     }
 
-    auto sampler = store(create_sampler("path/to/your/file.wav"));
+    auto sampler = store(create_sampler());
     sampler->play_continuous(0, sampler->slice_from_stream().with_looping(true));
 
     auto block = sampler->get_buffer();
