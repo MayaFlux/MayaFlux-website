@@ -732,6 +732,6 @@ You have:
 - Kept the numbers between your hands and the fire in one small network you can read and rewrite
 - Started a simulation from a function of your own, and recorded one
 
-A simulation is not a thing apart. Its fields, its rules and its picture are objects you hold, and every setting on them is a number that anything can drive. In the next section a table of numbers becomes a sound and a shape.
+A simulation is not a thing apart. Its fields, its rules and its picture are objects you hold, and every setting on them is a number that anything can drive.
 
 {{< /tutorial-detail >}}

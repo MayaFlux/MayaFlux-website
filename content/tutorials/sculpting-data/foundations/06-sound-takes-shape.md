@@ -903,6 +903,6 @@ You have:
 - Drawn the character of a sound as a thread through space
 - Kept any of these as a file
 
-Nothing here drew a shape by hand. A shape is a list of points and a list of triangles, a generator made the list from a rule, and the sound was one of the inputs to the rule. Each block heard a different side of the sound and let the shape have its own weight and memory. In the next sections the form fills space as a volume, and a table of numbers becomes a sound and a shape.
+Nothing here drew a shape by hand. A shape is a list of points and a list of triangles, a generator made the list from a rule, and the sound was one of the inputs to the rule. Each block heard a different side of the sound and let the shape have its own weight and memory. In the next section the form fills space as a volume.
 
 {{< /tutorial-detail >}}
