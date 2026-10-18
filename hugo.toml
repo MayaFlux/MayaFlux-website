@@ -86,34 +86,58 @@ url = "/releases/news/the_shape_of_material/"
 weight = 3
 
 [[menu.main]]
+name = "0.5.0"
+parent = "stable"
+url = "/releases/release/050/"
+weight = 1
+
+[[menu.main]]
+name = "0.4.0"
+parent = "stable"
+url = "/releases/release/040/"
+weight = 2
+
+[[menu.main]]
 name = "0.3.0"
 parent = "stable"
 url = "/releases/release/030/"
-weight = 1
+weight = 3
 
 [[menu.main]]
 name = "0.2.0"
 parent = "stable"
 url = "/releases/release/020/"
-weight = 2
+weight = 4
 
 [[menu.main]]
 name = "0.1.0"
 parent = "stable"
 url = "/releases/release/010/"
-weight = 3
+weight = 5
+
+[[menu.main]]
+name = "0.4"
+parent = "patch"
+url = "/releases/patch/04/"
+weight = 1
+
+[[menu.main]]
+name = "0.3"
+parent = "patch"
+url = "/releases/patch/03/"
+weight = 2
 
 [[menu.main]]
 name = "0.2"
 parent = "patch"
 url = "/releases/patch/02/"
-weight = 1
+weight = 3
 
 [[menu.main]]
 name = "0.1"
 parent = "patch"
 url = "/releases/patch/01/"
-weight = 2
+weight = 4
 
 [[menu.main]]
 name = "Posters"

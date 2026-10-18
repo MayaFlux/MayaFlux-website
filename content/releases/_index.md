@@ -14,6 +14,10 @@
 <a href="release/020"><strong>0.2.0</strong></a>
 <br>
 <a href="release/030"><strong>0.3.0</strong></a>
+<br>
+<a href="release/040"><strong>0.4.0</strong></a>
+<br>
+<a href="release/050"><strong>0.5.0</strong></a>
 </p>
 </div>
 </div>
@@ -26,6 +30,10 @@
 <a href="patch/01"><strong>0.1.1, 0.1.2</strong></a>
 <br>
 <a href="patch/02"><strong>0.2.1</strong></a>
+<br>
+<a href="patch/03"><strong>0.3.1 to 0.3.4</strong></a>
+<br>
+<a href="patch/04"><strong>0.4.1</strong></a>
 </p>
 </div>
 </div>
