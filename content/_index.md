@@ -1,255 +1,154 @@
 ---
 ---
 
-{{< rawhtml >}}
+<div class="card wide">
+<h2>A computational medium for form, time, and their many possible manifestations</h2>
+<p>A number is not a sound. A sequence is not a melody. A field is not an image, and a collection of coordinates is not necessarily geometry.</p>
+<p>These identities are not in the data. They arrive when something gives the data a reading, and they become unavoidable when it has to reach a speaker or a screen.</p>
+<p>MayaFlux is free, open-source software for working with the material first. You build sounds, images, simulations, instruments and performances from the same numbers, and you decide at the last moment what each one becomes.</p>
+<p><a href="/download/"><strong>Download MayaFlux</strong></a> &nbsp;·&nbsp; <a href="/tutorials/sculpting-data/foundations/"><strong>Start with the tutorials</strong></a></p>
+</div>
 
-<!-- ====================================== -->
-<!--  CARD 1 — Digital Paradigm             -->
-<!-- ====================================== -->
+<div class="showcase-grid">
 
-<div class="card collapsible">
-    <div class="collapsible-header">
-        <h2>Beyond Analog Metaphors</h2>
-        <p class="hint">Click to expand</p>
-    </div>
+<div class="card showcase">
+{{< youtube q3tGICMhUCg >}}
+<div class="showcase-body">
+<p class="kicker">A hand, a medium, five voices</p>
+<h3>Smoke and the Water</h3>
+<p>A hand disturbs a body of smoke and water. The medium swirls, thins and begins to come apart, and five voices gather around it, changing with its movement and adding new matter as it changes.</p>
+<details>
+<summary>More about this piece</summary>
+<p>A pen tablet gives the piece its touch. Strokes push and curl the volume and leave trails that return later as a reversed gesture. The volume passes through four states of matter: shell, knot, combustion and liquid.</p>
+<p>The five voices are recordings, looped and read in changing directions, pitches and stereo positions. Their sound feeds back into the volume, so image and sound share one living material and neither illustrates the other. It needs a pen tablet, and you supply your own recordings.</p>
+<p><a href="https://github.com/MayaFlux/community-projects/tree/main/ranjith/smoke_and_the_water">Files for this piece</a></p>
+</details>
+</div>
+</div>
 
-    <div class="collapsible-body">
-        <p>
-        Most creative coding tools simulate analog hardware: virtual knobs, cables, circuit boards.
-        This imposes constraints that don't exist in computation.
-        </p>
-        </br>
-        <p><strong>MayaFlux embraces true digital paradigms.</strong> Oscillators, patch cables, and envelope generators are pedagogical crutches borrowed from hardware that never constrained digital computation. MayaFlux embraces recursion, look-ahead processing, arbitrary precision, cross-domain data sharing, and computational patterns that have no analog equivalent.
-        </p>
-        </br>
-        <p>
-    Polynomials sculpt data. Logic gates make creative decisions. Coroutines coordinate time itself.</p>
-    </div>
+<div class="card showcase">
+{{< youtube 8gf0ATnL8g8 >}}
+<div class="showcase-body">
+<p class="kicker">A first program you can run</p>
+<h3>Four Voices, One Form</h3>
+<p>Four voices emerge from different kinds of randomness and orbit through a shared space. Each owns a body of a different shape in a form carved on the GPU, and a swarm of particles streams toward the voices along its surface.</p>
+<details>
+<summary>More about this piece</summary>
+<p>The voices shape the form and the swarm, the form's changing size affects the voices, and the whole system develops its own irregular rhythms. Nothing needs to be recorded, downloaded or connected. It asks you to choose one image, which becomes the form's skin. Click to strike every voice, and hold and drag to play them.</p>
+<p>The complete program is in the Getting Started guide, ready to copy into a new project.</p>
+<p><a href="https://github.com/MayaFlux/MayaFlux/blob/main/docs/Getting_Started.md">The program in Getting Started</a></p>
+</details>
+</div>
+</div>
+
+<div class="card showcase">
+{{< youtube FWHjHqsGtU8 >}}
+<div class="showcase-body">
+<p class="kicker">Matter without categories</p>
+<h3>Fugal Culture</h3>
+<p>A colony of filamented organisms changes shape as six voices move through a web of resonant strands.</p>
+<details>
+<summary>More about this piece</summary>
+<p>Twenty-four organisms of six kinds, from spined spores to soft bells with trailing tendrils, are each drawn from one continuous tangle of fine lines. The sound is a web of thirty-two resonant strands. Six voices enter twelve seconds apart and play one melodic contour as an answer, a reversal, an inversion or a doubled figure, while the pace slowly quickens.</p>
+<p>Each organism gives a strand its colour and decay. Each strand that sounds pushes its organism to change. The two stay distinct and keep influencing one another.</p>
+<p><a href="https://github.com/MayaFlux/community-projects/tree/main/ranjith/fugul_culture">Files for this piece</a></p>
+</details>
+</div>
+</div>
+
+<div class="card showcase">
+{{< youtube LdvbbOaLIfA >}}
+<div class="showcase-body">
+<p class="kicker">Things that happen in time</p>
+<h3>A Hostile Topsoil</h3>
+<p>A rhythmic machine of pure tones, clicks and noise disturbs a cellular landscape. Life spreads, territories migrate and the ground accumulates the consequences, long after the sounds have passed.</p>
+<details>
+<summary>More about this piece</summary>
+<p>The machine's score is itself written by cellular automata. Four parts play a forty second phrase whose pattern unfolds one automaton generation at a time, then runs backwards near the end. Under it, five click-driven voices ring as a drone on their own clock, and the drone is recorded and replayed by thirty-six taps at inharmonic ratios, a slow cloud of partials made of tape.</p>
+<p>The picture is a grid of over eight million cells divided into drifting territories, each running one of twelve Life-like rules. Each hit of the score lands in the grid after its own wandering delay. Press Space and the picture rises into terrain shaped by the drone.</p>
+<p><a href="https://github.com/MayaFlux/community-projects/tree/main/ranjith/hostile_topsoil">Files for this piece</a></p>
+</details>
+</div>
+</div>
+
+<div class="card showcase">
+{{< youtube 8GmkjOVUtTA >}}
+<div class="showcase-body">
+<p class="kicker">An instrument is something you make</p>
+<h3>Tingling Time</h3>
+<p>A pen on a tablet strikes bells and drones, and every strike pulls a moment from the last seconds back into the picture. Here a camera looks half at the tablet and half at the screen, so the piece watches itself being played.</p>
+<details>
+<summary>More about this piece</summary>
+<p>A live camera is recorded into a ring of recent frames. Each strike cuts back a different distance into it and shows that moment in the regions of the picture shaped by noise. The speed of the pen changes how fast the past plays. Some bells are struck by rules, not by the hand, and a written drone sustains underneath.</p>
+<p>It needs a pen tablet and a camera. The code will be published after 0.5.</p>
+</details>
+</div>
+</div>
+
+<div class="card showcase">
+{{< youtube Tb8Ni1jdcGI >}}
+<div class="showcase-body">
+<p class="kicker">Write, compile, perform</p>
+<h3>Live on a Steam Deck</h3>
+<p>A twenty minute live-coded set at TOPLAP Bengaluru, performed on a Steam Deck with an earlier version of MayaFlux.</p>
+<details>
+<summary>More about this performance</summary>
+<p>The set was four pieces, written and changed while they played. MayaFlux 0.3 was developed in parallel with the performance, so the framework and the set grew together. Live coding is done with Lila, which evaluates C++ inside the running program.</p>
+</details>
+</div>
+</div>
 
 </div>
 
-<!-- ====================================== -->
-<!--  CARD 2 — What Makes MayaFlux Different -->
-<!-- ====================================== -->
-
-<div class="card collapsible">
-    <div class="collapsible-header">
-        <h2>What Makes MayaFlux Different</h2>
-        <p class="hint">Click to expand</p>
-    </div>
-
-    <div class="collapsible-body">
-
-        <div class="feature-grid">
-            <div class="feature-card">
-                <h3>Unified Data Streams</h3>
-                <p>Audio, visual, and control signals share the same numerical substrate. A node output routes to an RtAudio callback and a Vulkan push constant simultaneously, with no translation layer.</p>
-            </div>
-
-            <hr>
-            <div class="feature-card">
-                <h3>Nexus: Spatial Entity Lifecycle</h3>
-                <p>Fabric, Wiring, Emitter, Sensor, Agent. A spatial computation layer where entities perceive and influence audio and graphics simultaneously. Not a scene graph. No update loop. No component system.</p>
-            </div>
-
-            <hr>
-            <div class="feature-card">
-                <h3>Granular Synthesis as Data Analysis</h3>
-                <p>Recordings decompose into populations of named, attributed grains. Sort by spectral centroid. Filter by variance. Reorder by any function you can express in code. The composition is an explicit analytical argument about the material, not a phasor and a scatter parameter.</p>
-            </div>
-
-            <hr>
-            <div class="feature-card">
-                <h3>Portal::Text</h3>
-                <p>A glyph is a quad. A quad is four numbers. Four numbers can go anywhere. Text renders as a texture driven by the same node graph as audio and geometry: per-glyph oscillators, physics, GPU bindings.</p>
-            </div>
-
-            <hr>
-            <div class="feature-card">
-                <h3>Physical Modelling Networks</h3>
-                <p>ModalNetwork, WaveguideNetwork, and ResonatorNetwork implement physical modelling synthesis as first-class node graph citizens. Excitation, coupling, boundary conditions, and spatial routing are all live-configurable parameters.</p>
-            </div>
-
-            <hr>
-            <div class="feature-card">
-                <h3>Cross-Modal Node Bindings</h3>
-                <p>Node outputs bind directly to GPU shader parameters. Audio envelopes, spectral data, and control signals reach the GPU through the same node API, with no bridging code.</p>
-            </div>
-
-            <hr>
-            <div class="feature-card">
-                <h3>Live Coding with Lila</h3>
-                <p>An embedded Clang interpreter evaluates arbitrary C++23 at runtime via LLVM ORC JIT. Latency is one buffer cycle. Algorithms change without stopping audio or tearing down the graphics context. Used in production during a 20-minute live set on a Steam Deck.</p>
-            </div>
-
-            <hr>
-            <div class="feature-card">
-                <h3>Coroutine Temporal Control</h3>
-                <p>C++20 coroutines are the scheduling primitive. SampleDelay, FrameDelay, and MultiRateDelay awaiters let temporal intent cross domain boundaries. Time is compositional material, not a callback interval.</p>
-            </div>
-
-            <hr>
-            <div class="feature-card">
-                <h3>Lock-Free Architecture</h3>
-                <p>No mutexes in the real-time path. atomic_ref, CAS-based dispatch, and lock-free registration lists coordinate all four execution contexts: RtAudio callbacks, Vulkan render threads, async input backends, and user coroutines.</p>
-            </div>
-
-            <hr>
-            <div class="feature-card">
-                <h3>Live Signal Matrix</h3>
-                <p>IOManager provides a unified interface across the full signal matrix: audio files, video files, live camera devices, and image assets. SamplingPipeline adds polyphonic multi-cursor playback with independent speed and looping per voice.</p>
-            </div>
-
-            <hr>
-            <div class="feature-card">
-                <h3>MIDI and HID Input</h3>
-                <p>RtMidi and HIDAPI backends feed an async InputManager that dispatches to InputNode instances in the node graph. Controllers, sensors, and custom HID devices become signal sources with the same routing API as any other node.</p>
-            </div>
-        </div>
-
-    </div>
-
+<div class="card wide">
+<h2>Room to grow</h2>
+<p>MayaFlux was designed around computation itself. Open as many windows as you need, and none of them is the main one. Events are coroutines that run when something calls for them. Sound, graphics, simulation, input, geometry and control each run on their own schedule, and you decide how they relate.</p>
+<p>Because of that, a work can keep growing inside one project. A sketch can become a composition, an installation, a simulation, a game, an instrument, an editor, or the start of an application framework of its own.</p>
+<p>The pieces above show some of what this makes possible. They are a beginning, not a boundary.</p>
 </div>
 
-<!-- ====================================== -->
-<!--  CARD 3 — Philosophy                   -->
-<!-- ====================================== -->
-
-<div class="card collapsible">
-    <div class="collapsible-header">
-        <h2>Philosophy</h2>
-        <p class="hint">Click to expand</p>
-    </div>
-
-    <div class="collapsible-body">
-
-        <div class="philosophy-points">
-
-            <div class="philosophy-point">
-                <h3>Domain is decided last</h3>
-                <p>Sound, visuals, control signals are all numbers. A camera is a position and two matrices. A light is a position and a falloff function. A voice is a cursor into a buffer. Domain vocabulary describes what something is <em>used for</em>, not what it <em>is</em> computationally. MayaFlux does not enshrine that vocabulary in its type system.</p>
-            </div>
-
-            <hr>
-            <div class="philosophy-point">
-                <h3>Same structure, different outputs</h3>
-                <p>A gravitational attractor and a reverb send are the same computational structure pointed at different outputs. MayaFlux has no light type, no force type, no camera type. It has positioned entities, functions that fire, and outputs that route to audio, geometry, or GPU descriptors. What the entity <em>is</em> in domain terms is entirely the user's imagination applied to pure math.</p>
-            </div>
-
-            <hr>
-            <div class="philosophy-point">
-                <h3>Don't name what doesn't need a name</h3>
-                <p>Vulkan does not have a camera. It has a push constant slot. If you put a matrix there, the vertex shader reads it. MayaFlux exposes this as-is. Not naming it is not a missing feature. It is a deliberate refusal to add abstraction that adds nothing but the illusion of safety.</p>
-            </div>
-
-            <hr>
-            <div class="philosophy-point">
-                <h3>Code as Creative Material</h3>
-                <p>Data transformation is the creative act. Programming is compositional structure, not plumbing. When tools protect you from complexity, they also protect you from possibility.</p>
-            </div>
-
-            <hr>
-            <div class="philosophy-point">
-                <h3>Time as Structure</h3>
-                <p>Temporal relationships are part of artistic expression, not implementation detail. Coroutines are the scheduling primitive. Time is material.</p>
-            </div>
-
-        </div>
-
-    </div>
-
+<div class="card wide">
+<h2>Begin somewhere</h2>
+<p>You do not need to understand how it works before you make something.</p>
+<div class="two-column-grid">
+<div>
+<h3>Install</h3>
+<p><a href="/download/"><strong>Weave</strong></a> installs MayaFlux with everything it needs and creates a ready-to-build project. Open the project in any editor, build it, and run it. It works on Linux, Windows and Apple Silicon Macs.</p>
+</div>
+<div>
+<h3>Play</h3>
+<p><a href="/tutorials/sculpting-data/foundations/"><strong>Foundations</strong></a> has seven short exercises that begin with something you already have: a sound, a picture, a recording, a film, a camera or a model. Run one, change a single number, then listen or look at what changed.</p>
+</div>
+</div>
+<p>You can use every example without understanding it, and read the code when you want to know why. If you are coming from another tool, there are guides for <a href="/personas/">your background</a> and for <a href="/onboarding/">Max, Pure Data and openFrameworks</a>.</p>
 </div>
 
-<!-- ====================================== -->
-<!--  CARD 4 — Built From Necessity         -->
-<!-- ====================================== -->
-
-<div class="card collapsible">
-    <div class="collapsible-header">
-        <h2>Built From Necessity</h2>
-        <p class="hint">Click to expand</p>
-    </div>
-
-    <div class="collapsible-body">
-
-        <p>
-        MayaFlux wasn't built to improve on existing tools. It was built because they could not support the work already happening.
-        </p>
-        <ul>
-            <li><strong>15+ years of interdisciplinary performance</strong> across Chennai, Delhi, and the Netherlands</li>
-            <li><strong>Production audio engineering</strong> for Unreal Engine 5 and Metro: Awakening VR</li>
-            <li><strong>Experimental creative computing education</strong></li>
-            <li><strong>Live performance under pressure:</strong> 0.3 was developed in parallel with a 20-minute live coding set on a Steam Deck at TOPLAP Bengaluru. Four pieces. The framework and the performance were simultaneous.</li>
-        </ul>
-
-    </div>
-
+<div class="card wide">
+<h2>Write, compile, perform</h2>
+<p>MayaFlux is written in modern C++. A program is an ordinary project that you compile, and the same language describes a mathematical function, a network of sounds, a picture on the GPU or a change in the middle of a performance.</p>
+<p>When you want to work live, <strong>Lila</strong>, MayaFlux's live-coding environment, evaluates C++ fragments inside the running program from VS Code or Neovim. The sound does not stop and the window does not close. Live coding is an option, not a separate language and not a requirement.</p>
 </div>
 
-<!-- ====================================== -->
-<!--  CARD 5 — Current Status               -->
-<!-- ====================================== -->
-
-<div class="card collapsible">
-    <div class="collapsible-header">
-        <h2>Current Status</h2>
-        <p class="hint">Click to expand</p>
-    </div>
-
-    <div class="collapsible-body">
-
-        <p><strong>Version 0.3.0, April 2026. Alpha. Stable core.</strong></p>
-        <hr>
-        <p><strong>Stable:</strong> Audio processing, lock-free node graphs, coroutine scheduler, channel routing with crossfade transitions.</p>
-        <hr>
-        <p><strong>Stable:</strong> Vulkan 1.3 dynamic rendering, multi-window, geometry nodes, texture pipeline, compute shaders, GPU readback.</p>
-        <hr>
-        <p><strong>Stable:</strong> Nexus spatial entity layer: Fabric, Wiring, Emitter, Sensor, Agent, SpatialIndex3D with lock-free snapshot publication.</p>
-        <hr>
-        <p><strong>Stable:</strong> Granular synthesis with offline grain attribution, SamplingPipeline for polyphonic multi-cursor playback.</p>
-        <hr>
-        <p><strong>Stable:</strong> Portal::Text: FreeType glyph rendering as GPU texture, driven by the same node graph as audio and geometry.</p>
-        <hr>
-        <p><strong>Stable:</strong> Live camera input (Linux, macOS, Windows), video file playback, image loading via IOManager.</p>
-        <hr>
-        <p><strong>Stable:</strong> MIDI and HID input backends, async dispatch, InputNode infrastructure.</p>
-        <hr>
-        <p><strong>Stable:</strong> Lila, LLVM ORC JIT for live C++23 evaluation at sub-buffer latency.</p>
-        <hr>
-        <p><strong>Next (0.4):</strong> Nexus and agent build-out. Kinesis as first-class analysis namespace: Eigen-level linear algebra, FluCoMa-level audio analysis primitives.</p>
-        <hr>
-        <p><strong>Planned (0.5):</strong> Native UI framework, building on existing Region and WindowContainer infrastructure.</p>
-
-    </div>
-
+<div class="card wide">
+<h2>What is underneath</h2>
+<ul>
+<li><strong>One kind of material.</strong> Sound, geometry, image and control signals are all numbers, and the same tools shape any of them. Sound and picture share data directly, with no conversion step between them.</li>
+<li><strong>Real-time sound and GPU graphics.</strong> Audio runs in real time on each platform's native backend. Pictures and heavy computation run on the GPU through Vulkan, including simulations of particles, fluids and cellular worlds.</li>
+<li><strong>The world outside.</strong> Cameras, video, 3D models, volumes, tables of data, MIDI, pen tablets and microphones come in and go out through the same system.</li>
+<li><strong>Analysis built in.</strong> Pictures can be analysed live on the GPU, finding shapes, edges and motion, and the results can drive sound or geometry.</li>
+</ul>
+<p>For how it is put together, read <a href="https://github.com/MayaFlux/MayaFlux/blob/main/docs/Digital_Architecture.md">the architecture guide</a>. For individual functions, see the <a href="https://mayaflux.github.io/MayaFlux/">reference documentation</a>.</p>
 </div>
 
-<!-- ====================================== -->
-<!--  CARD 6 — Call to Action               -->
-<!-- ====================================== -->
-
-<div class="card collapsible">
-    <div class="collapsible-header">
-        <h2>Ready to Explore?</h2>
-        <p class="hint">Click to expand</p>
-    </div>
-
-    <div class="collapsible-body">
-
-        <p>
-        MayaFlux is for creators who've outgrown callback-driven thinking and want unified streams across audio, visual, and algorithmic composition.
-        </p>
-
-        <ul>
-        <li><a href="/download/">Download Weave</a></li>
-        <li><a href="https://mayaflux.github.io/MayaFlux/">Documentation</a></li>
-        <li><a href="https://github.com/MayaFlux/MayaFlux">Source Code</a></li>
-        <li><a href="/releases/">Release Notes</a></li>
-        <li><a href="/posters/cpponline-2026/">C++ Online conference poster</a></li>
-        </ul>
-
-    </div>
-
+<div class="card wide">
+<h2>Open to investigation</h2>
+<p>MayaFlux is free software under the GNU General Public License v3.0. Ranjith Hegde, an independent musician, researcher and software developer, wrote the first code in February 2025 and made it public on 1 March 2025, after a decade of working toward it in other forms. It grows through the problems met while making things with it.</p>
+<p>It comes out of practice. Years of work with dancers, writers, photographers and musicians in the Basement 21 collective in Chennai, live-coded performances, and production audio for Metro: Awakening came before it. The <a href="https://github.com/MayaFlux/MayaFlux/commits">commit history is public</a>, and the architecture was presented as a <a href="/posters/cpponline-2026/">poster at C++Online 2026</a>.</p>
+<p>Version 0.5 is made to be used. If something breaks, or something is unclear, that is what the project needs to hear.</p>
+<ul>
+<li><a href="/download/">Download Weave</a></li>
+<li><a href="https://github.com/MayaFlux/MayaFlux/issues">Report a bug or ask a question</a></li>
+<li><a href="https://github.com/MayaFlux/MayaFlux">Source code</a></li>
+<li><a href="/releases/">Release notes</a></li>
+</ul>
 </div>
-
-{{< /rawhtml >}}
