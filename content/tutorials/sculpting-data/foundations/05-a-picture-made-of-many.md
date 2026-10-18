@@ -27,7 +27,7 @@ inline std::vector<std::string> pictures(const std::string& folder, size_t limit
     return found;
 }
 ```
-Save each shader in the `data/shaders` folder of your project, under the name written above it. The code asks for it by that file name alone. The program looks for `data/shaders` in the folder you run it from, and one folder up, so run it from the project folder or its build folder. If the window stays blank or never appears, the shader was not found: look in the terminal for an error about failing to read the shader, and check the folder and the name. The stills are any folder of photographs you like, written as `path/to/stills`.
+Save each shader in the `data/shaders` folder of your project, under the name written above it. The code asks for it by that file name alone. The program looks for `data/shaders` in the folder you run it from, and one folder up, so run it from the project folder or its build folder. If the window stays blank or never appears, the shader was not found: look in the terminal for an error about failing to read the shader, and check the folder and the name. Use a folder with at least eight photographs for the first block and at least twenty-four for the second, written as `path/to/stills`.
 
 ### A Pile of Pictures
 
@@ -554,7 +554,7 @@ What the pictures have in common keeps flashing out of the noise and being lost 
 Change one thing at a time:
 
 - **`1.3` and `3.7` to `0.2` and `0.5`:** the same piece, slowed to a drift
-- **`t * 0.9 + 2.0` to a constant `0.0`:** no spread, the picture moves as one and the middle is clean
+- **Replace the spread expression with `const double spread = 0.0;`:** no spread, so the picture moves as one and the middle is clean
 - **`90.0` in the shader to `300.0`:** the grains shrink to fine dust, like static
 - **`90.0` to `20.0`:** coarse flakes, like torn paper
 - **`8.0` in the shader to `1.0`:** the grains change once a second and hold their picture between
@@ -813,7 +813,7 @@ The still and the film are two layers of one stack. The painting is read as numb
 Change one thing at a time:
 
 - **`8.0` to `2.0`:** only loud passages open the past
-- **`0.25 * i` to `0.5 * i`:** the white reaches eight seconds back, but the ring must hold it: use a ring of 600 frames or more
+- **`0.25 * i` to `0.5 * i`:** the last of sixteen moments reaches seven and a half seconds back; keep the 600 frame ring so it can hold that past
 - **`0.1` to `0.01`:** the depth follows the sound slowly and smears its changes
 - **A painting with soft edges, not hard ones:** the past blends into the present like a glaze, a hard edge gives a cut
 

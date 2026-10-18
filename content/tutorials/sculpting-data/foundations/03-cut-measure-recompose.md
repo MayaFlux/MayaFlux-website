@@ -31,7 +31,7 @@ Run this code. The recording is cut into tenths of a second, each tenth is measu
 
 Add `.ascending = false` after `.feature_key = "rms"` and the arc runs from the loudest to the quietest.
 
-### Dull to Bright
+### Fewer to More Crossings
 ```cpp
 #include "MayaFlux/WorkflowIncludes.hpp"
 
@@ -41,13 +41,13 @@ void compose() {
     auto config = Granular::GranularConfig {
         .grain_size = 4096,
         .hop_size = 1024,
-        .feature_key = "brightness",
+        .feature_key = "crossings",
         .ascending = true,
         .taper = [](std::span<double> grain) { Kinesis::Discrete::apply_hann(grain); }
     };
 
     auto analyzer = make_persistent_shared<StandardEnergyAnalyzer>(
-        EnergyAnalyzerConfig { .window_size = 512, .hop_size = 256, .method = EnergyMethod::SPECTRAL });
+        EnergyAnalyzerConfig { .window_size = 512, .hop_size = 256, .method = EnergyMethod::ZERO_CROSSING });
 
     auto measure = Granular::AttributeExecutor([analyzer](std::span<const double> grain, const ExecutionContext&) -> double {
         if (grain.empty()) {
@@ -63,7 +63,7 @@ void compose() {
     dawn | Audio;
 }
 ```
-Run this code. This time you wrote the measurement yourself: the spectral energy of each grain. The grains are ordered from the lowest to the highest, and each overlaps the next by three quarters under a soft window, so the joins vanish. What you hear is the recording's timbre brightening from first to last, a colour change with no melody to follow.
+Run this code. This time you wrote the measurement yourself: how often each grain crosses zero. The grains are ordered from fewer crossings to more, and each overlaps the next by three quarters under a soft window. The taper softens the joins, though reordering can still be audible. Higher crossing rates can come from high pitches or noise, so what you hear depends on the recording.
 
 ### Turbulence
 ```cpp
@@ -81,7 +81,7 @@ void compose() {
     cloud | Audio;
 }
 ```
-Run this code. Each grain is measured by how much its samples vary, and the most restless ones come first. There is no window, and every point is covered by four grains, so the grains pile on top of each other. The result is a dense, saturated cloud that is loudest where the recording was most agitated and settles as the grains calm.
+Run this code. Each grain is measured by how much its sample values vary, and those with the highest variance come first. There is no taper, and most output samples contain four overlapping grains, so their values add together. The result can be dense and loud, but its level depends on the source and on how overlapping waveforms combine. Variance alone does not tell you how agitated a sound feels.
 
 You have, in each case:
 
@@ -137,15 +137,15 @@ There are two ways to measure.
 
 **A named measurement.** Pass an `AnalysisType` and a name. `AnalysisType::FEATURE` with `"rms"` is the loudness of each grain. `AnalysisType::STATISTICAL` with `"variance"` is how much its samples vary. The number is written on each grain under `feature_key`, and the sort reads that same name.
 
-**Your own measurement.** Pass an `AttributeExecutor`: a function that receives one grain's samples and returns one number. The second block above measures spectral energy. The analyzer is made once, before the grains are measured, with its settings named, and the function reuses it for every grain. Change the method and the order changes:
+**Your own measurement.** Pass an `AttributeExecutor`: a function that receives one grain's samples and returns one number. The second block above measures zero-crossing rate. The analyzer is made once, before the grains are measured, with its settings named, and the function reuses it for every grain. Change the method and the order changes:
 ```cpp
 auto analyzer = make_persistent_shared<StandardEnergyAnalyzer>(
     EnergyAnalyzerConfig { .window_size = 512, .hop_size = 256, .method = EnergyMethod::ZERO_CROSSING });
 ```
-`window_size` and `hop_size` are how the analyzer walks along the grain. `extract_scalar_energy(analysis, "mean_energy")` then takes the average over those windows as the single number written on the grain. Other names it understands are `"max_energy"`, `"min_energy"`, `"variance"` and `"dynamic_range"`.
-Zero crossings count how often the signal changes sign, a rough measure of how noisy a grain is. `EnergyMethod::RMS` is loudness. Any function you can write over a span of samples will do.
+`window_size` and `hop_size` are how the analyzer walks along the grain. With `ZERO_CROSSING`, `extract_scalar_energy(analysis, "mean_energy")` takes the average zero-crossing rate across those windows; `mean_energy` is the analyzer's generic field name. Other names it understands are `"max_energy"`, `"min_energy"`, `"variance"` and `"dynamic_range"`.
+Zero crossings count how often the signal changes sign. They can rise with pitch or noise; they are not a reliable measure of brightness on their own. `EnergyMethod::RMS` measures signal level. Any function you can write over a span of samples will do.
 
-The measure is the whole character of the result. Loudness arranges a recording by dynamics. Spectral energy arranges it by colour. Variance arranges it by agitation. The same recording gives a different piece for each.
+The measure changes the order of the grains. RMS orders by level, zero crossings by sign changes, and variance by the spread of sample values. How each ordering sounds depends on the recording.
 
 {{< /tutorial-detail >}}
 
@@ -167,7 +167,7 @@ A minute of audio cut into grains of 256 frames is more than ten thousand of the
 
 **Overlap-add** output (`CONTAINER_ADDITIVE`, `STREAM_ADDITIVE`) places grain number i at i times `hop_size` and adds the grains together where they overlap. The second and third blocks use it. The grain taper decides how the overlaps sound:
 
-- A Hann window, `Kinesis::Discrete::apply_hann`, fades each grain in and out smoothly, so overlaps are seamless
+- A Hann window, `Kinesis::Discrete::apply_hann`, fades each grain in and out smoothly, reducing abrupt edges at the overlaps
 - A trapezoid, `Kinesis::Discrete::apply_trapezoid(grain, grain.size() / 8)`, keeps the body of each grain and fades only the edges, which keeps more of the grain's own character
 - No taper at all sums the grains raw. Where they overlap the level builds up, which is what makes the third block a saturated cloud rather than a smooth one
 
@@ -288,7 +288,7 @@ Then change one thing at a time:
 
 - **`.speed(-1.0)` to `.speed(-0.5)`:** the descending side takes twice as long, so the two cross at a different point every time round.
 - **`grain`:** `Config::get_sample_rate() / 40` makes the grains a fortieth of a second, and the arc turns to a texture.
-- **`"rms"` to `"variance"` with `AnalysisType::STATISTICAL`:** order by agitation instead of loudness.
+- **`"rms"` to `"variance"` with `AnalysisType::STATISTICAL`:** order by the spread of sample values instead of RMS level.
 
 ### The Same Gesture at Three Scales
 
@@ -321,7 +321,7 @@ Change the three numbers in `{ 0.05, 0.2, 0.8 }` to move the scales, or add a fo
 You have:
 
 - Cut a recording into grains and measured each one
-- Ordered the grains by loudness, by spectral energy and by variance
+- Ordered the grains by level, by zero-crossing rate and by variance
 - Chosen whether grains sit end to end or overlap, and how the overlap is windowed
 - Turned the result into a container to play, or a stream to read from many ways
 - Built one gesture at several scales, and one ordering that runs both ways

@@ -9,7 +9,7 @@ A simulation sounds like something that belongs to heavy software and long rende
 
 Smoke is a grid with a density in every cell. Heat is a second grid. The rules say that heat rises, that density is carried along, and that the air cannot be squeezed. Everything else is a choice. How thick the air is, how fast the heat fades, where something is added and how quickly, and what the whole thing looks like are numbers you set, and any of them can be driven by a sound, a pointer, or another number.
 
-The two blocks below show it. The first loads a fire that someone else made in another program, sets it burning again, and lets a drone decide when it flares. The second builds a fire from nothing, and puts your hands on it.
+The two blocks below show it. The first loads density and temperature saved by another program, moves the smoke under a new flow, and lets a drone add heat and smoke. The second builds a fire from nothing, and puts your hands on it.
 
 ### Fire From a File
 
@@ -116,7 +116,7 @@ void compose() {
 ```
 Run this code. A file dialog opens. Choose a `.vdb` file with a density field and a temperature field. The fire sample from the OpenVDB website works, and so does a fire you have exported from another program.
 
-The fire appears as it was saved, and starts to move again under rules of your choosing. A drone of seven slightly detuned tones plays underneath it. For the first twelve seconds nothing connects the two, and the fire burns on its own. Then every time the drone changes its tuning, which is every two and a half seconds, a flare of heat and smoke is added at the bottom of the fire. A small shift gives a small flare and a big shift gives a big one.
+The loaded density and temperature supply the starting image. The new solver moves velocity and density; temperature affects buoyancy but is not in this block's `carried` list. A drone of seven slightly detuned tones plays underneath it. For the first twelve seconds nothing connects the two. After that, every tuning change, scheduled every two and a half seconds, adds heat and smoke at the bottom. The amount added depends on how far the tuning moved.
 
 You do nothing here. The sound and the fire do it between them.
 
@@ -124,9 +124,9 @@ Change one thing at a time:
 
 - **`0.997F` to `0.9995F`:** the smoke hangs around much longer
 - **`0.00015F` to `0.0015F`:** the air thickens, and the fire turns slow and heavy
-- **`12.0` to `0.0`:** the drone steers the fire from the first second
-- **`5.0F * *kick` to `15.0F * *kick`:** every change in the drone is an explosion
-- **`roots`:** your own seven frequencies. Closer tones beat more slowly and make fewer, longer flares
+- **`12.0` to `0.0`:** the first scheduled tuning change can feed the fire, about two and a half seconds in
+- **`5.0F * *kick` to `15.0F * *kick`:** each tuning change adds heat three times as fast while the kick lasts
+- **`roots`:** your own seven frequencies. Their spacing changes the drone's beating; flares still follow the scheduled tuning changes
 
 {{< tutorial-detail title="Also: Check What Is In the File" >}}
 
@@ -322,17 +322,17 @@ void compose() {
         { .name = "burst" },
     });
 
-    auto read = relation->add<StepOperator>([](StepOperator& self, std::span<RelationSlot> slots, uint32_t) {
-        const double x = self.parameter("x");
-        const double y = self.parameter("y");
+    auto read = relation->add<StepOperator>([](const std::shared_ptr<StepOperator>& self, std::span<RelationSlot> slots, uint32_t) {
+        const double x = self->parameter("x");
+        const double y = self->parameter("y");
         slots[3].level = std::hypot(x - slots[0].level, y - slots[1].level) * 60.0;
         slots[0].level = x;
         slots[1].level = y;
-        slots[2].level = self.parameter("down");
-        slots[4].level = self.parameter("fill");
-        slots[7].level = self.parameter("size");
-        slots[8].level = self.parameter("smoke");
-        slots[9].level = self.parameter("burst");
+        slots[2].level = self->parameter("down");
+        slots[4].level = self->parameter("fill");
+        slots[7].level = self->parameter("size");
+        slots[8].level = self->parameter("smoke");
+        slots[9].level = self->parameter("burst");
     });
     read->map("x", Source([hand] { return static_cast<double>(hand->at.x); }));
     read->map("y", Source([hand] { return static_cast<double>(hand->at.y); }));
@@ -352,7 +352,7 @@ void compose() {
             return (in[0] * 0.43 + in[2] * 2.4) * (1.0 - std::clamp(in[1] * 2.5, 0.0, 1.0));
         });
 
-    relation->add<StepOperator>([e](StepOperator&, std::span<RelationSlot> slots, uint32_t) {
+    relation->add<StepOperator>([e](const std::shared_ptr<StepOperator>&, std::span<RelationSlot> slots, uint32_t) {
         const bool held = slots[2].level > 0.5 || slots[8].level > 0.5;
         const glm::vec3 at(static_cast<float>(slots[0].level), static_cast<float>(slots[1].level), 0.0F);
         const auto size = static_cast<float>(slots[7].level);
@@ -380,19 +380,19 @@ void compose() {
     sound->set_output_scale(2.0);
     sound->add_slots({ { .name = "low", .node = low }, { .name = "high", .node = high } });
 
-    auto voice = sound->add<StepOperator>([low, high](StepOperator& self, std::span<RelationSlot>, uint32_t) {
-        const double lift = std::clamp((self.parameter("heat") - 2.8) / 4.0, 0.0, 1.0);
-        const double stir = std::clamp(self.parameter("speed") / 2.0, 0.0, 1.0) * self.parameter("down");
+    auto voice = sound->add<StepOperator>([low, high](const std::shared_ptr<StepOperator>& self, std::span<RelationSlot>, uint32_t) {
+        const double lift = std::clamp((self->parameter("heat") - 2.8) / 4.0, 0.0, 1.0);
+        const double stir = std::clamp(self->parameter("speed") / 2.0, 0.0, 1.0) * self->parameter("down");
         low->set_amplitude(0.04 + 0.14 * lift);
         high->set_amplitude(0.12 * stir);
-        high->set_frequency(static_cast<float>(330.0 + 165.0 * (self.parameter("height") + 1.0)));
+        high->set_frequency(static_cast<float>(330.0 + 165.0 * (self->parameter("height") + 1.0)));
     });
     voice->map("heat", Source(net, 5));
     voice->map("speed", Source(net, 3));
     voice->map("down", Source(net, 2));
     voice->map("height", Source(net, 1));
 
-    sound->add<AdvanceOperator>(*sound);
+    sound->add<AdvanceOperator>();
     sound->add<CombineOperator>(2);
 
     sound | Audio[0];
@@ -416,7 +416,7 @@ Everything between your hand and the fire passes through one small network of na
 
 Change one thing at a time:
 
-- **`2.8` in the heat formula to `0.0`:** the fire only burns while you hold a button
+- **`2.8` in the heat formula to `0.0`:** the steady heat source stops; a held button or a Space burst can still add heat
 - **`0.992F` to `0.98F`:** the heat fades faster, and the flame is short
 - **`1.1F` in `density_gain` to `0.2F`:** smoke stops dragging the plume and it rises lazily
 - **`2.5` in the soot formula to `0.5`:** the box can fill almost to the top before it thins
@@ -480,7 +480,7 @@ const float radius = glm::length(bounds.max - bounds.min) * 0.5F;
 ```
 The camera sits at a multiple of that radius, and the thickness of the air and the pull of the smoke are multiplied by it. A flow tuned for a box two units across means nothing at another size, and this is what carries it over.
 
-A fire file has the fields a fire needs, density and temperature. It does not have a velocity or a pressure, which the rules need and which the file never stored. `vega.evolve` adds any field it needs that the volume lacks, under the names `velocity`, `pressure` and `divergence`, and the block then fills the new ones with zero. It does not touch a field the file already has.
+This block expects fields named `density` and `temperature` in the file. `vega.evolve` adds missing flow fields, including `velocity`, `pressure` and `divergence`; it reuses any that the file already supplies. The block then seeds `velocity` and `pressure` to zero, even if they came from the file. It carries density through the flow while temperature remains at its loaded positions, apart from the heat added by `influx()`.
 
 One line you will see in the log is expected: `setup_rendering: no SurfaceConfig was supplied at construction`. `vega.evolve` always tries to draw a volume as a solid surface, and this volume was not built for one. The flow is already running when the line appears, and the next expansion shows what draws it instead.
 
@@ -564,7 +564,7 @@ There is another way to draw a volume. Give it a `SurfaceConfig` when you build 
 
 The first block never touches the fire from the sound. It touches something the sound also reads.
 
-A tone is a `Sine` made with a frequency and an amplitude, `vega.Sine(220.0F, 0.25)`. Seven of them sit on a stack of intervals from 55 to 659 hertz, each nudged a few hertz off its note, so they beat against each other slowly. Each has a second, very slow `Sine` as its amplitude modulator, a different rate for each, so the chord thickens and thins by itself.
+The drone uses seven `Sine` nodes on two output channels. Each starts near one of the frequencies in `roots`, from 55 to about 659 hertz, and has a slower sine modulating its amplitude. The scheduled function retunes the seven nodes together.
 
 Every two and a half seconds a scheduled function moves every tone to a new nearby pitch, and adds up how far they all moved. That number is the news. A large total becomes a large flare, a small one a small flare, and the flare is held in `kick`. A second function runs every frame, lets `kick` fall by 3 percent, and sets both sources' rates from it. The fire sees only the rates.
 
@@ -577,6 +577,47 @@ chain.then([armed]() { *armed = true; }, 12.0).start();
 
 Any change is a good trigger. The measure here is how far the tuning moved. It could as easily be how loud the sound is, a note arriving, or a pointer moving. The earlier cards measured sounds in many ways, and any of those numbers could stand where `moved` is.
 
+{{< tutorial-detail title="Also: Combine the Drone into Two Nodes" >}}
+
+The trial version makes the same seven tones with one `Polynomial` node per stereo side. To try it, add `#include "MayaFlux/Kinesis/Discrete/Kernels.hpp"`, and replace the `drone` creation and tuning loop in the first block with this, leaving `roots` in place:
+```cpp
+const auto rate = static_cast<double>(Config::get_sample_rate());
+auto tuning = std::make_shared<std::array<double, 7>>();
+for (size_t i = 0; i < roots.size(); ++i) {
+    (*tuning)[i] = roots[i] + get_uniform_random(-3.0, 3.0);
+}
+
+auto drone_side = [&](size_t side) {
+    std::vector<size_t> members;
+    std::vector<double> increments;
+    std::vector<double> levels;
+    std::vector<double> breaths;
+    for (size_t i = side; i < roots.size(); i += 2) {
+        members.push_back(i);
+        increments.push_back(Kinesis::Discrete::radians_per_sample((*tuning)[i], rate));
+        levels.push_back(0.5);
+        breaths.push_back(Kinesis::Discrete::radians_per_sample(0.04 + 0.02 * static_cast<double>(i), rate));
+    }
+
+    return std::make_shared<Nodes::Generator::Polynomial>(
+        [members, tuning, rate](std::span<double> window, std::span<double> coefs) -> double {
+            auto steps = coefs.subspan(1, members.size());
+            for (size_t k = 0; k < members.size(); ++k) {
+                steps[k] = Kinesis::Discrete::radians_per_sample((*tuning)[members[k]], rate);
+            }
+            return Kinesis::Discrete::phasor_bank(window, coefs);
+        },
+        Nodes::Generator::PolynomialMode::FEEDFORWARD, 1,
+        Kinesis::Discrete::phasor_bank_state(increments, levels, breaths));
+};
+
+auto left = drone_side(0) | Audio[0];
+auto right = drone_side(1) | Audio[1];
+```
+Then remove `drone` from the `schedule_metro(2.5, ...)` capture and remove `(*drone)[i]->set_frequency(...)` from its loop. The `Polynomial` nodes read the changed `tuning` values each audio block; the flare calculation stays the same.
+
+{{< /tutorial-detail >}}
+
 {{< /tutorial-detail >}}
 
 {{< tutorial-detail title="Expansion 8: The Relation Network" >}}
@@ -587,7 +628,7 @@ The slots are `x`, `y`, `down`, `speed`, `fill`, `heat`, `soot`, `size`, `smoke`
 
 - **A step** is a function over all the slots. The first one reads the world into the slots. The last reads the slots out into the fire's sources.
 - **A derive** makes one slot from others. The `heat` slot is the pointer being down, plus how fast it moves, plus any burst, on top of a steady base. The `soot` slot is the heat, plus any right button, reduced as `fill` rises.
-- **A source** is what a step reads its inputs from. `read->map("x", Source(...))` ties a name to a function that returns a number once a frame, and the step reads it with `self.parameter("x")`. A source can also be a node, a constant, or a slot of another network.
+- **A source** is what a step reads its inputs from. `read->map("x", Source(...))` ties a name to a function that returns a number once a frame, and the step reads it with `self->parameter("x")`. A source can also be a node, a constant, or a slot of another network.
 
 The order is the point. The values are read, then the derives work out what they mean, then the last step applies them. To change how the fire answers your hand you change one derive, and the sources stay the same.
 

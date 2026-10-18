@@ -102,7 +102,7 @@ void compose() {
     window->show();
 }
 ```
-Run this code. The picture plays in the window and the sound plays through your speakers. `video | Graphics` hooks the picture, and the sound too when it was asked for.
+Run this code. `EXTRACT_AUDIO` asks the reader to decode the soundtrack; it does not send sound to the speakers. `video | Graphics` then hooks the picture and the extracted audio to their output buffers, so the picture appears and the sound plays.
 
 ### Video, Picture Only
 ```cpp
@@ -510,7 +510,7 @@ The audio is also kept by the IO manager, keyed by its video: `get_io_manager()-
 
 {{< tutorial-detail title="Expansion 14: Video, the Buffer and the Hook" >}}
 
-`video | Graphics` hooks the picture and, when the file has sound you asked for, the sound. By hand, for each:
+`video | Graphics` hooks the picture and, when the file has sound you asked the reader to extract, hooks that sound for playback too. By hand, for each:
 ```cpp
 auto picture = get_io_manager()->hook_video_container_to_buffer(video);
 picture->setup_rendering({ .target_window = window });

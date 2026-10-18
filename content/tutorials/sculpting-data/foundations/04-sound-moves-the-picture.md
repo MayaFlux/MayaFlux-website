@@ -184,6 +184,8 @@ picture->setup_rendering({ .target_window = window, .fragment_shader = "audio_ro
 ```
 `target_window` is the window to draw into. `fragment_shader` replaces the default shader, which draws the picture as it is. Leave it out and you have the first section again.
 
+`read_image()` loads the whole image by default; pass an optional `Kakshya::Region` as its second argument when you want a bounded pixel rectangle instead.
+
 {{< /tutorial-detail >}}
 
 {{< tutorial-detail title="Expansion 3: The Sound as a Storage Buffer" >}}

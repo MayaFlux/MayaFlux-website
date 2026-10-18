@@ -9,7 +9,7 @@ In the last section a recording played from start to end. Here the same recordin
 
 A tape machine has one head and a motor. The head sits at one position, the motor moves the tape at one speed, and turning around means stopping the spool. A recording in memory has no head and no motor. It is a list of numbers, and every voice that reads it can have a position that is any function of time. That is what separates the first half of this section, which a patient person with enough machines could do, from the second half, which they could not.
 
-Each block below is a complete `compose()`. A file dialog opens: choose a sound file at least three seconds long. To skip the dialog, give the first argument a path, for example `create_sampler()`.
+Each block below is a complete `compose()`. A file dialog opens: choose a sound file at least three seconds long. To skip the dialog, give the first argument a path, for example `create_sampler("path/to/file.wav")`.
 
 ### A Region of a Sound
 ```cpp
@@ -38,7 +38,7 @@ void compose() {
 ```
 Run this code. The recording plays on the left. Two seconds later a second reading joins on the right, a fifth higher. Two seconds after that a third reading joins on both sides, an octave higher. They are the same samples, read at different speeds, so each is a different pitch and finishes at a different time.
 
-Change `1.5` to `1.001` and run again: two readings that start together and slowly drift apart.
+Change `1.5` to `1.001` and run again: the second reading still enters two seconds later, now at nearly the first reading's speed.
 
 You have, in each case:
 
@@ -192,7 +192,7 @@ One sampler is made for each output channel a set uses, and each tap is a voice 
 
 A tap reads the recording by interpolating between frames, so reading it faster or slower changes the pitch. A speed of 1.5 is a frequency ratio of 3 to 2, a fifth. A speed of 2.0 is an octave.
 
-Two taps at 1.0 and 1.001 read the same samples a thousandth apart in speed. They start together and sound as one. After a second one is a thousandth of a second ahead, and the two together beat and then separate, a slow phase shift between two copies of one sound.
+Two taps at 1.0 and 1.001 read the same samples a thousandth apart in speed. In the example above, the second enters two seconds after the first, so the readings start at different places in the recording. From then on, their positions drift by a thousandth of a second per second. How that sounds depends on the recording.
 
 {{< /tutorial-detail >}}
 
@@ -305,7 +305,7 @@ void compose() {
     store(taps);
 }
 ```
-Run it. Each channel's playhead swings along a sine curve across the three seconds of the file from half a second to three and a half seconds in. At each end of the swing it slows to a stop, reverses, and speeds up again, so the sound glides to a standstill, turns around, and glides back up through its pitch. The right side swings at three halves the speed of the left, so the two never settle into agreement: they line up again only every twenty-five seconds.
+Run it. Each channel's playhead swings along a sine curve across the three seconds of the file from half a second to three and a half seconds in. At each end of the swing it slows to a stop, reverses, and speeds up again, so the sound glides to a standstill, turns around, and glides back up through its pitch. The right side swings at three halves the rate of the left. Their positions cross more often, while the full pair of motions repeats about every twenty-five seconds.
 
 Then change one thing at a time:
 
