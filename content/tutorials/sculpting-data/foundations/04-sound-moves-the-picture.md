@@ -76,7 +76,8 @@ Speak and the picture bends as you speak. Input has to be switched on before the
 
 The picture can move as well. Replace the first two picture lines with a film or a camera. `| Graphics` hooks each one to a buffer:
 ```cpp
-auto film = get_io_manager()->load_video("path/to/film.mkv") | Graphics;
+auto film = choose_video({}).first;
+film | Graphics;
 auto picture = get_associated_buffer(film);
 picture->setup_rendering({ .target_window = window, .fragment_shader = "audio_rows.frag" });
 ```
@@ -149,7 +150,7 @@ void compose() {
         for (const double value : samples) {
             sum += std::abs(value);
         }
-        return sum / std::max<size_t>(1, samples.size());
+        return sum / samples.size();
     }, offsetof(Push, level), sizeof(float));
 }
 ```
@@ -238,7 +239,7 @@ struct Push {
 renderer->set_push_constant_size<Push>();
 renderer->feed("level", source, offsetof(Push, level), sizeof(float));
 ```
-`feed` takes a function that is called once every frame. Whatever it returns is written at `offsetof(Push, level)`. Return a `double` and it is stored as a float. Only four or eight bytes are written, so each field gets its own `feed`:
+`feed` takes a function that is called once every frame. Whatever it returns is written at `offsetof(Push, level)`. Return a `double` and it is stored as a float. Only four or eight bytes are written, so each field gets its own `feed`. If you add `float tilt;` to both the shader and C++ `Push` blocks, it gets a second feed:
 ```cpp
 renderer->feed("level", [block]() { return mean_level(block); }, offsetof(Push, level), sizeof(float));
 renderer->feed("tilt", [state]() { return state->tilt; }, offsetof(Push, tilt), sizeof(float));
@@ -272,7 +273,7 @@ vec2 cell = floor(uv * grid_n);
 vec2 cell_rand = hash22(cell) * 2.0 - 1.0;
 uv += cell_rand * (0.02 + abs(cell_energy) * 0.12);
 ```
-`hash22` is a small function that turns a cell's position into two numbers that look random. A fuller version of this shader also tears some cells off to random places when a strike arrives.
+`hash22` is a small function that turns a cell's position into two numbers that look random. Here `energy` is the whole block's level and `cell_energy` is a level chosen for that cell; a complete shader computes both. A fuller version also tears some cells off to random places when a strike arrives.
 
 {{< /tutorial-detail >}}
 
@@ -289,9 +290,10 @@ void compose() {
     auto window = create_window({ "Morph", 1280, 720 });
     window->show();
 
-    auto a = IO::ImageReader::load(std::string("path/to/a.png"), 4);
-    auto b = IO::ImageReader::load(std::string("path/to/b.png"), 4);
-    auto c = IO::ImageReader::load(std::string("path/to/c.png"), 4);
+    auto square = Kakshya::Region::image_rect(0, 0, 511, 511);
+    auto a = IO::ImageReader::load(std::string("path/to/a.png"), 4, square);
+    auto b = IO::ImageReader::load(std::string("path/to/b.png"), 4, square);
+    auto c = IO::ImageReader::load(std::string("path/to/c.png"), 4, square);
 
     const uint32_t width = a->width;
     const uint32_t height = a->height;
@@ -321,7 +323,7 @@ void compose() {
 
     auto morph = std::make_shared<TextureExecutionContext>(
         GpuComputeConfig { "texture_array_morph.comp", { 16, 16, 1 }, sizeof(MorphPC) },
-        ImageFormat::RGBA8, TextureExecutionContext::OutputMode::CONTAINER, 1, weights_binding);
+        ImageFormat::RGBA8, TextureExecutionContext::OutputMode::IMAGE, 1, weights_binding);
 
     morph->set_push_constants(MorphPC { .layer_count = 3, .normalise = 1, .layer_offset = 0, .pad = 0 });
     morph->set_binding_data(2, std::vector<float> { 1.0F, 0.2F, 0.6F });
@@ -335,7 +337,7 @@ void compose() {
     result->set_gpu_texture(morph->get_output_image(0));
 }
 ```
-The three pictures must have the same size. The shader reads one weight per layer from a list of floats and divides by their total, so the weights are proportions and not fixed amounts. Here the first picture is strongest, the third is at about half of it, and the second is faint. Change the numbers and run again to see a different blend.
+Choose three pictures at least 512×512 pixels. The reader takes the same 512×512 square from each, so every layer has the same size. To use a larger area, increase the crop's inclusive end coordinates to fit all three pictures; `image_rect(0, 0, 1023, 767)` takes 1024×768 pixels when each picture is at least that large. The shader reads one weight per layer from a list of floats and divides by their total, so the weights are proportions and not fixed amounts. Here the first picture is strongest, the third is at about half of it, and the second is faint. Change the numbers and run again to see a different blend.
 
 The weights are just a list of numbers. They could as easily be the energy of a few bands of a sound as three constants.
 
@@ -420,7 +422,7 @@ void compose() {
         for (const double value : *block) {
             sum += std::abs(value);
         }
-        return sum / std::max<size_t>(1, block->size());
+        return sum / block->size();
     }, offsetof(Splash, level), sizeof(float));
     renderer->feed("x", [origin]() { return static_cast<double>(origin->x); }, offsetof(Splash, x), sizeof(float));
     renderer->feed("y", [origin]() { return static_cast<double>(origin->y); }, offsetof(Splash, y), sizeof(float));

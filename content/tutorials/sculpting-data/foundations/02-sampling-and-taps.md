@@ -62,7 +62,7 @@ sampler->build();
 2.  The `SamplingPipeline` is made with the stream, the engine's managers, an output channel and the block size
 3.  `build()` supplies the sampler's buffer to that output channel and starts the pipeline that drives it every audio cycle
 
-The numbers are the ones `create_sampler` uses by default: `48000 * 5` frames, and `true` to cut the file off there. So by default only the first five seconds at 48 kHz are loaded. To read more of the file, ask for more frames: `create_sampler("file.wav", 48000 * 20)`.
+The numbers are the ones `create_sampler` uses by default: `48000 * 5` frames, and `true` to cut the file off there. That is five seconds at 48 kHz, 2.5 seconds at 96 kHz, or about 5.44 seconds at 44.1 kHz. To request a duration at the current rate, calculate its frame count: `create_sampler("file.wav", Config::get_sample_rate() * 20)` asks for twenty seconds.
 
 A sampler plays one channel of the file. By default that is the channel with the same number as its output channel, which is channel 0 for a stereo file's left side. `create_sampler(path, frames, true, 1)` plays channel 1 on output 1, and `create_samplers(path)` makes one sampler per channel.
 
@@ -174,7 +174,7 @@ void compose() {
 - `tap()` begins a new tap, and the calls that follow describe it
 - `speed(ratio)`, with a negative ratio meaning backwards, and `backward()` for reading from the end of the region
 - `enters_after(seconds)`, `level(gain)`, `on_channel(n)` and `on_channels({ 0, 1 })`
-- `region(start_frame, end_frame)`, which applies to every tap, and `loop(false)` to play once
+- `region(start_frame, end_frame)`, which applies to every tap and uses an exclusive end frame (unlike `slice_from_range`), and `loop(false)` to play once
 
 Taps loop by default. After `start()` the set can still be changed:
 ```cpp
@@ -196,15 +196,15 @@ Two taps at 1.0 and 1.001 read the same samples a thousandth apart in speed. In 
 
 {{< /tutorial-detail >}}
 
-{{< tutorial-detail title="Expansion 8: Adding Voices Makes the Others Quieter" >}}
+{{< tutorial-detail title="Expansion 8: How Output Mixing Sets the Level" >}}
 
-Every voice and every tap that sounds on an output channel adds into that channel's mix. By default the engine divides the mix by the number of sources feeding it, so a new voice makes the existing ones quieter in return.
+Voices in one sampler add together inside its buffer; taps assigned to the same output channel share a sampler. By default the output channel divides its mix by the number of active buffers feeding it. Adding another voice to the same sampler does not increase that divisor. Adding a separate sampler buffer can make the existing buffers quieter.
 
 To turn that off for the two stereo channels:
 ```cpp
 set_mix_normalization_for_channels({ 0, 1 }, false);
 ```
-With it off the voices add at full level. Lower each voice's `level` to keep the total under control.
+With it off, buffers add at full level. Lower a voice's or tap's level to keep the total under control; normalization by buffer count does not prevent several voices within one buffer from adding up.
 
 {{< /tutorial-detail >}}
 

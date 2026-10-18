@@ -46,13 +46,10 @@ void compose() {
         .taper = [](std::span<double> grain) { Kinesis::Discrete::apply_hann(grain); }
     };
 
-    auto analyzer = make_persistent_shared<StandardEnergyAnalyzer>(
+    auto analyzer = std::make_shared<StandardEnergyAnalyzer>(
         EnergyAnalyzerConfig { .window_size = 512, .hop_size = 256, .method = EnergyMethod::ZERO_CROSSING });
 
     auto measure = Granular::AttributeExecutor([analyzer](std::span<const double> grain, const ExecutionContext&) -> double {
-        if (grain.empty()) {
-            return 0.0;
-        }
         std::vector<Kakshya::DataVariant> input { Kakshya::DataVariant(std::vector<double>(grain.begin(), grain.end())) };
         return extract_scalar_energy(analyzer->analyze_energy(input), "mean_energy");
     });
@@ -139,7 +136,7 @@ There are two ways to measure.
 
 **Your own measurement.** Pass an `AttributeExecutor`: a function that receives one grain's samples and returns one number. The second block above measures zero-crossing rate. The analyzer is made once, before the grains are measured, with its settings named, and the function reuses it for every grain. Change the method and the order changes:
 ```cpp
-auto analyzer = make_persistent_shared<StandardEnergyAnalyzer>(
+auto analyzer = std::make_shared<StandardEnergyAnalyzer>(
     EnergyAnalyzerConfig { .window_size = 512, .hop_size = 256, .method = EnergyMethod::ZERO_CROSSING });
 ```
 `window_size` and `hop_size` are how the analyzer walks along the grain. With `ZERO_CROSSING`, `extract_scalar_energy(analysis, "mean_energy")` takes the average zero-crossing rate across those windows; `mean_energy` is the analyzer's generic field name. Other names it understands are `"max_energy"`, `"min_energy"`, `"variance"` and `"dynamic_range"`.
@@ -203,7 +200,7 @@ Every field of `GranularConfig`, with its default:
 - `channel = 0`, which channel is measured
 - `ascending = true`, the order
 - `gpu_sort_threshold = 0`, grain count at which the sort moves to the GPU, 0 for never
-- `attribution_context`, left at its default
+- `attribution_context = ComputationContext::SPECTRAL`, the context used to select the attribute rule
 - `taper`, empty by default, which means no taper
 
 Fields you leave out keep their defaults. Fields you do name have to be written in the order above.
@@ -230,28 +227,31 @@ void compose() {
     window->show();
 
     auto config = Granular::GranularConfig { .grain_size = 4800, .hop_size = 4800, .feature_key = "rms" };
-    auto matrix = Granular::make_granular_matrix(ComputationContext::SPECTRAL, Granular::GranularOutput::STREAM);
-    auto sampler = std::make_shared<std::shared_ptr<Kriya::SamplingPipeline>>();
+    auto matrix = store(Granular::make_granular_matrix(ComputationContext::SPECTRAL, Granular::GranularOutput::STREAM));
+
+    struct Playback {
+        std::shared_ptr<Kakshya::DynamicSoundStream> stream;
+        std::shared_ptr<Kriya::SamplingPipeline> sampler;
+    };
+    auto playback = std::make_shared<Playback>();
 
     Granular::process_to_stream_async(
         matrix, sound, AnalysisType::FEATURE,
-        [sampler](std::shared_ptr<Kakshya::DynamicSoundStream> stream) {
-            if (stream) {
-                *sampler = create_sampler_from_stream(stream, 0);
-            }
+        [playback](std::shared_ptr<Kakshya::DynamicSoundStream> stream) {
+            playback->stream = std::move(stream);
         },
         config, "rms");
 
     sound | Audio;
 
-    on_key_pressed(window, IO::Keys::Q, [sampler]() {
-        if (*sampler) {
-            (*sampler)->play(0, (*sampler)->slice_from_stream());
-        }
+    on_key_pressed(window, IO::Keys::Q, [playback] {
+        if (!playback->stream) return;
+        if (!playback->sampler) playback->sampler = create_sampler_from_stream(playback->stream);
+        playback->sampler->play(0, playback->sampler->slice_from_stream());
     });
 }
 ```
-The original plays at once. When the rearranged version is ready the callback builds a sampler for it, and pressing Q starts it. The callback runs on the worker thread, so it only builds the sampler. Playing is left to the key press.
+The original plays at once. The worker prepares the rearranged stream in the background. Press Q after it is ready to make a sampler and play it; before then, Q does nothing. The key callback keeps the sampler for later presses.
 
 {{< /tutorial-detail >}}
 

@@ -517,7 +517,7 @@ picture->setup_rendering({ .target_window = window });
 
 auto buffers = get_io_manager()->hook_audio_container_to_buffers(audio);
 ```
-The last line is `audio | Audio`. When the file has no sound, or you did not ask for it, `audio` is empty and there is nothing to hook. Afterwards `get_associated_buffer(video)` finds the picture's buffer, and `get_associated_buffers(video)` finds the sound's, one per channel.
+The last line is `audio | Audio`. This fragment assumes the film has a soundtrack, as in the video-with-sound block. If the file has none, `load_video` returns an empty audio result and no audio buffer is produced. Afterwards `get_associated_buffer(video)` finds the picture's buffer, and `get_associated_buffers(video)` finds the sound's, one per channel.
 
 `hook_video_container_to_buffer` made a `VideoContainerBuffer`, which is a `TextureBuffer` that copies the current frame into its texture each cycle. That is why `setup_rendering` is the same line as for an image. When the container reaches its end the buffer removes itself, so the video plays once.
 
@@ -577,7 +577,7 @@ auto buffers = get_io_manager()->hook_audio_container_to_buffers(container);
 
 - The fluent version loads *and* hooks in one line
 - The explicit version separates the two, so you can inspect or change the container before it is hooked
-- Both do the same thing: one is convenience, one is control
+- With a chosen, readable file, both create the same per-channel playback buffers
 
 ---
 

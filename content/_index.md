@@ -80,7 +80,7 @@
 <details>
 <summary>More about this piece</summary>
 <p>A live camera is recorded into a ring of recent frames. Each strike cuts back a different distance into it and shows that moment in the regions of the picture shaped by noise. The speed of the pen changes how fast the past plays. Some bells are struck by rules, not by the hand, and a written drone sustains underneath.</p>
-<p>It needs a pen tablet and a camera. The code will be published after 0.5.</p>
+<p>It needs a pen tablet and a camera.</p>
 </details>
 </div>
 </div>
