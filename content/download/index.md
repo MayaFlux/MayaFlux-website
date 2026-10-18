@@ -2,57 +2,9 @@
 title: "Download"
 ---
 
-<div class="card collapsible">
-<div class="collapsible-header">
-  <h2>External Dependencies (Platform-Imposed, Required)</h2>
-</div>
-<p class="hint">Click to expand</p>
-<div class="collapsible-body">
+# Download Weave 0.5
 
-  <p>MayaFlux itself does <strong>not</strong> require external IDEs or large SDK bundles. Weave installs all internal framework dependencies across all supported platforms.</p>
-  <p>However, some operating systems enforce their own compiler toolchains. This is <strong>not</strong> a MayaFlux design choice. It is how those platforms are structured.</p>
-
-  <hr />
-
-  <h3>Linux</h3>
-  <p>No IDE required. No heavyweight SDK required. On supported distributions, a C/C++ compiler and standard libraries are already present or installed via the system package manager. Weave installs MayaFlux-specific dependencies automatically.</p>
-
-  <hr />
-
-  <h3>Windows</h3>
-  <p>Windows requires Microsoft's compiler toolchain. Weave installs it automatically via winget if not already present. No manual Visual Studio installation is needed.</p>
-
-  <hr />
-
-  <h3>macOS</h3>
-  <p>macOS requires Apple's command line tools. Install them with:</p>
-
-```bash
-xcode-select --install
-```
-
-  <p>Follow the system dialog to complete installation. Apple does not allow third-party compilers to fully replace the system toolchain.</p>
-
-  <hr />
-
-  <h3>What Weave installs</h3>
-  <ul>
-    <li>MayaFlux libraries</li>
-    <li>Vulkan components</li>
-    <li>Internal runtime dependencies</li>
-    <li>Project templates</li>
-  </ul>
-
-</div>
-</div>
-
-<br />
-
-# Get Started with Weave
-
-The unified installer and project creator for **MayaFlux**.
-
-Weave downloads the framework, installs dependencies, and sets up your first project in minutes.
+Download Weave for your operating system, open it, and choose **Install MayaFlux**. Weave installs MayaFlux and everything the framework needs. You can then choose **Create Project** to make a project with CMake presets. Use any editor or IDE you prefer.
 
 ---
 
@@ -60,38 +12,53 @@ Weave downloads the framework, installs dependencies, and sets up your first pro
 <!-- macOS CARD             -->
 <!-- ====================== -->
 
-<div class="card collapsible">
+<div class="card collapsible download-details-card">
 <div class="collapsible-header">
   <h2>macOS</h2>
-  <p><a href="https://github.com/MayaFlux/Weave/releases/download/v0.4.0/Weave-macos.dmg"><strong>Download for macOS</strong></a></p>
+  <p><a href="https://github.com/MayaFlux/Weave/releases/download/v0.5.0/Weave-macos.dmg"><strong>Download Weave 0.5 for macOS</strong></a></p>
   <p class="hint">Click to expand</p>
 </div>
 <div class="collapsible-body">
 
-### Prerequisites
-
-- macOS 15.0 (Sequoia) or later
-- Xcode Command Line Tools: `xcode-select --install`
+**Requires:** macOS 26 (Tahoe) or later on Apple silicon (arm64).
 
 ### Install
 
-1. Open `Weave-macos.dmg` and double-click **Weave.app**
-2. If macOS shows an "unverified developer" warning: close it, go to **System Settings > Privacy & Security**, find Weave, click **Open Anyway**
-3. Choose **Install MayaFlux** and follow the prompts
-4. Restart your terminal when done
+1. Open `Weave-macos.dmg` and drag **Weave.app** to **Applications**.
+2. Open **Weave.app**. If macOS blocks it, go to **System Settings > Privacy & Security**, click [**Open Anyway**](https://support.apple.com/en-us/102445), then click **Open** in the confirmation dialog. [Other open-source macOS releases](https://github.com/neovim/neovim/releases) document the same routine step.
+3. Choose **Install MayaFlux** and follow the prompts. Restart your terminal when installation finishes.
+
+<details>
+<summary>Why does macOS show this warning?</summary>
+<p>MayaFlux does not pay Apple's Developer Program fee for Developer ID notarization. The fee is a financial burden, but our refusal is also a deliberate stance. Requiring community projects to pay for ordinary access to users is hostile to open knowledge and the spirit of free software. We regard it as "protection money".</p>
+<p>Many independent open-source projects make the same choice for financial and principled reasons. MayaFlux is part of that broader community. Because Apple has not notarized this build, macOS may say it cannot check Weave for malicious software. This warning does not mean macOS found malware.</p>
+</details>
 
 ### Create and build a project
 
+**GUI:** Open **Weave.app**, choose **Create Project**, enter a name, and select a destination.
+
+**Optional CLI:** You can create the same project from a terminal:
+
 ```bash
 weave new MyProject ~/Projects/
-
-cd MyProject
-cmake --preset release
-cmake --build --preset release
-./build/MyProject
 ```
 
+**Build either way:** Open a terminal in the new project folder and run:
+
+```bash
+cmake --preset release
+cmake --build --preset release
+```
+
+Run the executable named after your project from the `build/` folder.
+
 📘 [macOS Documentation](https://github.com/MayaFlux/Weave/tree/main/docs/MACOS.md)
+
+<details>
+<summary>Homebrew reports missing or outdated Xcode Command Line Tools</summary>
+<p>If the tools are missing, run <code>xcode-select --install</code> and retry. If Homebrew says they are outdated, follow its update instructions and retry.</p>
+</details>
 
 </div>
 </div>
@@ -105,16 +72,12 @@ cmake --build --preset release
 <div class="card collapsible">
 <div class="collapsible-header">
   <h2>Linux</h2>
-  <p><a href="https://github.com/MayaFlux/Weave/releases/download/v0.4.0/Weave-linux.AppImage"><strong>Download for Linux</strong></a></p>
+  <p><a href="https://github.com/MayaFlux/Weave/releases/download/v0.5.0/Weave-linux.AppImage"><strong>Download Weave 0.5 for Linux</strong></a></p>
   <p class="hint">Click to expand</p>
 </div>
 <div class="collapsible-body">
 
-### Supported distributions
-
-- Arch Linux
-- Fedora 43+
-- Ubuntu 25+
+**Requires:** Linux x86_64 on Arch Linux, Fedora 43+, or Ubuntu 25+.
 
 ### Install
 
@@ -123,18 +86,26 @@ chmod +x Weave-linux.AppImage
 ./Weave-linux.AppImage
 ```
 
-Choose **Install MayaFlux** and follow the prompts. Weave detects your distribution and installs via the native package manager. Enter your sudo password when prompted — it is not stored.
+Choose **Install MayaFlux** and follow the prompts. Weave uses your distribution's package manager to install MayaFlux and its dependencies. Enter your sudo password when prompted; Weave does not store it.
 
 ### Create and build a project
 
+**GUI:** Open Weave, choose **Create Project**, enter a name, and select a destination.
+
+**Optional CLI:** You can create the same project from a terminal:
+
 ```bash
 weave new MyProject ~/Projects/
+```
 
-cd MyProject
+**Build either way:** Open a terminal in the new project folder and run:
+
+```bash
 cmake --preset release
 cmake --build --preset release
-./build/MyProject
 ```
+
+Run the executable named after your project from the `build/` folder.
 
 📘 [Linux Documentation](https://github.com/MayaFlux/Weave/tree/main/docs/LINUX.md)
 
@@ -147,42 +118,51 @@ cmake --build --preset release
 
 <!-- ====================== -->
 
-<div class="card collapsible">
+<div class="card collapsible download-details-card">
 <div class="collapsible-header">
   <h2>Windows</h2>
-  <p><a href="https://github.com/MayaFlux/Weave/releases/download/v0.4.0/Weave-windows.zip"><strong>Download for Windows</strong></a></p>
+  <p><a href="https://github.com/MayaFlux/Weave/releases/download/v0.5.0/Weave-windows.zip"><strong>Download Weave 0.5 for Windows</strong></a></p>
   <p class="hint">Click to expand</p>
 </div>
 <div class="collapsible-body">
 
-### Prerequisites
-
-- Windows 10 or 11 (64-bit)
-- MSVC Build Tools: installed automatically by Weave if not already present
+**Requires:** Windows 10 or 11 (64-bit).
 
 ### Install
 
 1. Extract `Weave-windows.zip`
-2. Right-click `Weave.exe` and choose **Run as Administrator**
-3. Accept the UAC prompt
-4. Choose **Install MayaFlux** and follow the prompts
-5. Restart your terminal when done
+2. Open `Weave.exe` and choose **Install MayaFlux**
+3. Accept the UAC prompt when Weave requests administrator permission for installation
+4. Follow the prompts and restart your terminal when done
+
+Weave installs the required Microsoft C++ components if they are missing. You **do not** need to install Visual Studio.
+
+<details>
+<summary>Why does Weave install MSVC Build Tools, Windows SDK, and VC++ Redistributable?</summary>
+<p>MayaFlux uses native Windows backends, including WASAPI, Win32 windowing, WinMM, and COM, to maximize compatibility and performance. Building against these platform APIs needs Windows SDK files and Microsoft C++ build tools. Weave requests only the components its workflow needs: x64 C++ tools, the Windows SDK, and the current VC++ Redistributable. It does not download the full Visual Studio IDE or its roughly 10 GB default installation. These components can still take time and disk space to install.</p>
+</details>
 
 ### Create and build a project
 
-All project operations go through the Weave GUI on Windows. Open `Weave.exe` and choose **Create Project**.
+Open `Weave.exe`, choose **Create Project**, enter a name, and select a destination. Project creation on Windows is handled in the Weave GUI. Open PowerShell in the new project folder to build it:
 
 ```powershell
-cd MyProject
 cmake --preset release
 cmake --build --preset release
-.\build\MyProject.exe
 ```
+
+Run the executable named after your project from the `build\` folder.
 
 📘 [Windows Documentation](https://github.com/MayaFlux/Weave/tree/main/docs/WINDOWS.md)
 
 </div>
 </div>
+
+---
+
+## Check a new project
+
+Each project created with Weave 0.5 includes a validation script. Run `./validate.sh` on macOS or Linux, or `.\validate.bat` on Windows, from the project folder to check its files, tools, and MayaFlux installation. After building, use `./run-report.sh` or `.\run-report.bat` to collect logs when reporting a problem. These scripts are included in newly created projects; existing projects keep their files.
 
 ---
 

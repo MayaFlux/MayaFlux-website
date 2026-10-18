@@ -126,7 +126,8 @@ document.addEventListener("DOMContentLoaded", () => addCopyButtons(document));
 
     <script>
       document.querySelectorAll(".collapsible").forEach((card) => {
-        card.addEventListener("click", () => {
+        card.addEventListener("click", (event) => {
+          if (card.classList.contains("download-details-card") && event.target.closest("details")) return;
           const body = card.querySelector(".collapsible-body");
           const isOpen = card.classList.contains("open");
 
