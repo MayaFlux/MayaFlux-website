@@ -362,7 +362,7 @@ Sound is one way of deciding when and how far, not the only one. A node is a str
 - a `Logic` gate calls `on_change_to(true, ...)` and `on_change_to(false, ...)` when it opens and closes, `while_true` for as long as it is open, and `on_tick_if(condition, ...)` when a condition holds
 - a `Counter` calls `on_increment`, `on_wrap` and `on_count(target, ...)`
 
-A node that you send to `Audio` runs with the sound, and its hooks run there too. If you want the node's timing and not its sound, call `exclude_output_from_graph()` on it: it is processed as usual and its output is left out of the mix. The Chimera runs with the picture. The simple, safe way to join them is a plain value that both can see:
+A node that you send to `Audio` runs with the sound, and its hooks run there too, silent or not, as in the Stones block. The Chimera runs with the picture. The simple, safe way to join them is a plain value that both can see:
 ```cpp
 auto laid = std::make_shared<uint32_t>(0);
 

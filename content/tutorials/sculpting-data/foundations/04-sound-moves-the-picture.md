@@ -409,6 +409,13 @@ void compose() {
     picture->setup_rendering({ .target_window = window, .fragment_shader = "splash.frag" });
 
     auto bell = vega.ModalNetwork(8, 110.0, ModalNetwork::Spectrum::INHARMONIC, 4.0) | Audio[{ 0, 1 }];
+    bell->set_output_scale(0.25);
+    bell->set_coupling_enabled(true);
+    for (size_t mode = 0; mode + 1 < 8; ++mode) {
+        bell->set_mode_coupling(mode, mode + 1, 0.00004);
+    }
+    bell->set_mode_coupling(0, 3, 0.00012);
+    bell->set_mode_coupling(1, 6, 0.00008);
     auto origin = std::make_shared<glm::vec2>(0.5F, 0.5F);
 
     auto renderer = picture->get_render_processor();
@@ -429,15 +436,15 @@ void compose() {
 
     on_mouse_pressed(window, IO::MouseButtons::Left, [bell, origin, window](double x, double y) {
         const auto ndc = normalize_coords(x, y, window);
-        *origin = glm::vec2((ndc.x + 1.0F) * 0.5F, (ndc.y + 1.0F) * 0.5F);
+        *origin = glm::vec2((ndc.x + 1.0F) * 0.5F, (1.0F - ndc.y) * 0.5F);
         bell->set_fundamental(get_uniform_random(60.0, 400.0));
         bell->excite(get_uniform_random(0.5, 1.0));
     });
 }
 ```
-Run it. The picture sits still and silent. Click, and a bell of a new pitch is struck, and a splash is thrown from where you clicked. The picture is cut into thirty-two by thirty-two cells, and the loudness of the bell decides how far the splash reaches. Inside that reach, cells are torn from where they were and flung outward from the click, each by its own distance and in its own slightly different direction. As the bell rings down, the splash reaches less and less, and the cells fall back into the picture.
+Run it. The picture sits still and silent. Click, and a bell of a new pitch is struck, and a splash is thrown from where you clicked. The bell's eight modes are linked to their neighbours, so while it rings, energy drifts from the loud low modes into the quieter high ones. `set_output_scale(0.25)` sets how loud the network is, and the splash measures the same scaled sound, so a quieter bell also means a smaller splash. The picture is cut into thirty-two by thirty-two cells, and the loudness of the bell decides how far the splash reaches. Inside that reach, cells are torn from where they were and flung outward from the click, each by its own distance and in its own slightly different direction. As the bell rings down, the splash reaches less and less, and the cells fall back into the picture.
 
-Nothing is painted and nothing accumulates. The cells are the picture's own, thrown by the sound. If the splash starts from the wrong side of the window, change `ndc.y + 1.0F` to `1.0F - ndc.y`.
+Nothing is painted and nothing accumulates. The cells are the picture's own, thrown by the sound.
 
 Then change one thing at a time:
 
@@ -445,6 +452,9 @@ Then change one thing at a time:
 - **`32.0` to `120.0`:** fine spatter, like flicked droplets
 - **`4.0` to `12.0`:** the bell rings much longer, and the splash lingers
 - **`* 6.0` to `* 2.0`:** a smaller reach for the same sound
+- **`0.25` in `set_output_scale` to `1.0`:** a much louder bell, and the first splash covers the whole picture
+- **`0.00004` to `0.0004`:** energy moves between the modes ten times faster, and the high modes fill in sooner
+- **Delete the `set_coupling_enabled(true)` line:** the modes ring independently, and the tone only dies away
 
 ### The Red Room
 `data/shaders/red_room.frag`

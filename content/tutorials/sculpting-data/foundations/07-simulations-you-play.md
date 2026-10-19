@@ -255,7 +255,7 @@ Ember make_ember() {
         const float half = std::tan(fov * 0.5F) * distance;
         return glm::vec3(
             std::clamp(ndc.x * half * aspect, -1.0F, 1.0F),
-            std::clamp(-ndc.y * half, -1.0F, 1.0F),
+            std::clamp(ndc.y * half, -1.0F, 1.0F),
             0.0F);
     };
 
@@ -646,9 +646,9 @@ A mouse reports a position in the window. The fire lives in a box in the world. 
 ```cpp
 const auto ndc = normalize_coords(x, y, window);
 const float half = std::tan(fov * 0.5F) * distance;
-return glm::vec3(ndc.x * half * aspect, -ndc.y * half, 0.0F);
+return glm::vec3(ndc.x * half * aspect, ndc.y * half, 0.0F);
 ```
-`normalize_coords` gives -1 to 1 across the window, and the top is -1, so the vertical is flipped. The result is clamped to the box. The numbers `fov`, `aspect` and `distance` are the same ones that place the camera, so the pointer and the picture stay in step. If you move the camera, move them together.
+`normalize_coords` gives -1 to 1 across the window, with +1 at the top, which is also up in the box. The result is clamped to the box. The numbers `fov`, `aspect` and `distance` are the same ones that place the camera, so the pointer and the picture stay in step. If you move the camera, move them together.
 
 A pointer does not tell you where it is in depth, so the fire is always touched in the middle plane. That is enough to paint on, and a way to choose depth, such as a key or the scroll wheel, is easy to add to the hand.
 

@@ -471,7 +471,7 @@ for (auto& mesh : meshes) {
 
 `vega.read_mesh_network()` read the same file, but kept its parts together. Each mesh became a slot in a `MeshNetwork`: a name, a node holding that mesh's geometry, a transform of its own, and the diffuse texture when one was found.
 
-`| Graphics` registered the network as a visual network, one the engine advances every frame. A network has no way to draw itself, because drawing needs a buffer, so something still has to make one. By hand:
+`| Graphics` registered the network as a visual network, one the engine advances every frame, after switching it to graphics output if it was not already. A network has no way to draw itself, because drawing needs a buffer, so something still has to make one. By hand:
 ```cpp
 register_node_network(network, Nodes::ProcessingToken::VISUAL_RATE);
 

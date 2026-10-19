@@ -539,7 +539,7 @@ What each measurement says about the moment:
 - `rms` and `peak`: how loud. `peak` is the largest single sample and reacts to a click. `rms` is the steady level
 - `low_frequency_energy(samples, 1, n, n, 0.02)`: how much sound there is in the lowest two percent of the spectrum. For 48000 samples a second and a block of 512, that is below about 470 Hz. The size of the number depends on how loud the sound is, which is why the blocks that use it take its square root and divide by a guess
 - `spectral_energy`: all of the spectrum together
-- `zero_crossing_rate`: how often the sound crosses zero, as a fraction of the block. It is high for a noisy or bright sound and low for a dull one
+- `zero_crossing_rate`: how often the sound crosses zero, as crossings per sample. A pure tone gives twice its frequency divided by the sample rate and noise gives about a half, so it rises with pitch and with noisiness. It is a rough stand-in for brightness, not a measure of it
 - `estimate_frequency(samples, sample_rate, fallback, threshold)`: a pitch, from the same zero crossings. It is cheap and reads a clean tone well. A rich voice has many crossings that are not the pitch, so it wanders. It gives `fallback` when the block is too short or has too few crossings
 - `kurtosis`: how peaked the values are. A steady sine gives about -1.5, noise gives about 0, and a block holding a click gives a number many times larger. It is how the pot, the membrane and the spine tell a smooth sound from a sharp one
 - `skewness`, `entropy`, `variance`: more ways to say how the values are spread. `entropy` is higher the more evenly spread they are
