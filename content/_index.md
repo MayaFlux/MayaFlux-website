@@ -79,8 +79,10 @@
 <p>A pen on a tablet strikes bells and drones, and every strike pulls a moment from the last seconds back into the picture. Here a camera looks half at the tablet and half at the screen, so the piece watches itself being played.</p>
 <details>
 <summary>More about this piece</summary>
-<p>A live camera is recorded into a ring of recent frames. Each strike cuts back a different distance into it and shows that moment in the regions of the picture shaped by noise. The speed of the pen changes how fast the past plays. Some bells are struck by rules, not by the hand, and a written drone sustains underneath.</p>
-<p>It needs a pen tablet and a camera.</p>
+<p>Eight voices share the piece: four sustained drones and four coupled bells. The pen strikes the bells and lifts the drones, a faster or harder hand lifts them more, and every fourth touch lets another voice in. The voices travel between the two ears, each on a journey of its own length.</p>
+<p>A live camera is recorded into a ring of its most recent frames. Each bell owns a layer of the picture. A strike cuts that layer back, from about half a second for a light touch to five seconds for a hard one, and shows that moment in a region shaped by noise and by the live brightness. The region grows with the strike and recedes as it fades, and the speed of the pen changes how fast the past plays.</p>
+<p>Four keys change how the piece answers the pen. At one end the hand strikes the bells alone. At the other, three slow signals strike bells by simple rules, a written drone that is never struck joins in, and every touch sets off a burst of strikes at falling pitch. It needs a pen tablet and a camera.</p>
+<p><a href="https://github.com/MayaFlux/community-projects/tree/main/ranjith/tingling_time">Files for this piece</a></p>
 </details>
 </div>
 </div>
