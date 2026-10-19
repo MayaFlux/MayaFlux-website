@@ -47,7 +47,6 @@ void compose() {
     window->show();
 
     auto picture = vega.read_image() | Graphics;
-    picture->setup_rendering({ .target_window = window, .fragment_shader = "audio_rows.frag" });
 
     auto sampler = store(create_sampler());
     sampler->play_continuous(0, sampler->slice_from_stream().with_looping(true));
@@ -57,6 +56,7 @@ void compose() {
 
     auto reader = create_processor<Buffers::DescriptorBindingsProcessor>(picture, config);
     reader->bind_audio_buffer("audio", sampler->get_buffer(), "audio_data", 1, Portal::Graphics::DescriptorRole::STORAGE);
+    picture->setup_rendering({ .target_window = window, .fragment_shader = "audio_rows.frag" });
 }
 ```
 Run this code. The sound plays and the picture is pulled sideways by it. The top of the picture reads the start of the sound's current block, the bottom reads the end, so the whole waveform of the moment is drawn as a ripple running down the picture. Loud passages tear it apart, and in silence it settles back to exactly the picture you chose.
@@ -74,17 +74,15 @@ Speak and the picture bends as you speak. Input has to be switched on before the
 
 {{< tutorial-detail title="Also: A Film or a Camera as the Picture" >}}
 
-The picture can move as well. Replace the first two picture lines with a film or a camera. `| Graphics` hooks each one to a buffer:
+The picture can move as well. Replace the `read_image` line with a film or a camera, and leave `setup_rendering` as the last line, after the reader. `| Graphics` hooks each one to a buffer:
 ```cpp
 auto film = choose_video({}).first;
 film | Graphics;
 auto picture = get_associated_buffer(film);
-picture->setup_rendering({ .target_window = window, .fragment_shader = "audio_rows.frag" });
 ```
 ```cpp
 auto camera = vega.read_camera() | Graphics;
 auto picture = get_associated_buffer(camera);
-picture->setup_rendering({ .target_window = window, .fragment_shader = "audio_rows.frag" });
 ```
 The film plays once. The camera asks which camera and which mode when it starts, and runs for as long as the program does.
 
@@ -184,6 +182,8 @@ auto picture = vega.read_image() | Graphics;
 picture->setup_rendering({ .target_window = window, .fragment_shader = "audio_rows.frag" });
 ```
 `target_window` is the window to draw into. `fragment_shader` replaces the default shader, which draws the picture as it is. Leave it out and you have the first section again.
+
+When your own shader reads extra data that you attach yourself, as the next expansion does, attach it between these two lines. `setup_rendering` lets the picture start drawing, so the first frame should already know everything the shader reads.
 
 `read_image()` loads the whole image by default; pass an optional `Kakshya::Region` as its second argument when you want a bounded pixel rectangle instead.
 
@@ -525,7 +525,6 @@ void compose() {
     window->show();
 
     auto picture = vega.read_image() | Graphics;
-    picture->setup_rendering({ .target_window = window, .fragment_shader = "two_axes.frag" });
 
     auto samplers = create_samplers(48000 * 10);
     store(samplers);
@@ -544,6 +543,7 @@ void compose() {
     auto reader = create_processor<Buffers::DescriptorBindingsProcessor>(picture, config);
     reader->bind_audio_buffer("left", samplers[0]->get_buffer(), "left_data", 1, Portal::Graphics::DescriptorRole::STORAGE);
     reader->bind_audio_buffer("right", samplers[1]->get_buffer(), "right_data", 1, Portal::Graphics::DescriptorRole::STORAGE);
+    picture->setup_rendering({ .target_window = window, .fragment_shader = "two_axes.frag" });
 }
 ```
 Run it with a stereo recording. Each channel of the file gets its own sampler, and each sampler's block goes to its own storage buffer. The left channel pushes the rows sideways and the right channel pushes the columns up and down. A sound that sits left bends the picture one way, and a sound that sits right bends it the other. A sound that moves between the ears moves the distortion from one axis to the other.

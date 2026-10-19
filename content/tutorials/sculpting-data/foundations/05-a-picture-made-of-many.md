@@ -374,13 +374,13 @@ builder.every(1.0 / 60.0, [laid](Kriya::Chimera& set) {
 ```
 The hook writes the number, and `every` reads it on the next frame and applies it. The Stones block is this, once per stone. The time block does it with a layer number and a distance.
 
-A continuous number works the same way. The Paint Time block measures the loudness of the sound it is playing, and the sound of a bell, a string or a resonator that you have sent to the speakers can be measured in just the same way, with `get_audio_buffer()`.
+A continuous number works the same way. The Paint Time block measures the loudness of the sound it is playing by reading the sampler's buffer with `get_buffer()`, and the buffer of any other sound you have sent to the speakers can be measured in just the same way.
 
 {{< /tutorial-detail >}}
 
 {{< tutorial-detail title="Expansion 8: Emergence by Order" >}}
 
-Put many pictures of the same kind of thing on top of each other and the thing they have in common is what holds still. Mixing, as the first block does, lets every picture leave a trace, and the traces cloud each other. Choosing does better. At every pixel the shader collects the layers' values, sorts them, and picks one by its rank: the lowest is the darkest of all the pictures at that pixel, the middle is the typical one, the highest is the brightest.
+Put many pictures of the same kind of thing on top of each other and the thing they have in common is what holds still. Mixing, as the first block does, lets every picture leave a trace, and the traces cloud each other. Choosing does better. At every pixel the shader collects the layers' values, sorts them, and picks by rank: the lowest is the darkest of all the pictures at that pixel, the middle is the typical one, the highest is the brightest. Red, green and blue are sorted separately, so the three channels of a pixel can come from different pictures, and a rank between two whole numbers blends its two neighbours.
 
 A shader of your own does this. `emerge.frag` below picks any rank with a dial, and can scatter the rank from grain to grain.
 
@@ -549,7 +549,7 @@ Use twenty to thirty photographs of the same kind of thing: windows, clouds, fac
 
 Run it. Two knobs move fast and out of step with each other. The first is the dial, which swings between the darkest of all your pictures and the brightest in a couple of seconds, with a second, quicker wobble on top, so it never repeats the same sweep. The second is the spread. The picture is scattered into a few thousand small, irregular grains, and at every moment each grain is given its own push away from the dial, drawn fresh eight times a second. When the spread is low the whole picture moves together. When it is high, neighbouring grains pick pictures of different ranks, and the window becomes a flickering dust where one grain shows the darkest picture, the next the typical one and the next the brightest.
 
-What the pictures have in common keeps flashing out of the noise and being lost again. Nothing in the stack is blended. At each pixel one picture wins, and which one changes many times a second.
+What the pictures have in common keeps flashing out of the noise and being lost again. Nothing in the stack is averaged. At each pixel the shader reads one rank of the sorted values, and which picture that rank belongs to changes many times a second.
 
 Change one thing at a time:
 
@@ -697,7 +697,7 @@ Run it with a film that has a person, a room or a street in it.
 
 Six layers read the same film at six different times: now, three seconds ago, a moment held still, a lag that wanders between half a second and six, one that plays backward at half speed, and one six seconds back. A slow field of noise decides, pixel by pixel, which of the six you see, so the picture is made of patches of different times with a dark seam between them. The patches drift. Someone's arm is where it is now, and the chair beside it is where it was.
 
-Every few seconds the clock ticks, and one of the layers, chosen at random, is thrown to some other moment of the last eight seconds. The patch that belonged to it changes, and the whole field lurches. The room has reset in one place.
+Every few seconds the clock ticks, and one of the five layers after the first, chosen at random, is thrown to some other moment of the last eight seconds. The patch that belonged to it changes, and the whole field lurches. The room has reset in one place.
 
 {{< tutorial-detail title="Memory and Size" >}}
 

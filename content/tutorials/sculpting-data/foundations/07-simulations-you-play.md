@@ -419,7 +419,7 @@ Change one thing at a time:
 - **`2.8` in the heat formula to `0.0`:** the steady heat source stops; a held button or a Space burst can still add heat
 - **`0.992F` to `0.98F`:** the heat fades faster, and the flame is short
 - **`1.1F` in `density_gain` to `0.2F`:** smoke stops dragging the plume and it rises lazily
-- **`2.5` in the soot formula to `0.5`:** the box can fill almost to the top before it thins
+- **`2.5` in the soot formula to `0.5`:** the box can fill almost completely before the soot is even halved
 - **`glm::uvec3(64)` to `glm::uvec3(96)`:** a finer fire at several times the cost
 
 You have, in both blocks:
@@ -482,7 +482,7 @@ The camera sits at a multiple of that radius, and the thickness of the air and t
 
 This block expects fields named `density` and `temperature` in the file. `vega.evolve` adds missing flow fields, including `velocity`, `pressure` and `divergence`; it reuses any that the file already supplies. The block then seeds `velocity` and `pressure` to zero, even if they came from the file. It carries density through the flow while temperature remains at its loaded positions, apart from the heat added by `influx()`.
 
-One line you will see in the log is expected: `setup_rendering: no SurfaceConfig was supplied at construction`. `vega.evolve` always tries to draw a volume as a solid surface, and this volume was not built for one. The flow is already running when the line appears, and the next expansion shows what draws it instead.
+One line you will see in the log is expected: `setup_rendering: no SurfaceConfig was supplied at construction`. `vega.evolve` always tries to draw a volume as a solid surface, and this volume was not built for one. The flow is already running when the line appears, and the next expansion shows what draws it instead. Every other block here that gives `vega.evolve` a volume built without a `SurfaceConfig` logs the same line.
 
 {{< /tutorial-detail >}}
 
@@ -554,7 +554,7 @@ The function is called each frame because the field swaps between two copies as 
 - **`step_scale`** is the length of a step as a fraction of one cell
 - **`max_steps`** is how many steps a ray may take. Left out, it is enough to cross the box from corner to corner.
 
-Fire is drawn with additive blending so overlapping layers get brighter, and smoke without it, so it dims what is behind it. The buffers are drawn from the front, so the camera can sit inside the box.
+Fire is drawn with additive blending so overlapping layers get brighter, and smoke without it, so it dims what is behind it. The box is drawn by its inside faces, so the camera can sit inside it.
 
 There is another way to draw a volume. Give it a `SurfaceConfig` when you build it and it draws the shape of one value, a solid surface like the skin of a balloon. This looks right while the field has a firm edge. While a fire fades and smears, the edge is eaten away and the surface breaks into facets and ends. That is why the fire here is looked through and not thresholded.
 
@@ -614,7 +614,7 @@ auto drone_side = [&](size_t side) {
 auto left = drone_side(0) | Audio[0];
 auto right = drone_side(1) | Audio[1];
 ```
-Then remove `drone` from the `schedule_metro(2.5, ...)` capture and remove `(*drone)[i]->set_frequency(...)` from its loop. The `Polynomial` nodes read the changed `tuning` values each audio block; the flare calculation stays the same.
+Then remove `drone` from the `schedule_metro(2.5, ...)` capture and remove `(*drone)[i]->set_frequency(...)` from its loop. The `Polynomial` nodes read the changed `tuning` values on every sample; the flare calculation stays the same.
 
 {{< /tutorial-detail >}}
 

@@ -125,7 +125,7 @@ void compose() {
     }, "dancer", Vruta::ProcessingToken::FRAME_ACCURATE);
 }
 ```
-Run this code. A figure of six parts stands in the window, and you hear a plucked string walking up and down a five note scale, two notes a second. Nothing is measured and nothing is loaded. A few nodes keep time, and everything else follows them:
+Run this code. A figure of six parts stands in the window, and you hear a plucked string climbing a five note scale and starting over, two notes a second. Nothing is measured and nothing is loaded. A few nodes keep time, and everything else follows them:
 
 - **The pulse** is a silent clock that ticks twice a second. Each tick is an event, and one function answers it three ways: it picks the next note, plucks the string, and hands the lead to the other arm.
 - **The thump** is an envelope that jumps up on every tick and falls away. It is how far the knees dip and the body drops.
@@ -133,7 +133,7 @@ Run this code. A figure of six parts stands in the window, and you hear a plucke
 - **The reach** is a slow swell over eight seconds that holds the arms higher and lower. A `Logic` node watches it, and when it passes a threshold on the way up, the next notes are an octave higher, and when it falls back they come down again. The arms are high when the notes are high.
 - **The sway** is a slow wave that leans the body.
 
-All the motions run at the same two beats a second and start together, so the knees, the arm and the note land at the same moment.
+The pulse, the thump and the whip run at the same two beats a second and start together, so the knees, the arm and the note land at the same moment. The sway and the reach are slower and keep their own time.
 
 Drag with the middle mouse button to walk round it.
 
@@ -369,7 +369,7 @@ Kinesis::generate_explicit_surface(heights, columns, rows, { 4.0F, 4.0F }, 1.0F)
 Kinesis::generate_revolution(
     [](float t) { return glm::vec2(0.5F + 0.3F * std::sin(t * 9.0F), t * 2.0F - 1.0F); }, 96, 128, glm::two_pi<float>());
 ```
-A profile that does not reach a radius of 0 at its ends leaves the shape open there. The figure's head is this, with a profile that closes at both ends.
+A profile that does not reach a radius of 0 at its ends leaves the shape open there.
 
 **Tube.** A thick thread along a list of points. It takes the points, a function that gives the radius at each position `t` along the thread, how many sides it has, and whether its ends are closed:
 ```cpp
@@ -417,7 +417,7 @@ bind_fly_preset(window);
 
 **Fly** is a first-person camera. Drag with the right mouse button to look, and use the movement keys to travel. It also starts five units back from the origin.
 
-Both take a config for a shape of another size. The figure stands about two units tall with its feet at the floor, so it looks at a point nearer its middle:
+Both take a config for a shape of another size. The figure stands a little under two units tall, from about 0.2 to 1.8, so it looks at a point nearer its middle:
 ```cpp
 bind_orbit_preset(window, { .focal_point = { 0.0F, 0.9F, 0.0F }, .initial_distance = 4.5F });
 ```
@@ -537,7 +537,7 @@ const double loud = Kinesis::Discrete::rms(samples, 1, n, n)[0];
 What each measurement says about the moment:
 
 - `rms` and `peak`: how loud. `peak` is the largest single sample and reacts to a click. `rms` is the steady level
-- `low_frequency_energy(samples, 1, n, n, 0.02)`: how much sound there is in the lowest two percent of the spectrum. For 48000 samples a second and a block of 512, that is below about 400 Hz. The size of the number depends on how loud the sound is, which is why the blocks that use it take its square root and divide by a guess
+- `low_frequency_energy(samples, 1, n, n, 0.02)`: how much sound there is in the lowest two percent of the spectrum. For 48000 samples a second and a block of 512, that is below about 470 Hz. The size of the number depends on how loud the sound is, which is why the blocks that use it take its square root and divide by a guess
 - `spectral_energy`: all of the spectrum together
 - `zero_crossing_rate`: how often the sound crosses zero, as a fraction of the block. It is high for a noisy or bright sound and low for a dull one
 - `estimate_frequency(samples, sample_rate, fallback, threshold)`: a pitch, from the same zero crossings. It is cheap and reads a clean tone well. A rich voice has many crossings that are not the pitch, so it wanders. It gives `fallback` when the block is too short or has too few crossings
@@ -772,7 +772,7 @@ void compose() {
 Run it. A flat skin lies in the window. Make a sound and it is struck, and the sound only strikes it:
 
 - **How high the sound is** picks where along the skin it lands, low at the left and high at the right
-- **How sharp the sound is** picks how far back it lands, a smooth tone near you and a click at the far edge
+- **How sharp the sound is** picks how near it lands, a smooth tone at the far edge and a click close to you
 - **How loud the sound is** sets how hard the blow is
 
 Whatever lands makes rings that spread, reach the edge, come back, and cross the rings from the other blows. After the sound has stopped the skin is still moving, and a loud clap at one spot leaves a pattern that takes seconds to die. The surface is a map of what kind of sound it was, and also a record of it.
