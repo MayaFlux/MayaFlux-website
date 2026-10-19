@@ -90,12 +90,12 @@
 <div class="card showcase">
 {{< youtube Tb8Ni1jdcGI >}}
 <div class="showcase-body">
-<p class="kicker">Write, compile, perform</p>
+<p class="kicker">Live coding</p>
 <h3>Live on a Steam Deck</h3>
 <p>A twenty minute live-coded set at TOPLAP Bengaluru, performed on a Steam Deck with an earlier version of MayaFlux.</p>
 <details>
 <summary>More about this performance</summary>
-<p>The set was four pieces, written and changed while they played. MayaFlux 0.3 was developed in parallel with the performance, so the framework and the set grew together. Live coding is done with Lila, which evaluates C++ inside the running program.</p>
+<p>The set was four pieces, written and changed while they played. MayaFlux 0.3 was developed in parallel with the performance, so the framework and the set grew together. It was written live with Lila.</p>
 </details>
 </div>
 </div>
@@ -103,10 +103,15 @@
 </div>
 
 <div class="card wide">
-<h2>Room to grow</h2>
-<p>MayaFlux was designed around computation itself. Open as many windows as you need, and none of them is the main one. Events are coroutines that run when something calls for them. Sound, graphics, simulation, input, geometry and control each run on their own schedule, and you decide how they relate.</p>
-<p>Because of that, a work can keep growing inside one project. A sketch can become a composition, an installation, a simulation, a game, an instrument, an editor, or the start of an application framework of its own.</p>
-<p>The pieces above show some of what this makes possible. They are a beginning, not a boundary.</p>
+<h2>Independent by design</h2>
+<p>MayaFlux is a substrate for complete software. Every part of it stands on its own. No window is the main window, and you open as many as you need. No clock is the master clock, and events are coroutines that run when something calls for them. Sound, graphics, simulation and input each run on their own schedule, and you decide how they relate.</p>
+<p>Because nothing outranks anything else, the same project can be any of these:</p>
+<ul>
+<li>A game, or the editor you make it in.</li>
+<li>A digital audio workstation, or a non-linear video editor.</li>
+<li>A single focused artwork, or an installation.</li>
+<li>An instrument that keeps growing and evolving, or a data analysis engine running on the GPU.</li>
+</ul>
 </div>
 
 <div class="card wide">
@@ -122,33 +127,28 @@
 <p><a href="/tutorials/sculpting-data/foundations/"><strong>Foundations</strong></a> has seven short exercises that begin with something you already have: a sound, a picture, a recording, a film, a camera or a model. Run one, change a single number, then listen or look at what changed.</p>
 </div>
 </div>
-<p>You can use every example without understanding it, and read the code when you want to know why. If you are coming from another tool, there are guides for <a href="/personas/">your background</a> and for <a href="/onboarding/">Max, Pure Data and openFrameworks</a>.</p>
+<p>If you are coming from another tool, there are guides for <a href="/personas/">your background</a> and for <a href="/onboarding/">Max, Pure Data and openFrameworks</a>.</p>
 </div>
 
 <div class="card wide">
-<h2>Write, compile, perform</h2>
-<p>MayaFlux is written in modern C++. A program is an ordinary project that you compile, and the same language describes a mathematical function, a network of sounds, a picture on the GPU or a change in the middle of a performance.</p>
-<p>When you want to work live, <strong>Lila</strong>, MayaFlux's live-coding environment, evaluates C++ fragments inside the running program from VS Code or Neovim. The sound does not stop and the window does not close. Live coding is an option, not a separate language and not a requirement.</p>
-</div>
-
-<div class="card wide">
-<h2>What is underneath</h2>
+<h2>Plain C++, live or compiled</h2>
+<p>MayaFlux is modern C++20 and C++23, with all the fluency and machinery the language now provides. It does not hold on to old habits, and it makes no identity out of embracing or avoiding any particular library. The premise is that C++ can be written live, or used through high-level operations, without a domain-specific language in between.</p>
 <ul>
-<li><strong>One kind of material.</strong> Sound, geometry, image and control signals are all numbers, and the same tools shape any of them. Sound and picture share data directly, with no conversion step between them.</li>
-<li><strong>Real-time sound and GPU graphics.</strong> Audio runs in real time on each platform's native backend. Pictures and heavy computation run on the GPU through Vulkan, including simulations of particles, fluids and cellular worlds.</li>
+<li><strong>No C++ tax.</strong> <a href="/download/">Weave</a> installs MayaFlux with every dependency, configures the compiler and build presets, and creates a project that builds with one command. You get a curated environment, and you can expand it: community modules are C++ source libraries that compile straight into your project, and the project's <code>CMakeLists.txt</code> is yours to edit.</li>
+<li><strong>Live.</strong> <strong>Lila</strong>, MayaFlux's live-coding environment, evaluates C++ inside the running program from VS Code or Neovim. The sound does not stop and the window does not close.</li>
+<li><strong>High level.</strong> One call can build a visible structure or set a simulation going. The same project can also work at the lowest level, whenever you choose.</li>
+<li><strong>No locks on the real-time paths.</strong> Audio, graphics and input coordinate without mutexes, so one never waits on another.</li>
+<li><strong>Real-time sound and GPU graphics.</strong> Audio runs on each platform's native backend. Pictures and heavy computation run on the GPU through Vulkan, including particles, fluids, cellular worlds and live image analysis.</li>
 <li><strong>The world outside.</strong> Cameras, video, 3D models, volumes, tables of data, MIDI, pen tablets and microphones come in and go out through the same system.</li>
-<li><strong>Analysis built in.</strong> Pictures can be analysed live on the GPU, finding shapes, edges and motion, and the results can drive sound or geometry.</li>
 </ul>
-<p>For how it is put together, read <a href="https://github.com/MayaFlux/MayaFlux/blob/main/docs/Digital_Architecture.md">the architecture guide</a>. For individual functions, see the <a href="https://mayaflux.github.io/MayaFlux/">reference documentation</a>.</p>
+<p>The code, the <a href="https://github.com/MayaFlux/MayaFlux/blob/main/docs/Digital_Architecture.md">architecture guide</a> and the <a href="https://mayaflux.github.io/MayaFlux/">reference documentation</a> are on <a href="https://github.com/MayaFlux/MayaFlux">GitHub</a>.</p>
 </div>
 
 <div class="card wide">
 <h2>Open to investigation</h2>
-<p>MayaFlux is free software under the GNU General Public License v3.0. Ranjith Hegde, an independent musician, researcher and software developer, wrote the first code in February 2025 and made it public on 1 March 2025, after a decade of working toward it in other forms. It grows through the problems met while making things with it.</p>
-<p>It comes out of practice. Years of work with dancers, writers, photographers and musicians in the Basement 21 collective in Chennai, live-coded performances, and production audio for Metro: Awakening came before it. The <a href="https://github.com/MayaFlux/MayaFlux/commits">commit history is public</a>, and the architecture was presented as a <a href="/posters/cpponline-2026/">poster at C++Online 2026</a>.</p>
-<p>Version 0.5 is made to be used. If something breaks, or something is unclear, that is what the project needs to hear.</p>
+<p>MayaFlux is free software under the GNU General Public License v3.0. Read it, question it, take part, fork it and grow it elsewhere, or change it, in the spirit of free software and open knowledge. Version 0.5 is made to be used, so if something breaks or is unclear, say so.</p>
+<p>Ranjith Hegde, an independent musician, researcher and software developer, wrote the first code in February 2025, after a decade of practice with dancers, writers, photographers and musicians, live coding, and production audio for Metro: Awakening. It has grown since then. It has been presented at TheISRO many times, at livecodeblr, as a poster at ADC, and as a <a href="https://www.youtube.com/watch?v=_qZvFNCYQ74">talk</a> (with <a href="https://mayaflux.github.io/MayaFlux-cpponline2026/">slides</a>) and a <a href="/posters/cpponline-2026/">poster</a> at C++Online, and it has been taught in many community workshops. The <a href="https://github.com/MayaFlux/MayaFlux/commits">commit history is public</a>.</p>
 <ul>
-<li><a href="/download/">Download Weave</a></li>
 <li><a href="https://github.com/MayaFlux/MayaFlux/issues">Report a bug or ask a question</a></li>
 <li><a href="https://github.com/MayaFlux/MayaFlux">Source code</a></li>
 <li><a href="/releases/">Release notes</a></li>

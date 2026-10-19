@@ -585,19 +585,7 @@ auto buffers = get_io_manager()->hook_audio_container_to_buffers(container);
 
 {{< /tutorial-detail >}}
 
-{{< tutorial-detail title="Try It → Recap" >}}
-
-Start from the sound:
-```cpp
-void compose() {
-    vega.read_audio("path/to/your/file.wav") | Audio;
-}
-```
-Replace `"path/to/your/file.wav"` with an actual path and run it. Then change one thing at a time:
-
-- **Image:** change `width` and `height`. The window changes size.
-- **Video:** delete `EXTRACT_AUDIO` and replace it with `{}`. The picture still plays, and the sound is gone.
-- **Sound:** delete `| Audio`. The file still loads, and nothing plays.
+{{< tutorial-detail title="Recap" >}}
 
 ### What You Achieved
 
