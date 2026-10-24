@@ -293,3 +293,263 @@ fabric.wire(moving_presence)
 On a mouse event, the Emitter receives the pointer coordinates in `InfluenceContext::cursor_pos`. That is separate from its world position. The input code decides how to convert the pointer and can call `emitter->set_position(...)` when the influence itself should move. `move_to` instead gives the entity a sequence of positions, firing it at each step. For a custom coroutine, `use()` lets you decide when to call `Fabric::fire()` yourself.
 
 The main idea is simple: `Fabric` keeps the spatial picture; `Wiring` decides when one entity acts. A Sensor can run on a timer, an Emitter can answer an input event, or a Presence can follow a short route. Their callbacks decide what each firing means and where its result goes.
+
+### One presence, several directions of action
+
+A Sensor can hold one clear act of attention. An Emitter can hold one clear act of influence. Either one may contain a complicated rule. The point is that each remains one thing we can name and follow: this is what notices; this is what acts. That kind of unity gives us a useful handle on a behavior without deciding in advance how simple the behavior must be.
+
+Now picture a presence moving through a space. It does not need to be a person, or even a thing the player can see. As it moves, it takes in several nearby presences. Their distances and relations contribute to a changing reading. That reading might bend a field, alter a sound, and change how another presence responds. The motion, the reading, and the consequences belong to one continuing presence, even as its effects travel elsewhere.
+
+```mermaid
+flowchart LR
+    Many[Many nearby presences] --> Read[One changing reading]
+    Read --> Field[Field shifts]
+    Read --> Sound[Sound shifts]
+    Field --> Elsewhere[Another presence responds]
+    Sound --> Elsewhere
+```
+
+This is the step from a Sensor or Emitter to an Agent. The Agent can carry both perception and influence under one identity. It can move, read a neighborhood, and act on the reading. If the behavior grows, it can hold more than one perception and more than one influence. Each can have its own targets, so a reading or response can branch without turning the Agent into a pile of unrelated objects.
+
+The contexts mark the two directions of this exchange. `PerceptionContext` is the situation arriving from the surrounding space. `InfluenceContext` is the situation from which the Agent acts, including its current position and influence values. The functions decide what these mean here. They can also bring in state from elsewhere, so the Agent's action can depend on what it has noticed before.
+
+```cpp
+auto agent = std::make_shared<MayaFlux::Nexus::Agent>(3.0F);
+agent->set_position(agent_position);
+
+float neighborhood = 0.0F;
+auto reading = agent->add_perception<float>(
+    [&agent](const MayaFlux::Nexus::PerceptionContext& ctx) {
+        float sum = 0.0F;
+        for (const auto& result : ctx.spatial_results) {
+            if (result.id != agent->id()) {
+                sum += 1.0F / (1.0F + result.distance_sq);
+            }
+        }
+        return sum;
+    });
+reading->add_target([&neighborhood](const float& value) {
+    neighborhood = value;
+});
+
+auto response = agent->add_influence<glm::vec4>(
+    [&neighborhood](const MayaFlux::Nexus::InfluenceContext& ctx) {
+        return glm::vec4(ctx.position, neighborhood);
+    });
+response->add_target(MayaFlux::Nexus::bind_params(gpu_field));
+
+fabric.wire(agent)
+    .every(1.0 / 60.0, MayaFlux::Vruta::ProcessingToken::FRAME_ACCURATE)
+    .position_from(next_agent_position)
+    .finalise();
+```
+
+On each firing, the Agent's moving position gives the reading a point of view. The nearby results become a single measure of the surrounding activity. The influence carries that measure onward with the Agent's position, where the field can use it. The same reading could also feed a sound, or another influence could respond to a different part of the neighborhood. The code is short because the relationships are the subject; the game decides what those changes look and sound like.
+
+`Presence` and `Locus` take this idea further in different directions. A Presence gathers its neighbors and radiates a distance-weighted influence to each one. A Locus carries a moving viewpoint and can send it to several render processors. They are children of Agent, with particular forms of agency already built in. Sensor and Emitter remain useful when one coherent operation is what the game calls for. Agent is for when one presence needs to notice and affect the world in several connected ways.
+
+### Two ways to give the player control
+
+Keep the same space, the same Loci, and the same relations. Change what movement means to the player.
+
+In the first version, one Locus receives the controls. WASD moves its viewpoint, the mouse turns it, and a click changes its intensity. The player's hand stays close to the action: press, move, arrive. The Locus already connects movement to perception and view, so its viewpoint travels with it.
+
+WASD and mouse are familiar industry conventions, but their meaning is still a choice. A key's lambda can branch on something a Sensor has read, change several related things, or send a response through a field. Here it moves the Locus. Control could also begin with a microphone level, a carefully made web of relations, or a rhythm or time pattern. The keyboard is one source among many; it does not decide what agency has to look like.
+
+```mermaid
+flowchart LR
+    Input[WASD and mouse] --> Move[Move and turn one Locus]
+    Move --> View[The scene follows its view]
+    View --> Act[The player acts from this place]
+```
+
+The visible setup is just the binding call:
+
+```cpp
+PlayerControls controls = bind_locus_controls(fabric, window, current_locus);
+```
+
+<details>
+<summary>Show the key binding and Locus construction</summary>
+
+The key-binding lambda gives each held key one flag. The Locus advances those flags on its frame Wiring. Mouse movement updates the same navigation state; the Locus sends its resulting view to the render processors.
+
+```cpp
+#include "MayaFlux/MayaFlux.hpp"
+#include "MayaFlux/Nexus/Principals/Locus.hpp"
+
+struct PlayerControls {
+    std::vector<uint32_t> wiring_ids;
+    std::vector<std::function<void()>> reset;
+};
+
+PlayerControls bind_locus_controls(
+    MayaFlux::Nexus::Fabric& fabric,
+    const std::shared_ptr<MayaFlux::Core::Window>& window,
+    const std::shared_ptr<MayaFlux::Nexus::Locus>& locus)
+{
+    using namespace MayaFlux;
+
+    PlayerControls controls;
+    auto& nav = locus->nav();
+
+    const auto bind_key = [&](IO::Keys key, bool& movement_flag) {
+        bool* held = &movement_flag;
+        auto emitter = std::make_shared<Nexus::Emitter>(
+            [held](const Nexus::InfluenceContext&) { *held = true; });
+
+        auto wiring = fabric.wire(emitter);
+        controls.wiring_ids.push_back(wiring.entity_id());
+        controls.reset.push_back([held]() { *held = false; });
+        wiring.on(window, key, true, [held]() { *held = false; }).finalise();
+    };
+
+    bind_key(IO::Keys::W, nav.forward_held);
+    bind_key(IO::Keys::A, nav.left_held);
+    bind_key(IO::Keys::S, nav.back_held);
+    bind_key(IO::Keys::D, nav.right_held);
+
+    auto look = std::make_shared<Nexus::Emitter>(
+        [locus](const Nexus::InfluenceContext& ctx) {
+            if (!ctx.cursor_pos)
+                return;
+
+            auto& nav = locus->nav();
+            if (nav.first_mouse) {
+                nav.last_x = ctx.cursor_pos->x;
+                nav.last_y = ctx.cursor_pos->y;
+                nav.first_mouse = false;
+                return;
+            }
+
+            Kinesis::apply_mouse_delta(
+                nav,
+                static_cast<float>(ctx.cursor_pos->x - nav.last_x),
+                static_cast<float>(ctx.cursor_pos->y - nav.last_y));
+            nav.last_x = ctx.cursor_pos->x;
+            nav.last_y = ctx.cursor_pos->y;
+        });
+
+    auto mouse_wiring = fabric.wire(look);
+    controls.wiring_ids.push_back(mouse_wiring.entity_id());
+    controls.reset.push_back([locus]() { locus->nav().first_mouse = true; });
+    mouse_wiring
+        .on(window, IO::MouseButtons::Right, true,
+            [locus](double, double) { locus->nav().first_mouse = true; })
+        .finalise();
+
+    auto click = std::make_shared<Nexus::Emitter>(
+        [locus](const Nexus::InfluenceContext&) {
+            locus->set_intensity(locus->intensity() > 0.5F ? 0.25F : 1.0F);
+        });
+    auto click_wiring = fabric.wire(click);
+    controls.wiring_ids.push_back(click_wiring.entity_id());
+    click_wiring.on(window, IO::MouseButtons::Left).finalise();
+
+    return controls;
+}
+
+void unbind_locus_controls(
+    MayaFlux::Nexus::Fabric& fabric,
+    const PlayerControls& controls)
+{
+    for (const uint32_t id : controls.wiring_ids)
+        fabric.remove(id);
+    for (const auto& reset : controls.reset)
+        reset();
+}
+
+std::shared_ptr<MayaFlux::Nexus::Locus> make_locus(
+    MayaFlux::Nexus::Fabric& fabric,
+    const glm::vec3& eye,
+    const std::shared_ptr<MayaFlux::Buffers::VKBuffer>& buffer,
+    float aspect)
+{
+    MayaFlux::Kinesis::NavigationConfig config {
+        .initial_eye = eye,
+        .initial_target = eye + glm::vec3(0.0F, 0.0F, -1.0F),
+        .move_speed = 2.0F,
+    };
+
+    auto locus = std::make_shared<MayaFlux::Nexus::Locus>(
+        config,
+        2.0F,
+        MayaFlux::Nexus::Agent::PerceptionFn {},
+        MayaFlux::Nexus::Agent::InfluenceFn {});
+    locus->set_aspect(aspect);
+    locus->attach(buffer, {
+        .on_move = MayaFlux::Nexus::AttachConfig::OnMove::Carry,
+    });
+
+    fabric.wire(locus)
+        .every(1.0 / 60.0, MayaFlux::Vruta::ProcessingToken::FRAME_ACCURATE)
+        .finalise();
+    return locus;
+}
+
+// current_buffer is already rendered. These are the render processors
+// whose view should follow the controlled Locus.
+auto current_locus = make_locus(fabric, current_eye, current_buffer, aspect);
+for (const auto& processor : scene_processors)
+    current_locus->add_view_target(processor);
+```
+
+</details>
+
+The second version changes the meaning of movement. There is no single viewpoint that the player carries through the whole space. Each place has its own Locus and attached buffer. When the controlled Locus comes close to another one, the controls move across. The player stops steering the first place and begins acting from the next.
+
+```mermaid
+flowchart LR
+    Current[Current Locus receives WASD and mouse] --> Near{Another Locus within reach?}
+    Near -->|no| Current
+    Near -->|yes| Handoff[Remove current input Wirings]
+    Handoff --> Next[Bind those controls to the next Locus]
+    Next --> View[Next Locus drives the scene view]
+```
+
+Create the next Locus with the same helper. Both remain in Fabric; only the current one drives the scene processors. The proximity check removes the old bindings, moves the view targets, and binds the controls to the next Locus. This is where control changes meaning, so the handoff stays in the main example.
+
+```cpp
+auto next_locus = make_locus(fabric, next_eye, next_buffer, aspect);
+
+struct ControlHandoff {
+    std::shared_ptr<MayaFlux::Nexus::Locus> current;
+    std::shared_ptr<MayaFlux::Nexus::Locus> next;
+    PlayerControls controls;
+    bool transferred {};
+};
+
+const float handoff_distance = 1.25F;
+auto handoff = std::make_shared<ControlHandoff>(ControlHandoff {
+    .current = current_locus,
+    .next = next_locus,
+    .controls = std::move(controls),
+});
+
+auto proximity = std::make_shared<MayaFlux::Nexus::Emitter>(
+    [&fabric, window, scene_processors, handoff, handoff_distance](const MayaFlux::Nexus::InfluenceContext&) {
+        if (handoff->transferred
+            || !handoff->current->position()
+            || !handoff->next->position())
+            return;
+
+        if (glm::distance(*handoff->current->position(), *handoff->next->position())
+            >= handoff_distance)
+            return;
+
+        unbind_locus_controls(fabric, handoff->controls);
+        for (const auto& processor : scene_processors) {
+            handoff->current->remove_view_target(processor);
+            handoff->next->add_view_target(processor);
+        }
+        handoff->controls = bind_locus_controls(fabric, window, handoff->next);
+        handoff->current = handoff->next;
+        handoff->transferred = true;
+    });
+
+fabric.wire(proximity)
+    .every(1.0 / 60.0, MayaFlux::Vruta::ProcessingToken::FRAME_ACCURATE)
+    .finalise();
+```
+
+The first version gives direct, tactile control over one Locus. In the second, movement only carries control as far as another Locus. Proximity decides when the player's actions begin coming from that new viewpoint. The same movement and view machinery serves both arrangements. What changes is the relation between the player's movement and the place from which they act.
